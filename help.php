@@ -71,6 +71,10 @@
         .help-table th { background: #f9fafb; font-size: 13px; }
         .help-table td { font-size: 13px; vertical-align: middle; }
         .nav-section { position: sticky; top: 1rem; }
+        .lang-switcher { font-size: 13px; }
+        .lang-switcher a { color: rgba(255,255,255,.7); text-decoration: none; padding: 2px 8px; border-radius: 4px; }
+        .lang-switcher a:hover { color: white; background: rgba(255,255,255,.15); }
+        .lang-switcher a.active { color: white; background: rgba(255,255,255,.25); font-weight: 600; }
         @media (max-width: 991px) {
             .nav-section { position: static; margin-bottom: 1rem; }
         }
@@ -109,8 +113,16 @@
 <!-- Hero Section -->
 <div class="help-hero">
     <div class="container">
-        <h1><i class="bi bi-question-circle"></i> Help & Guide</h1>
-        <p>คู่มือการใช้งาน Numa Log &mdash; ระบบบันทึกและวิเคราะห์ข้อมูลการซื้อสินค้าไอดอล</p>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1><i class="bi bi-question-circle"></i> Help & Guide</h1>
+                <p>คู่มือการใช้งาน Numa Log &mdash; ระบบบันทึกและวิเคราะห์ข้อมูลการซื้อสินค้าไอดอล</p>
+            </div>
+            <div class="lang-switcher">
+                <a href="help.php" class="active">TH</a>
+                <a href="help_en.php">EN</a>
+            </div>
+        </div>
     </div>
 </div>
 

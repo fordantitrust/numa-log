@@ -248,7 +248,9 @@ numa-log/
 ├── import.php                # Excel to SQLite importer
 ├── seed_idols.php            # Idol entity seeder
 ├── help.php                  # Help & guide page (Thai)
+├── help_en.php               # Help & guide page (English)
 ├── HOW_TO_USE.md             # How to use documentation (Thai)
+├── HOW_TO_USE_EN.md          # How to use documentation (English)
 ├── Dockerfile                # Docker image definition
 ├── docker-compose.yml        # Docker Compose configuration
 ├── .dockerignore             # Docker build exclusions
@@ -370,6 +372,15 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.3.1 (2026-02-17)
+
+English documentation release.
+
+#### Added
+- **English help page** (`help_en.php`) - In-app help & guide page in English
+- **English how to use** (`HOW_TO_USE_EN.md`) - Comprehensive usage documentation in English
+- **Language switcher** - TH/EN toggle on help pages to switch between Thai and English
 
 ### v1.3.0 (2026-02-17)
 
