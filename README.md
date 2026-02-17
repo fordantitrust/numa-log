@@ -1,4 +1,4 @@
-# Idol Items Purchased
+# Numa Log
 
 Web-based application for managing idol merchandise purchase data. Built with PHP 8.2, SQLite, Bootstrap 5, and Chart.js.
 
@@ -70,10 +70,10 @@ To back up data from Docker:
 
 ```bash
 # Copy database out of container
-docker cp idol-items-purchased:/var/www/html/data/database.sqlite ./backup.sqlite
+docker cp numa-log:/var/www/html/data/database.sqlite ./backup.sqlite
 
 # Copy database into container
-docker cp ./backup.sqlite idol-items-purchased:/var/www/html/data/database.sqlite
+docker cp ./backup.sqlite numa-log:/var/www/html/data/database.sqlite
 ```
 
 ---
@@ -83,8 +83,8 @@ docker cp ./backup.sqlite idol-items-purchased:/var/www/html/data/database.sqlit
 #### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/Idols-items-purchased.git
-cd Idols-items-purchased
+git clone https://github.com/<your-username>/numa-log.git
+cd numa-log
 ```
 
 #### 2. Install dependencies
@@ -100,13 +100,13 @@ This installs `phpoffice/phpspreadsheet` for Excel import functionality.
 If using XAMPP, place the project under the document root:
 
 ```
-C:\xampp\htdocs\Idols-items-purchased\
+C:\xampp\htdocs\numa-log\
 ```
 
 Open your browser and navigate to:
 
 ```
-http://localhost/Idols-items-purchased/
+http://localhost/numa-log/
 ```
 
 Or use PHP built-in server:
@@ -230,7 +230,7 @@ define('ALLOW_RESEED', true);   // Shows Re-seed button on Idols page
 ## Project Structure
 
 ```
-Idols-items-purchased/
+numa-log/
 ├── .github/
 │   └── workflows/
 │       └── docker-build.yml  # GitHub Actions: build Docker image
@@ -368,6 +368,14 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.2.0 (2026-02-17)
+
+Project rename.
+
+#### Changed
+- Renamed project from "Idol Items Purchased" to **Numa Log**
+- Updated all page titles, navbar branding, Docker container name, and CI/CD config
 
 ### v1.1.0 (2026-02-17)
 

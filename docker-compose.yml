@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: idol-items-purchased
+    container_name: numa-log
     ports:
       - "8080:80"
     volumes:

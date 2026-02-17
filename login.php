@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Idol Items Purchased</title>
+    <title>Login - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card login-card">
         <div class="login-header">
             <i class="bi bi-stars" style="font-size: 2.5rem;"></i>
-            <h4 class="mt-2 mb-0">Idol Items Purchased</h4>
+            <h4 class="mt-2 mb-0">Numa Log</h4>
         </div>
         <div class="card-body p-4">
             <?php if ($error): ?>

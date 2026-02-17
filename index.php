@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Idol Items Purchased</title>
+    <title>Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -77,7 +77,7 @@ window.fetch = function(url, opts = {}) {
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Idol Items Purchased <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-bar-chart-line"></i> Report
