@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    container_name: idol-items-purchased
+    ports:
+      - "8080:80"
+    volumes:
+      - app-data:/var/www/html/data
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Bangkok
+
+volumes:
+  app-data:

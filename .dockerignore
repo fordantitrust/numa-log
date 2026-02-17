@@ -1,0 +1,10 @@
+.git
+.gitignore
+*.md
+database.sqlite
+database.sqlite-wal
+database.sqlite-shm
+backups/
+data/
+vendor/
+idols.xlsx

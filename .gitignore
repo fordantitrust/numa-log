@@ -1,0 +1,27 @@
+# Dependencies
+/vendor/
+
+# Database
+database.sqlite
+database.sqlite-wal
+database.sqlite-shm
+/data/*.sqlite
+
+# Backups
+/backups/*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Excel source
+idols.xlsx
+
+# Composer
+composer.phar
