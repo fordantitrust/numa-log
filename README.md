@@ -247,6 +247,8 @@ numa-log/
 ├── backup_upload.php         # Backup file upload handler
 ├── import.php                # Excel to SQLite importer
 ├── seed_idols.php            # Idol entity seeder
+├── help.php                  # Help & guide page (Thai)
+├── HOW_TO_USE.md             # How to use documentation (Thai)
 ├── Dockerfile                # Docker image definition
 ├── docker-compose.yml        # Docker Compose configuration
 ├── .dockerignore             # Docker build exclusions
@@ -368,6 +370,15 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.3.0 (2026-02-17)
+
+Help & documentation release.
+
+#### Added
+- **Help page** (`help.php`) - In-app help & guide page in Thai with sticky table of contents, accordion sections, step-by-step instructions, tips, warnings, and FAQ
+- **How to Use** (`HOW_TO_USE.md`) - Comprehensive usage documentation in Thai
+- **Help navigation** - Added Help link to navbar on all pages (Items, Report, Idols, Types, Users, Backup)
 
 ### v1.2.0 (2026-02-17)
 
