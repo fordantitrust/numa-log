@@ -352,6 +352,30 @@ All API calls go through `api.php` with `action` parameter.
 - **Import:** PhpSpreadsheet (Composer)
 - **CI/CD:** GitHub Actions (Docker build)
 
+## Changelog
+
+### v1.0.0 (2026-02-17)
+
+Initial release.
+
+#### Features
+- **Item Management** - Full CRUD with searchable dropdowns, sortable columns, pagination, filters, and summary cards
+- **Reports** - Monthly (with daily drill-down), By Member, By Group, By Company, By Type with interactive charts
+- **Idol Management** - Hierarchical tree view (Company > Group/Unit > Member) with unmapped names detection
+- **Type Management** - Type categories with usage stats and unmapped names detection
+- **User Management** - Role-based authentication (admin/user) with session-based login
+- **Backup & Restore** - Create, restore, download, upload, and delete database snapshots
+- **Excel Import** - Import data from `.xlsx` files with date handling
+- **Clone Item** - Duplicate existing items with one click
+
+#### Infrastructure
+- Docker & Docker Compose support with persistent data volume
+- GitHub Actions workflow for Docker image build
+- Auto-detection of data directory (Docker vs manual installation)
+- SQLite with WAL mode and foreign keys
+- Apache mod_rewrite support
+- Configurable feature flags (`ALLOW_IMPORT`, `ALLOW_RESEED`, `AUTH_ENABLED`)
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

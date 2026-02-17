@@ -102,6 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Default: admin / admin
             </div>
         </div>
+        <div class="card-footer text-center small text-muted py-2">
+            v<?= APP_VERSION ?>
+        </div>
     </div>
 </body>
 </html>

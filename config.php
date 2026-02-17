@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+define('APP_VERSION', '1.0.0');
+
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
 define('DB_PATH', $dataDir . '/database.sqlite');
