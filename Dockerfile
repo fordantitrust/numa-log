@@ -16,8 +16,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     pdo_sqlite \
     zip \
-    gd \
-    mbstring
+    gd
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
