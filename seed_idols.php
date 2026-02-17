@@ -78,6 +78,7 @@ function seedIdolEntities(): array
 // Handle AJAX call
 if (php_sapi_name() !== 'cli' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'seed') {
     requireAdmin();
+    verifyCsrf();
     header('Content-Type: application/json');
     if (!ALLOW_RESEED) {
         echo json_encode(['success' => false, 'message' => 'Re-seed is disabled. Set ALLOW_RESEED to true in config.php']);

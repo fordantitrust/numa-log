@@ -7,6 +7,11 @@ require __DIR__ . '/config.php';
 header('Content-Type: application/json');
 requireAuth();
 
+// CSRF check for state-changing requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
+}
+
 $pdo = getDB();
 $action = $_REQUEST['action'] ?? '';
 $me = currentUser();
@@ -20,7 +25,8 @@ try {
         default => jsonResp(['error' => 'Unknown action'], 400),
     };
 } catch (Throwable $e) {
-    jsonResp(['error' => $e->getMessage()], 500);
+    error_log('API error: ' . $e->getMessage());
+    jsonResp(['error' => 'An internal error occurred'], 500);
 }
 
 function jsonResp(array $data, int $code = 200): void

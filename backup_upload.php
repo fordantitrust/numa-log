@@ -6,6 +6,7 @@ require __DIR__ . '/config.php';
 
 header('Content-Type: application/json');
 requireAdmin();
+verifyCsrf();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

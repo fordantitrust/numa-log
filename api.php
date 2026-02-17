@@ -7,6 +7,11 @@ require __DIR__ . '/config.php';
 header('Content-Type: application/json');
 requireAuth();
 
+// CSRF check for state-changing requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
+}
+
 $pdo = getDB();
 $action = $_REQUEST['action'] ?? '';
 
@@ -39,7 +44,8 @@ try {
         default => jsonResponse(['error' => 'Unknown action'], 400),
     };
 } catch (Throwable $e) {
-    jsonResponse(['error' => $e->getMessage()], 500);
+    error_log('API error: ' . $e->getMessage());
+    jsonResponse(['error' => 'An internal error occurred'], 500);
 }
 
 function jsonResponse(array $data, int $code = 200): void
@@ -741,12 +747,15 @@ function handleBackupDownload(): void
 {
     requireAdmin();
     $filename = basename(trim($_GET['filename'] ?? ''));
+    if ($filename === '' || !str_ends_with($filename, '.sqlite')) {
+        jsonResponse(['error' => 'Invalid file type'], 400);
+    }
     $filepath = BACKUP_DIR . '/' . $filename;
-    if ($filename === '' || !file_exists($filepath)) {
+    if (!file_exists($filepath)) {
         jsonResponse(['error' => 'Backup file not found'], 404);
     }
     header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
     header('Content-Length: ' . filesize($filepath));
     readfile($filepath);
     exit;

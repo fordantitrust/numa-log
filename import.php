@@ -91,6 +91,7 @@ function importExcel(string $filePath): array
 
 // Handle direct access (AJAX call from web UI)
 if (php_sapi_name() !== 'cli' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'import') {
+    verifyCsrf();
     header('Content-Type: application/json');
     if (!ALLOW_IMPORT) {
         echo json_encode(['success' => false, 'message' => 'Import is disabled. Set ALLOW_IMPORT to true in config.php']);

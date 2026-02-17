@@ -21,8 +21,12 @@ requireAdmin();
         .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
         .table th { font-size: 12px; text-transform: uppercase; color: #6b7280; }
     </style>
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken()) ?>">
 </head>
 <body>
+<script>
+window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts.body instanceof FormData) { const t = document.querySelector('meta[name="csrf-token"]')?.content; if (t && !opts.body.has('csrf_token')) opts.body.append('csrf_token', t); } return origFetch.call(this, url, opts); }; })(window.fetch);
+</script>
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">

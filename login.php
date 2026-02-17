@@ -23,6 +23,7 @@ $error = '';
 
 // Handle login POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -35,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
+            session_regenerate_id(true);
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['display_name'] = $user['display_name'];
@@ -80,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="alert alert-danger py-2 small"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfToken()) ?>">
                 <div class="mb-3">
                     <label class="form-label small">Username</label>
                     <div class="input-group">

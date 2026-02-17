@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.1.0');
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -88,17 +88,32 @@ function initDB(): void
 }
 
 initDB();
+sendSecurityHeaders();
 
 // Create backup directory
 if (!is_dir(BACKUP_DIR)) {
     mkdir(BACKUP_DIR, 0755, true);
 }
 
+// Security headers
+function sendSecurityHeaders(): void
+{
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+}
+
 // Auth helpers
 function startAppSession(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
-        session_start(['cookie_lifetime' => SESSION_LIFETIME]);
+        session_start([
+            'cookie_lifetime' => SESSION_LIFETIME,
+            'cookie_httponly' => true,
+            'cookie_samesite' => 'Strict',
+            'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        ]);
     }
 }
 
@@ -146,6 +161,27 @@ function requireAdmin(): void
     if (!$user || $user['role'] !== 'admin') {
         http_response_code(403);
         echo json_encode(['error' => 'Admin access required']);
+        exit;
+    }
+}
+
+// CSRF protection
+function csrfToken(): string
+{
+    startAppSession();
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function verifyCsrf(): void
+{
+    startAppSession();
+    $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF token']);
         exit;
     }
 }

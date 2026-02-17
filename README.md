@@ -166,6 +166,21 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 - Change own password (available to all users)
 - Session-based authentication (24-hour lifetime)
 
+#### Role Permissions
+
+| Feature | Admin | User |
+|---------|:-----:|:----:|
+| View items list | O | O |
+| Add / Edit / Clone / Delete items | O | O |
+| View reports | O | O |
+| Manage idols (add/edit/delete) | O | O |
+| Manage types (add/edit/delete) | O | O |
+| Re-seed idol data | O | X |
+| Import Excel | O | X |
+| Backup & Restore | O | X |
+| Create / Edit / Delete users | O | X |
+| Change own password | O | O |
+
 ### Backup & Restore (`backup.php`)
 
 - **Admin only**
@@ -353,6 +368,24 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.1.0 (2026-02-17)
+
+Security hardening release.
+
+#### Security
+- **CSRF protection** - All POST requests require a CSRF token (auto-injected via `<meta>` tag and fetch wrapper)
+- **Session hardening** - `HttpOnly`, `SameSite=Strict`, and `Secure` (auto-detect HTTPS) cookie flags
+- **Session fixation prevention** - Session ID regenerated on login (`session_regenerate_id`)
+- **Security headers** - `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy` on all responses
+- **Error message hardening** - API error responses no longer expose internal error details; errors logged server-side via `error_log()`
+- **Backup download validation** - Enforces `.sqlite` extension check before download
+
+#### Added
+- App version display (`APP_VERSION`) on all page navbars and login page
+- Role permissions comparison table in README
+- GitHub Actions workflow for Docker image build
+- `.gitignore` file
 
 ### v1.0.0 (2026-02-17)
 

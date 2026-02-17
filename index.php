@@ -53,8 +53,21 @@
         .sd-list .sd-item:hover, .sd-list .sd-item.active { background: #f3f0ff; color: var(--primary); }
         .sd-list .sd-empty { padding: 8px 10px; color: #9ca3af; font-size: 12px; font-style: italic; }
     </style>
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken()) ?>">
 </head>
 <body>
+<script>
+// Auto-append CSRF token to all FormData POST requests
+const _origAppend = FormData.prototype.append;
+const _origFetch = window.fetch;
+window.fetch = function(url, opts = {}) {
+    if (opts.body instanceof FormData) {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (token && !opts.body.has('csrf_token')) opts.body.append('csrf_token', token);
+    }
+    return _origFetch.call(this, url, opts);
+};
+</script>
 
 <div id="loading" class="spinner-overlay">
     <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
