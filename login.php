@@ -21,6 +21,15 @@ if (isLoggedIn()) {
 
 $error = '';
 
+// Check if admin still uses the default password
+$showDefaultHint = false;
+try {
+    $adminRow = getDB()->query("SELECT password FROM users WHERE username = 'admin' LIMIT 1")->fetch();
+    if ($adminRow && password_verify('admin', $adminRow['password'])) {
+        $showDefaultHint = true;
+    }
+} catch (\Exception $e) {}
+
 // Handle login POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
@@ -101,9 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="bi bi-box-arrow-in-right"></i> Login
                 </button>
             </form>
+            <?php if ($showDefaultHint): ?>
             <div class="text-center mt-3 small text-muted">
                 Default: admin / admin
             </div>
+            <?php endif; ?>
         </div>
         <div class="card-footer text-center small text-muted py-2">
             v<?= APP_VERSION ?>

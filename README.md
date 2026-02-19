@@ -392,6 +392,8 @@ Type report enhancement, database optimization & navbar consistency release.
   - Standalone **Backup** and **Help** buttons removed; consolidated into the user dropdown
   - **Users** and **Backup** links in dropdown are now admin-only
   - Each page omits its own link from navigation (e.g. Users page has no "Users" in dropdown)
+- **Login page** — Default credential hint (`admin / admin`) now auto-hides once the admin password has been changed
+- **Documentation** — Updated in-app help (`help.php`, `help_en.php`) and markdown guides (`HOW_TO_USE.md`, `HOW_TO_USE_EN.md`) to reflect By Type drill-down and Members by Type accordion
 
 #### Performance
 - **SQLite indexes** — Added 6 indexes on hot columns: `items(idol)`, `items(type)`, `items(order_date)`, `items(type, idol)`, `idol_entities(parent_id)`, `idol_entities(category)`. Applied automatically via `IF NOT EXISTS` on first page load — no migration needed

@@ -178,6 +178,9 @@ The reports page has 5 tabs, each showing data from a different perspective:
 
 - Ranking of item types by spending
 - Shows item count and quantity for each type
+- **Click on a type name** to see details:
+  - Members, groups, and companies that purchased that type
+  - Item count, quantity, total spending, and share percentage
 
 ---
 
@@ -238,6 +241,13 @@ Each type shows:
 
 - The system detects type names in items that haven't been added to type_categories
 - Displayed as a list with a **Quick Add** button
+
+### Members by Type
+
+The bottom of the Types page includes a **Members by Type** accordion:
+- Expand each type to see which members purchased items of that type
+- Shows the group/unit and company for each member
+- Displays statistics: item count, quantity, and total spending
 
 ---
 

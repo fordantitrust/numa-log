@@ -343,7 +343,10 @@
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
                                 <h6><i class="bi bi-tags text-primary"></i> By Type</h6>
-                                <p class="small text-muted mb-0">อันดับประเภทสินค้าตามยอดใช้จ่าย พร้อมจำนวนรายการและจำนวนชิ้น</p>
+                                <p class="small text-muted mb-2">อันดับประเภทสินค้าตามยอดใช้จ่าย พร้อมจำนวนรายการและจำนวนชิ้น</p>
+                                <div class="tip-box mt-auto">
+                                    <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อประเภท</strong> เพื่อดูรายละเอียดสมาชิก กลุ่ม และค่ายที่ซื้อสินค้าประเภทนั้น
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -394,7 +397,9 @@
                         <li>กดปุ่ม <strong>Save</strong></li>
                     </ol>
 
-                    <p class="small text-muted mb-0">แต่ละประเภทจะแสดงสถิติ: จำนวนแถว, จำนวนชิ้น, ยอดใช้จ่ายรวม นอกจากนี้ยังมีระบบ <strong>Unmapped Names</strong> เพื่อตรวจจับชื่อ Type ที่ยังไม่ได้เพิ่มในระบบ</p>
+                    <p class="small text-muted mb-2">แต่ละประเภทจะแสดงสถิติ: จำนวนแถว, จำนวนชิ้น, ยอดใช้จ่ายรวม นอกจากนี้ยังมีระบบ <strong>Unmapped Names</strong> เพื่อตรวจจับชื่อ Type ที่ยังไม่ได้เพิ่มในระบบ</p>
+                    <h6 class="mt-2">Members by Type</h6>
+                    <p class="small text-muted mb-0">ด้านล่างของหน้า Types มีส่วน <strong>Members by Type</strong> แสดง accordion รายชื่อสมาชิก กลุ่ม และค่ายที่ซื้อสินค้าในแต่ละประเภท พร้อมสถิติจำนวนรายการ จำนวนชิ้น และยอดใช้จ่าย</p>
                 </div>
             </div>
 

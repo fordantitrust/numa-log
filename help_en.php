@@ -343,7 +343,10 @@
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
                                 <h6><i class="bi bi-tags text-primary"></i> By Type</h6>
-                                <p class="small text-muted mb-0">Ranking of item types by spending, with item count and quantity</p>
+                                <p class="small text-muted mb-2">Ranking of item types by spending, with item count and quantity</p>
+                                <div class="tip-box mt-auto">
+                                    <i class="bi bi-hand-index"></i> <strong>Click on a type name</strong> to see the member, group, and company breakdown for that type
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -394,7 +397,9 @@
                         <li>Click <strong>Save</strong></li>
                     </ol>
 
-                    <p class="small text-muted mb-0">Each type shows statistics: row count, quantity, and total spending. The system also has an <strong>Unmapped Names</strong> feature to detect type names that haven't been added yet.</p>
+                    <p class="small text-muted mb-2">Each type shows statistics: row count, quantity, and total spending. The system also has an <strong>Unmapped Names</strong> feature to detect type names that haven't been added yet.</p>
+                    <h6 class="mt-2">Members by Type</h6>
+                    <p class="small text-muted mb-0">The bottom of the Types page includes a <strong>Members by Type</strong> accordion showing which members, groups, and companies purchased each type, along with item count, quantity, and total spending statistics.</p>
                 </div>
             </div>
 
