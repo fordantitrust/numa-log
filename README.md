@@ -144,7 +144,7 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 | **By Member** | Ranking of individual idol members by spending. Click name for detail (type breakdown + monthly chart). |
 | **By Group** | Aggregated spending per group/unit. Click to see member breakdown. |
 | **By Company** | Aggregated spending per company. Click to see groups under that company. |
-| **By Type** | Ranking of item types by spending. |
+| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company). |
 
 ### Idol Management (`idols.php`)
 
@@ -158,6 +158,7 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 - CRUD for type categories with description and sort order
 - Usage stats (rows, quantity, spending)
 - Unmapped type names panel with quick-add button
+- **Members by Type** report — accordion view showing which members, groups, and companies appear under each type
 
 ### User Management (`users.php`)
 
@@ -331,6 +332,7 @@ All API calls go through `api.php` with `action` parameter.
 | `report_idol_detail` | GET | Detail for single idol (`?idol=Name`) |
 | `report_by_group` | GET | Spending aggregated by group/unit |
 | `report_by_company` | GET | Spending aggregated by company |
+| `report_type_detail` | GET | Member breakdown for a single type (`?type=Name`) |
 
 ### Idol Entities
 | Action | Method | Description |
@@ -343,6 +345,7 @@ All API calls go through `api.php` with `action` parameter.
 | Action | Method | Description |
 |--------|--------|-------------|
 | `type_list` | GET | List types with usage stats |
+| `type_members_report` | GET | All types with member/group/company breakdown |
 | `type_save` | POST | Create/update type |
 | `type_delete` | POST | Delete type |
 
@@ -372,6 +375,29 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.3.2 (2026-02-19)
+
+Type report enhancement, database optimization & navbar consistency release.
+
+#### Added
+- **Type detail view in report** (`report.php`) — Click any type in "By Type" tab to see member breakdown with group and company hierarchy
+- **Members by Type report** (`types.php`) — Accordion section on Type Management page showing members, group, and company for each type
+- **API:** `report_type_detail` — Returns member breakdown for a specific type
+- **API:** `type_members_report` — Returns all types with full member/group/company hierarchy
+
+#### Changed
+- **Navbar redesign** — Consistent navigation across all 8 pages:
+  - All pages show **← Items**, **Report**, and page-specific cross-links for quick navigation
+  - Standalone **Backup** and **Help** buttons removed; consolidated into the user dropdown
+  - **Users** and **Backup** links in dropdown are now admin-only
+  - Each page omits its own link from navigation (e.g. Users page has no "Users" in dropdown)
+
+#### Performance
+- **SQLite indexes** — Added 6 indexes on hot columns: `items(idol)`, `items(type)`, `items(order_date)`, `items(type, idol)`, `idol_entities(parent_id)`, `idol_entities(category)`. Applied automatically via `IF NOT EXISTS` on first page load — no migration needed
+- **PRAGMA tuning** — `synchronous=NORMAL` (faster writes, safe with WAL), `cache_size=-8000` (8 MB page cache), `temp_store=MEMORY` (in-memory temp tables and sorts)
+- **`handleReportIdol`** — Replaced two-step fetch + `IN (?, ...)` with a single `JOIN idol_entities` query
+- **`handleTypeList`** — Reduced from 3 separate queries to 2 (LEFT JOIN subquery for stats; LEFT JOIN for unmapped detection)
 
 ### v1.3.1 (2026-02-17)
 

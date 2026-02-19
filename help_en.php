@@ -87,7 +87,7 @@
         <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
             <a href="index.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-list-ul"></i> Items
+                <i class="bi bi-arrow-left"></i> Items
             </a>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-bar-chart-line"></i> Report
@@ -101,7 +101,11 @@
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
+                    <?php if ($u['role'] === 'admin'): ?>
                     <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php endif; ?>
                     <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
             </div>

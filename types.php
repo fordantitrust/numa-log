@@ -29,9 +29,28 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-tags"></i> Type Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Items</a>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i> Report</a>
-            <a href="help.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-question-circle"></i> Help</a>
-            <a href="index.php" class="btn btn-outline-light btn-sm"><i class="bi bi-arrow-left"></i> Back to List</a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i> Idols</a>
+            <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
+            <div class="btn-group">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php if ($u['role'] === 'admin'): ?>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php endif; ?>
+                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </nav>
@@ -80,6 +99,21 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 <div class="card-header py-2"><strong>Unmapped Type Names</strong></div>
                 <div class="card-body py-2" id="unmappedPanel">
                     <div class="text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members by Type Report -->
+    <div class="row g-3 mt-0">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <strong><i class="bi bi-people"></i> Members by Type</strong>
+                    <span class="badge bg-secondary" id="reportBadge">Loading...</span>
+                </div>
+                <div class="card-body p-2" id="membersReport">
+                    <div class="text-center text-muted py-3">Loading...</div>
                 </div>
             </div>
         </div>
@@ -147,7 +181,10 @@ const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH').format(n);
 let allTypes = [];
 
-document.addEventListener('DOMContentLoaded', loadTypes);
+document.addEventListener('DOMContentLoaded', () => {
+    loadTypes();
+    loadMembersReport();
+});
 
 async function loadTypes() {
     const res = await fetch('api.php?action=type_list').then(r => r.json());
@@ -155,6 +192,65 @@ async function loadTypes() {
     renderTable();
     renderStats();
     renderUnmapped(res.unmapped);
+}
+
+async function loadMembersReport() {
+    const res = await fetch('api.php?action=type_members_report').then(r => r.json());
+    renderMembersReport(res.by_type);
+}
+
+function renderMembersReport(byType) {
+    const types = Object.keys(byType);
+    $('reportBadge').textContent = types.length + ' types';
+
+    if (types.length === 0) {
+        $('membersReport').innerHTML = '<div class="text-muted text-center py-3">No data</div>';
+        return;
+    }
+
+    const html = `<div class="accordion accordion-flush" id="typeAccordion">` +
+        types.map((type, i) => {
+            const members = byType[type];
+            // group members by company then group
+            const rows = members.map(m => `
+                <tr>
+                    <td>${escHtml(m.member)}</td>
+                    <td class="text-muted">${m.group ? escHtml(m.group) : '-'}</td>
+                    <td class="text-muted">${m.company ? escHtml(m.company) : '-'}</td>
+                    <td class="text-center">${m.items_count}</td>
+                    <td class="text-center">${m.total_qty}</td>
+                    <td class="text-end">${m.total_price > 0 ? '฿' + fmt(m.total_price) : '-'}</td>
+                </tr>`).join('');
+            return `
+            <div class="accordion-item border-0 border-bottom">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed py-2 px-3" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#typeCollapse${i}" style="font-size:14px">
+                        <strong>${escHtml(type)}</strong>
+                        <span class="badge bg-secondary ms-2" style="font-weight:normal;font-size:11px">${members.length} members</span>
+                    </button>
+                </h2>
+                <div id="typeCollapse${i}" class="accordion-collapse collapse">
+                    <div class="accordion-body p-0">
+                        <table class="table table-sm table-hover mb-0" style="font-size:13px">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Group / Unit</th>
+                                    <th>Company</th>
+                                    <th class="text-center" style="width:60px">Rows</th>
+                                    <th class="text-center" style="width:60px">Qty</th>
+                                    <th class="text-end" style="width:110px">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
+        }).join('') + `</div>`;
+
+    $('membersReport').innerHTML = html;
 }
 
 function renderTable() {

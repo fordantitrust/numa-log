@@ -34,6 +34,8 @@ try {
         'idol_entity_save' => handleIdolEntitySave($pdo),
         'idol_entity_delete' => handleIdolEntityDelete($pdo),
         'type_list' => handleTypeList($pdo),
+        'type_members_report' => handleTypeByMembers($pdo),
+        'report_type_detail' => handleReportTypeDetail($pdo),
         'type_save' => handleTypeSave($pdo),
         'type_delete' => handleTypeDelete($pdo),
         'backup_list' => handleBackupList(),
@@ -246,24 +248,20 @@ function handleReportDaily(PDO $pdo): void
 
 function handleReportIdol(PDO $pdo): void
 {
-    // Get member names from idol_entities
-    $members = $pdo->query("SELECT name FROM idol_entities WHERE category = 'member'")->fetchAll(PDO::FETCH_COLUMN);
+    $hasMemberEntities = (int) $pdo->query("SELECT COUNT(*) FROM idol_entities WHERE category = 'member'")->fetchColumn() > 0;
 
-    if (count($members) > 0) {
-        $placeholders = implode(',', array_fill(0, count($members), '?'));
-        $stmt = $pdo->prepare("
+    if ($hasMemberEntities) {
+        $rows = $pdo->query("
             SELECT
-                idol,
+                i.idol,
                 COUNT(*) as items,
-                SUM(qty) as total_qty,
-                SUM(price_per_qty * qty) as total_price
-            FROM items
-            WHERE idol IN ({$placeholders})
-            GROUP BY idol
+                SUM(i.qty) as total_qty,
+                SUM(i.price_per_qty * i.qty) as total_price
+            FROM items i
+            JOIN idol_entities e ON e.name = i.idol AND e.category = 'member'
+            GROUP BY i.idol
             ORDER BY total_price DESC
-        ");
-        $stmt->execute($members);
-        $rows = $stmt->fetchAll();
+        ")->fetchAll();
     } else {
         // Fallback: show all if no idol_entities defined
         $rows = $pdo->query("
@@ -620,29 +618,140 @@ function handleIdolEntityDelete(PDO $pdo): void
 
 function handleTypeList(PDO $pdo): void
 {
-    $types = $pdo->query("SELECT * FROM type_categories ORDER BY sort_order, name")->fetchAll();
+    // Single query: LEFT JOIN aggregation from items
+    $types = $pdo->query("
+        SELECT tc.*,
+               COALESCE(u.cnt, 0)         as items_count,
+               COALESCE(u.total_qty, 0)   as total_qty,
+               COALESCE(u.total_price, 0) as total_price
+        FROM type_categories tc
+        LEFT JOIN (
+            SELECT type, COUNT(*) as cnt, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
+            FROM items WHERE type != ''
+            GROUP BY type
+        ) u ON u.type = tc.name
+        ORDER BY tc.sort_order, tc.name
+    ")->fetchAll();
 
-    // Get usage count from items table
-    $usage = $pdo->query("SELECT type, COUNT(*) as cnt, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price FROM items WHERE type != '' GROUP BY type")->fetchAll();
-    $usageMap = [];
-    foreach ($usage as $u) {
-        $usageMap[$u['type']] = $u;
-    }
-
-    foreach ($types as &$t) {
-        $u = $usageMap[$t['name']] ?? null;
-        $t['items_count'] = $u ? (int) $u['cnt'] : 0;
-        $t['total_qty'] = $u ? (int) $u['total_qty'] : 0;
-        $t['total_price'] = $u ? (float) $u['total_price'] : 0;
-    }
-    unset($t);
-
-    // Find unmapped types (in items but not in type_categories)
-    $mapped = array_column($types, 'name');
-    $allTypes = $pdo->query("SELECT DISTINCT type FROM items WHERE type != '' AND type != '-' ORDER BY type")->fetchAll(PDO::FETCH_COLUMN);
-    $unmapped = array_values(array_filter($allTypes, fn($t) => !in_array($t, $mapped, true)));
+    // Unmapped: types in items not present in type_categories
+    $unmapped = $pdo->query("
+        SELECT DISTINCT i.type
+        FROM items i
+        LEFT JOIN type_categories tc ON tc.name = i.type
+        WHERE i.type != '' AND i.type != '-' AND tc.id IS NULL
+        ORDER BY i.type
+    ")->fetchAll(PDO::FETCH_COLUMN);
 
     jsonResponse(['types' => $types, 'unmapped' => $unmapped]);
+}
+
+function handleTypeByMembers(PDO $pdo): void
+{
+    $rows = $pdo->query("
+        SELECT
+            i.type,
+            i.idol AS member_name,
+            m.category AS member_cat,
+            p.name AS parent_name,
+            p.category AS parent_cat,
+            gp.name AS gparent_name,
+            gp.category AS gparent_cat,
+            COUNT(*) AS items_count,
+            SUM(i.qty) AS total_qty,
+            SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        LEFT JOIN idol_entities m ON m.name = i.idol
+        LEFT JOIN idol_entities p ON m.parent_id = p.id
+        LEFT JOIN idol_entities gp ON p.parent_id = gp.id
+        WHERE i.type != '' AND i.idol != '' AND i.idol != '-'
+        GROUP BY i.type, i.idol
+        ORDER BY i.type, total_price DESC
+    ")->fetchAll();
+
+    $byType = [];
+    foreach ($rows as $r) {
+        $type = $r['type'];
+        if (!isset($byType[$type])) {
+            $byType[$type] = [];
+        }
+
+        $group = null;
+        $company = null;
+        if ($r['gparent_cat'] === 'company') {
+            $company = $r['gparent_name'];
+            $group = $r['parent_name'];
+        } elseif ($r['parent_cat'] === 'company') {
+            $company = $r['parent_name'];
+        } elseif ($r['parent_cat'] === 'group' || $r['parent_cat'] === 'unit') {
+            $group = $r['parent_name'];
+        }
+
+        $byType[$type][] = [
+            'member'      => $r['member_name'],
+            'group'       => $group,
+            'company'     => $company,
+            'items_count' => (int) $r['items_count'],
+            'total_qty'   => (int) $r['total_qty'],
+            'total_price' => (float) $r['total_price'],
+        ];
+    }
+
+    jsonResponse(['by_type' => $byType]);
+}
+
+function handleReportTypeDetail(PDO $pdo): void
+{
+    $type = trim($_GET['type'] ?? '');
+    if ($type === '') {
+        jsonResponse(['error' => 'type is required'], 400);
+    }
+
+    $rows = $pdo->prepare("
+        SELECT
+            i.idol AS member_name,
+            m.category AS member_cat,
+            p.name AS parent_name,
+            p.category AS parent_cat,
+            gp.name AS gparent_name,
+            gp.category AS gparent_cat,
+            COUNT(*) AS items_count,
+            SUM(i.qty) AS total_qty,
+            SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        LEFT JOIN idol_entities m ON m.name = i.idol
+        LEFT JOIN idol_entities p ON m.parent_id = p.id
+        LEFT JOIN idol_entities gp ON p.parent_id = gp.id
+        WHERE i.type = :type AND i.idol != '' AND i.idol != '-'
+        GROUP BY i.idol
+        ORDER BY total_price DESC
+    ");
+    $rows->execute([':type' => $type]);
+    $rows = $rows->fetchAll();
+
+    $members = [];
+    foreach ($rows as $r) {
+        $group = null;
+        $company = null;
+        if ($r['gparent_cat'] === 'company') {
+            $company = $r['gparent_name'];
+            $group = $r['parent_name'];
+        } elseif ($r['parent_cat'] === 'company') {
+            $company = $r['parent_name'];
+        } elseif ($r['parent_cat'] === 'group' || $r['parent_cat'] === 'unit') {
+            $group = $r['parent_name'];
+        }
+
+        $members[] = [
+            'member'      => $r['member_name'],
+            'group'       => $group,
+            'company'     => $company,
+            'items_count' => (int) $r['items_count'],
+            'total_qty'   => (int) $r['total_qty'],
+            'total_price' => (float) $r['total_price'],
+        ];
+    }
+
+    jsonResponse(['members' => $members]);
 }
 
 function handleTypeSave(PDO $pdo): void

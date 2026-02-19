@@ -93,15 +93,10 @@ window.fetch = function(url, opts = {}) {
                 <i class="bi bi-file-earmark-excel"></i> Import Excel
             </button>
             <?php endif; ?>
-            <?php $u = currentUser(); if ($u && $u['role'] === 'admin'): ?>
-            <a href="backup.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-database"></i> Backup
-            </a>
-            <?php endif; ?>
             <button class="btn btn-light btn-sm me-2" onclick="showFormModal()">
                 <i class="bi bi-plus-lg"></i> Add Item
             </button>
-            <?php if (AUTH_ENABLED && $u): ?>
+            <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
@@ -109,7 +104,11 @@ window.fetch = function(url, opts = {}) {
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
+                    <?php if ($u['role'] === 'admin'): ?>
                     <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php endif; ?>
                     <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>

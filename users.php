@@ -34,8 +34,26 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-people-fill"></i> User Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="help.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-question-circle"></i> Help</a>
-            <a href="index.php" class="btn btn-outline-light btn-sm"><i class="bi bi-arrow-left"></i> Back to List</a>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Items</a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i> Report</a>
+            <?php if (AUTH_ENABLED && $me): ?>
+            <div class="btn-group">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($me['display_name']) ?>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($me['username']) ?> (<?= $me['role'] ?>)</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php if ($me['role'] === 'admin'): ?>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php endif; ?>
+                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </nav>

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-define('APP_VERSION', '1.3.1');
+define('APP_VERSION', '1.3.2');
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -23,6 +23,9 @@ function getDB(): PDO
         ]);
         $pdo->exec('PRAGMA journal_mode=WAL');
         $pdo->exec('PRAGMA foreign_keys=ON');
+        $pdo->exec('PRAGMA synchronous=NORMAL');
+        $pdo->exec('PRAGMA cache_size=-8000');
+        $pdo->exec('PRAGMA temp_store=MEMORY');
     }
     return $pdo;
 }
@@ -85,6 +88,14 @@ function initDB(): void
             created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     ");
+
+    // Indexes for common query patterns
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_idol       ON items(idol)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_type       ON items(type)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_order_date ON items(order_date)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_type_idol  ON items(type, idol)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_parent_id     ON idol_entities(parent_id)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_category      ON idol_entities(category)');
 }
 
 initDB();

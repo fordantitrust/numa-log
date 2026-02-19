@@ -38,8 +38,28 @@
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-bar-chart-line"></i> Report <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="help.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-question-circle"></i> Help</a>
-            <a href="index.php" class="btn btn-outline-light btn-sm"><i class="bi bi-arrow-left"></i> Back to List</a>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Items</a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i> Idols</a>
+            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i> Types</a>
+            <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
+            <div class="btn-group">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php if ($u['role'] === 'admin'): ?>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <?php endif; ?>
+                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                </ul>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </nav>
@@ -309,34 +329,93 @@
 
         <!-- Type Tab -->
         <div class="tab-pane fade" id="tabType">
-            <div class="row g-3">
-                <div class="col-lg-5">
-                    <div class="card p-3">
-                        <h6 class="card-title mb-3">Top 10 Types by Spending</h6>
-                        <div class="chart-container">
-                            <canvas id="chartTypePie"></canvas>
+            <!-- Type main view -->
+            <div id="typeMainView">
+                <div class="row g-3">
+                    <div class="col-lg-5">
+                        <div class="card p-3">
+                            <h6 class="card-title mb-3">Top 10 Types by Spending</h6>
+                            <div class="chart-container">
+                                <canvas id="chartTypePie"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="card">
+                            <div class="card-header py-2"><strong>All Types Ranking</strong> <span class="text-muted small">- click to view members</span></div>
+                            <div class="table-scroll">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px">#</th>
+                                            <th>Type</th>
+                                            <th class="text-end">Items</th>
+                                            <th class="text-end">Qty</th>
+                                            <th class="text-end">Total (฿)</th>
+                                            <th style="width:120px">Share</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableType"></tbody>
+                                    <tfoot id="footType" class="table-light fw-bold"></tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-7">
-                    <div class="card">
-                        <div class="card-header py-2"><strong>All Types Ranking</strong></div>
-                        <div class="table-scroll">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th style="width:40px">#</th>
-                                        <th>Type</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
-                                        <th style="width:120px">Share</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableType"></tbody>
-                                <tfoot id="footType" class="table-light fw-bold"></tfoot>
-                            </table>
+            </div>
+            <!-- Type detail view -->
+            <div id="typeDetailView" style="display:none">
+                <div class="mb-3">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="hideTypeDetail()">
+                        <i class="bi bi-arrow-left"></i> Back to All Types
+                    </button>
+                    <span class="ms-2 fw-bold fs-5" id="typeDetailName"></span>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="card p-3 text-center" style="background:#f5f3ff">
+                            <div class="small text-muted">Total Items</div>
+                            <div class="fs-4 fw-bold" style="color:var(--primary)" id="typeDetItems">0</div>
                         </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 text-center" style="background:#fdf2f8">
+                            <div class="small text-muted">Total Qty</div>
+                            <div class="fs-4 fw-bold" style="color:#ec4899" id="typeDetQty">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 text-center" style="background:#f0fdf4">
+                            <div class="small text-muted">Total Spent</div>
+                            <div class="fs-4 fw-bold" style="color:#16a34a" id="typeDetSpent">฿0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 text-center" style="background:#fffbeb">
+                            <div class="small text-muted">Members</div>
+                            <div class="fs-4 fw-bold" style="color:#d97706" id="typeDetMembers">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header py-2"><strong>Member Breakdown</strong></div>
+                    <div class="table-scroll">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">#</th>
+                                    <th>Member</th>
+                                    <th>Group / Unit</th>
+                                    <th>Company</th>
+                                    <th class="text-end">Items</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Total (฿)</th>
+                                    <th style="width:120px">Share</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableTypeDetail"></tbody>
+                            <tfoot id="footTypeDetail" class="table-light fw-bold"></tfoot>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -742,6 +821,7 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
     }, { items: 0, qty: 0, price: 0 });
 
     const isIdol = key === 'idol';
+    const isType = key === 'type';
     $(tableId).innerHTML = data.map((r, i) => {
         const rank = i + 1;
         const pct = grandTotal > 0 ? ((Number(r.total_price) / grandTotal) * 100) : 0;
@@ -750,6 +830,8 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
         const medal = rank === 1 ? ' <i class="bi bi-trophy-fill rank-1"></i>' : rank === 2 ? ' <i class="bi bi-trophy-fill rank-2"></i>' : rank === 3 ? ' <i class="bi bi-trophy-fill rank-3"></i>' : '';
         const nameHtml = isIdol
             ? `<a href="#" class="text-decoration-none fw-semibold" onclick="showIdolDetail('${escJs(r[key])}');return false">${escHtml(r[key])}</a>${medal}`
+            : isType
+            ? `<a href="#" class="text-decoration-none fw-semibold" onclick="showTypeDetail('${escJs(r[key])}');return false">${escHtml(r[key])}</a>${medal}`
             : `${escHtml(r[key])}${medal}`;
         return `
         <tr>
@@ -1113,6 +1195,65 @@ function showCompanyGroups(idx) {
             </div></td>
         </tr>`;
     }).join('');
+}
+
+// --- Type Detail ---
+async function showTypeDetail(type) {
+    $('typeDetailName').textContent = type;
+    $('typeMainView').style.display = 'none';
+    $('typeDetailView').style.display = 'block';
+    $('tableTypeDetail').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Loading...</td></tr>';
+
+    const res = await fetch('api.php?action=report_type_detail&type=' + encodeURIComponent(type)).then(r => r.json());
+    const members = res.members || [];
+
+    const totItems = members.reduce((s, r) => s + r.items_count, 0);
+    const totQty   = members.reduce((s, r) => s + r.total_qty, 0);
+    const totPrice = members.reduce((s, r) => s + r.total_price, 0);
+
+    $('typeDetItems').textContent   = fmt(totItems);
+    $('typeDetQty').textContent     = fmt(totQty);
+    $('typeDetSpent').textContent   = '฿' + fmt(totPrice);
+    $('typeDetMembers').textContent = members.length;
+
+    if (members.length === 0) {
+        $('tableTypeDetail').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No member data</td></tr>';
+        $('footTypeDetail').innerHTML = '';
+        return;
+    }
+
+    const maxP = members[0].total_price;
+    $('tableTypeDetail').innerHTML = members.map((m, i) => {
+        const pct = totPrice > 0 ? ((m.total_price / totPrice) * 100) : 0;
+        const barW = maxP > 0 ? ((m.total_price / maxP) * 100) : 0;
+        return `<tr>
+            <td>${i + 1}</td>
+            <td><a href="#" class="text-decoration-none fw-semibold"
+                onclick="document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(m.member)}'),200);return false">${escHtml(m.member)}</a></td>
+            <td class="text-muted">${m.group ? escHtml(m.group) : '-'}</td>
+            <td class="text-muted">${m.company ? escHtml(m.company) : '-'}</td>
+            <td class="text-end">${fmt(m.items_count)}</td>
+            <td class="text-end">${fmt(m.total_qty)}</td>
+            <td class="text-end">${fmt(m.total_price)}</td>
+            <td><div class="d-flex align-items-center gap-1">
+                <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
+                <span class="small text-muted" style="min-width:40px">${pct.toFixed(1)}%</span>
+            </div></td>
+        </tr>`;
+    }).join('');
+
+    $('footTypeDetail').innerHTML = `<tr>
+        <td></td><td>Total</td><td></td><td></td>
+        <td class="text-end">${fmt(totItems)}</td>
+        <td class="text-end">${fmt(totQty)}</td>
+        <td class="text-end">${fmt(totPrice)}</td>
+        <td><span class="small text-muted">100%</span></td>
+    </tr>`;
+}
+
+function hideTypeDetail() {
+    $('typeDetailView').style.display = 'none';
+    $('typeMainView').style.display = 'block';
 }
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
