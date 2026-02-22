@@ -140,8 +140,8 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 
 | Tab | Description |
 |-----|-------------|
-| **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view. |
-| **By Member** | Ranking of individual idol members by spending. Click name for detail (type breakdown + monthly chart). |
+| **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view. Click any day in the daily breakdown to view filtered items for that day. |
+| **By Member** | Ranking of individual idol members by spending. Click name for detail (type breakdown + monthly chart). Click any month in the monthly breakdown to view filtered items for that member and month. |
 | **By Group** | Aggregated spending per group/unit. Click to see member breakdown. |
 | **By Company** | Aggregated spending per company. Click to see groups under that company. |
 | **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company). |
@@ -375,6 +375,15 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.3.3 (2026-02-22)
+
+Report drill-down links release.
+
+#### Added
+- **Daily Breakdown links** (`report.php`) — Each day row in the Monthly → Daily detail view is now a clickable link to `index.php` pre-filtered by that specific date (`date_from` & `date_to`)
+- **Member Monthly Breakdown links** (`report.php`) — Each month row in the By Member → detail view is now a clickable link to `index.php` pre-filtered by that member and month
+- **URL param pre-fill** (`index.php`) — Items page now reads `idol`, `date_from`, and `date_to` query parameters on load and auto-applies them to the filter inputs
 
 ### v1.3.2 (2026-02-19)
 

@@ -728,7 +728,7 @@ async function loadDaily(month) {
     // Table
     $('tableDaily').innerHTML = data.map(r => `
         <tr>
-            <td>${formatDay(r.day)}</td>
+            <td><a href="index.php?date_from=${r.day}&date_to=${r.day}" class="text-decoration-none">${formatDay(r.day)}</a></td>
             <td class="text-end">${fmt(r.items)}</td>
             <td class="text-end">${fmt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
@@ -869,6 +869,15 @@ function formatMonth(m) {
     return months[parseInt(mo) - 1] + ' ' + y;
 }
 
+function monthLastDay(month) {
+    const [y, m] = month.split('-');
+    const d = new Date(parseInt(y), parseInt(m), 0);
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+}
+
 // --- Idol Detail ---
 async function showIdolDetail(idol) {
     $('idolDetailName').textContent = idol;
@@ -967,12 +976,17 @@ async function showIdolDetail(idol) {
         return a;
     }, { items: 0, qty: 0, price: 0 });
 
-    $('tableIdolDetailMonth').innerHTML = byMonth.map(r => `<tr>
-        <td>${formatMonth(r.month)}</td>
-        <td class="text-end">${fmt(r.items)}</td>
-        <td class="text-end">${fmt(r.total_qty)}</td>
-        <td class="text-end">${fmt(r.total_price)}</td>
-    </tr>`).join('');
+    $('tableIdolDetailMonth').innerHTML = byMonth.map(r => {
+        const dateFrom = r.month + '-01';
+        const dateTo   = monthLastDay(r.month);
+        const url = 'index.php?idol=' + encodeURIComponent(idol) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
+        return `<tr>
+            <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
+            <td class="text-end">${fmt(r.items)}</td>
+            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmt(r.total_price)}</td>
+        </tr>`;
+    }).join('');
 
     $('footIdolDetailMonth').innerHTML = `<tr>
         <td>Total</td>

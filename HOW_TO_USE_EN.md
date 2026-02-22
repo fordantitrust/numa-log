@@ -156,6 +156,7 @@ The reports page has 5 tabs, each showing data from a different perspective:
 
 - Bar chart (spending) + line chart (quantity) by month
 - **Click on any month** to drill down to daily details
+- **Click on any day in the Daily Breakdown table** to go to the Items page filtered to that specific day
 
 ### 4.2 By Member
 
@@ -163,6 +164,7 @@ The reports page has 5 tabs, each showing data from a different perspective:
 - **Click on a member name** for details:
   - Breakdown by item type
   - Monthly spending chart
+- **Click on any month in the Monthly Breakdown table** to go to the Items page filtered to that member and month
 
 ### 4.3 By Group
 

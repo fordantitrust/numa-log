@@ -323,8 +323,19 @@ let debounceTimer = null;
 let filtersData = { idols: [], types: [] };
 
 // --- Init ---
-document.addEventListener('DOMContentLoaded', () => {
-    loadFilters();
+document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pDateFrom = urlParams.get('date_from');
+    const pDateTo   = urlParams.get('date_to');
+    const pIdol     = urlParams.get('idol');
+
+    if (pDateFrom) $('fDateFrom').value = pDateFrom;
+    if (pDateTo)   $('fDateTo').value   = pDateTo;
+
+    await loadFilters();
+
+    if (pIdol) $('fIdol').value = pIdol;
+
     loadData();
     setupSort();
     setupFilterEvents();
