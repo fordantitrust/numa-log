@@ -140,11 +140,11 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 
 | Tab | Description |
 |-----|-------------|
-| **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view. Click any day in the daily breakdown to view filtered items for that day. |
+| **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view (with Type Breakdown & Idol Breakdown charts). Click any day in the daily breakdown to view filtered items for that day. |
 | **By Member** | Ranking of individual idol members by spending. Click name for detail (type breakdown + monthly chart). Click any month in the monthly breakdown to view filtered items for that member and month. |
 | **By Group** | Aggregated spending per group/unit. Click to see member breakdown. |
 | **By Company** | Aggregated spending per company. Click to see groups under that company. |
-| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company). |
+| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company) and Monthly Breakdown chart. |
 
 ### Idol Management (`idols.php`)
 
@@ -375,6 +375,17 @@ All API calls go through `api.php` with `action` parameter.
 - **CI/CD:** GitHub Actions (Docker build)
 
 ## Changelog
+
+### v1.3.4 (2026-02-24)
+
+Report enhancement release.
+
+#### Added
+- **Monthly → Type Breakdown** (`report.php`) — When drilling into a month's daily view, a Type Breakdown doughnut chart and table are now shown, displaying spending share per item type for that month
+- **Monthly → Idol Breakdown** (`report.php`) — When drilling into a month's daily view, an Idol Breakdown doughnut chart and table are shown, displaying spending share per idol for that month (top 10 + Others). Click idol name to navigate to Idol detail view
+- **By Type → Monthly Breakdown** (`report.php`) — When clicking into a type's detail view, a Monthly Spending bar chart and monthly breakdown table are now shown. Click any month row to view filtered items for that type and month
+- **API:** `report_daily` now returns `by_type` and `by_idol` breakdowns alongside daily data
+- **API:** `report_type_detail` now returns `by_month` breakdown alongside member data
 
 ### v1.3.3 (2026-02-22)
 

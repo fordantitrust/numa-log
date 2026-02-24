@@ -155,7 +155,9 @@ The reports page has 5 tabs, each showing data from a different perspective:
 ### 4.1 Monthly
 
 - Bar chart (spending) + line chart (quantity) by month
-- **Click on any month** to drill down to daily details
+- **Click on any month** to drill down to daily details, including:
+  - **Type Breakdown** — Doughnut chart and table showing spending share by item type for that month
+  - **Idol Breakdown** — Doughnut chart and table showing spending share by idol for that month (click any idol name to jump to their detail view)
 - **Click on any day in the Daily Breakdown table** to go to the Items page filtered to that specific day
 
 ### 4.2 By Member
@@ -181,8 +183,8 @@ The reports page has 5 tabs, each showing data from a different perspective:
 - Ranking of item types by spending
 - Shows item count and quantity for each type
 - **Click on a type name** to see details:
-  - Members, groups, and companies that purchased that type
-  - Item count, quantity, total spending, and share percentage
+  - Members, groups, and companies that purchased that type, with statistics
+  - **Monthly Breakdown** — Bar chart and table showing monthly spending for that type. Click any month to go to the Items page filtered by type and month
 
 ---
 

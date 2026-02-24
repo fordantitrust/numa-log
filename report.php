@@ -194,6 +194,63 @@
                         </div>
                     </div>
                 </div>
+                <!-- Type & Idol Breakdown for selected month -->
+                <div class="row g-3 mt-2">
+                    <div class="col-lg-6">
+                        <div class="card p-3">
+                            <h6 class="card-title mb-3">Spending by Type</h6>
+                            <div class="chart-container" style="height:280px">
+                                <canvas id="chartDailyType"></canvas>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header py-2"><strong>Type Breakdown</strong></div>
+                            <div class="table-scroll" style="max-height:300px">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px">#</th>
+                                            <th>Type</th>
+                                            <th class="text-end">Items</th>
+                                            <th class="text-end">Qty</th>
+                                            <th class="text-end">Total (฿)</th>
+                                            <th style="width:100px">Share</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableDailyType"></tbody>
+                                    <tfoot id="footDailyType" class="table-light fw-bold"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card p-3">
+                            <h6 class="card-title mb-3">Spending by Idol</h6>
+                            <div class="chart-container" style="height:280px">
+                                <canvas id="chartDailyIdol"></canvas>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header py-2"><strong>Idol Breakdown</strong></div>
+                            <div class="table-scroll" style="max-height:300px">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px">#</th>
+                                            <th>Idol</th>
+                                            <th class="text-end">Items</th>
+                                            <th class="text-end">Qty</th>
+                                            <th class="text-end">Total (฿)</th>
+                                            <th style="width:100px">Share</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableDailyIdol"></tbody>
+                                    <tfoot id="footDailyIdol" class="table-light fw-bold"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -418,6 +475,36 @@
                         </table>
                     </div>
                 </div>
+                <!-- Monthly Breakdown for Type -->
+                <div class="row g-3 mt-2">
+                    <div class="col-lg-5">
+                        <div class="card p-3">
+                            <h6 class="card-title mb-3">Monthly Spending</h6>
+                            <div class="chart-container" style="height:300px">
+                                <canvas id="chartTypeDetailMonth"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="card">
+                            <div class="card-header py-2"><strong>Monthly Breakdown</strong></div>
+                            <div class="table-scroll">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Month</th>
+                                            <th class="text-end">Items</th>
+                                            <th class="text-end">Qty</th>
+                                            <th class="text-end">Total (฿)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableTypeDetailMonth"></tbody>
+                                    <tfoot id="footTypeDetailMonth" class="table-light fw-bold"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -551,10 +638,13 @@ const COLORS = [
 
 let chartMonthly = null;
 let chartDaily = null;
+let chartDailyType = null;
+let chartDailyIdol = null;
 let chartIdolPie = null;
 let chartTypePie = null;
 let chartIdolDetailType = null;
 let chartIdolDetailMonth = null;
+let chartTypeDetailMonth = null;
 let chartGroupPie = null;
 let chartCompanyPie = null;
 let groupData = [];
@@ -742,6 +832,112 @@ async function loadDaily(month) {
             <td class="text-end">${fmt(totQty)}</td>
             <td class="text-end">${fmt(totPrice)}</td>
         </tr>`;
+
+    // --- Type breakdown ---
+    const byType = res.by_type || [];
+    if (chartDailyType) chartDailyType.destroy();
+    chartDailyType = new Chart($('chartDailyType').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: byType.slice(0, 10).map(r => r.type),
+            datasets: [{
+                data: byType.slice(0, 10).map(r => Number(r.total_price)),
+                backgroundColor: COLORS.slice(0, Math.min(byType.length, 10)),
+                borderWidth: 2, borderColor: '#fff',
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => {
+                    const pct = totPrice > 0 ? ((ctx.raw / totPrice) * 100).toFixed(1) : 0;
+                    return `${ctx.label}: ฿${fmt(ctx.raw)} (${pct}%)`;
+                }}}
+            }
+        }
+    });
+
+    const maxTypeP = byType.length > 0 ? Number(byType[0].total_price) : 1;
+    $('tableDailyType').innerHTML = byType.map((r, i) => {
+        const pct = totPrice > 0 ? ((Number(r.total_price) / totPrice) * 100) : 0;
+        const barW = maxTypeP > 0 ? ((Number(r.total_price) / maxTypeP) * 100) : 0;
+        return `<tr>
+            <td>${i + 1}</td>
+            <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
+            <td class="text-end">${fmt(r.items)}</td>
+            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmt(r.total_price)}</td>
+            <td><div class="d-flex align-items-center gap-1">
+                <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
+                <span class="small text-muted" style="min-width:36px">${pct.toFixed(1)}%</span>
+            </div></td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" class="text-center text-muted py-2">No data</td></tr>';
+    const typeTotItems = byType.reduce((s, r) => s + Number(r.items), 0);
+    const typeTotQty = byType.reduce((s, r) => s + Number(r.total_qty), 0);
+    const typeTotPrice = byType.reduce((s, r) => s + Number(r.total_price), 0);
+    $('footDailyType').innerHTML = `<tr><td></td><td>Total</td>
+        <td class="text-end">${fmt(typeTotItems)}</td>
+        <td class="text-end">${fmt(typeTotQty)}</td>
+        <td class="text-end">${fmt(typeTotPrice)}</td>
+        <td><span class="small text-muted">100%</span></td></tr>`;
+
+    // --- Idol breakdown ---
+    const byIdol = res.by_idol || [];
+    const top10Idol = byIdol.slice(0, 10);
+    const othersIdolPrice = byIdol.slice(10).reduce((s, r) => s + Number(r.total_price), 0);
+    const idolPieLabels = top10Idol.map(r => r.idol);
+    const idolPieData = top10Idol.map(r => Number(r.total_price));
+    if (othersIdolPrice > 0) { idolPieLabels.push('Others'); idolPieData.push(othersIdolPrice); }
+    if (chartDailyIdol) chartDailyIdol.destroy();
+    chartDailyIdol = new Chart($('chartDailyIdol').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: idolPieLabels,
+            datasets: [{
+                data: idolPieData,
+                backgroundColor: COLORS.slice(0, idolPieLabels.length),
+                borderWidth: 2, borderColor: '#fff',
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => {
+                    const pct = totPrice > 0 ? ((ctx.raw / totPrice) * 100).toFixed(1) : 0;
+                    return `${ctx.label}: ฿${fmt(ctx.raw)} (${pct}%)`;
+                }}}
+            }
+        }
+    });
+
+    const idolTotPrice = byIdol.reduce((s, r) => s + Number(r.total_price), 0);
+    const maxIdolP = byIdol.length > 0 ? Number(byIdol[0].total_price) : 1;
+    $('tableDailyIdol').innerHTML = byIdol.map((r, i) => {
+        const pct = idolTotPrice > 0 ? ((Number(r.total_price) / idolTotPrice) * 100) : 0;
+        const barW = maxIdolP > 0 ? ((Number(r.total_price) / maxIdolP) * 100) : 0;
+        return `<tr>
+            <td>${i + 1}</td>
+            <td><a href="#" class="text-decoration-none fw-semibold"
+                onclick="document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol)}'),200);return false">${escHtml(r.idol)}</a></td>
+            <td class="text-end">${fmt(r.items)}</td>
+            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmt(r.total_price)}</td>
+            <td><div class="d-flex align-items-center gap-1">
+                <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
+                <span class="small text-muted" style="min-width:36px">${pct.toFixed(1)}%</span>
+            </div></td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" class="text-center text-muted py-2">No data</td></tr>';
+    const idolTotItems = byIdol.reduce((s, r) => s + Number(r.items), 0);
+    const idolTotQty = byIdol.reduce((s, r) => s + Number(r.total_qty), 0);
+    $('footDailyIdol').innerHTML = `<tr><td></td><td>Total</td>
+        <td class="text-end">${fmt(idolTotItems)}</td>
+        <td class="text-end">${fmt(idolTotQty)}</td>
+        <td class="text-end">${fmt(idolTotPrice)}</td>
+        <td><span class="small text-muted">100%</span></td></tr>`;
 }
 
 function formatDay(d) {
@@ -1262,6 +1458,54 @@ async function showTypeDetail(type) {
         <td class="text-end">${fmt(totQty)}</td>
         <td class="text-end">${fmt(totPrice)}</td>
         <td><span class="small text-muted">100%</span></td>
+    </tr>`;
+
+    // --- Monthly Breakdown for Type ---
+    const byMonth = res.by_month || [];
+    if (chartTypeDetailMonth) chartTypeDetailMonth.destroy();
+    chartTypeDetailMonth = new Chart($('chartTypeDetailMonth').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: byMonth.map(r => formatMonth(r.month)),
+            datasets: [{
+                label: 'Spending (฿)',
+                data: byMonth.map(r => Number(r.total_price)),
+                backgroundColor: 'rgba(124,58,237,0.7)',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => '฿' + fmt(ctx.raw) } }
+            },
+            scales: { y: { ticks: { callback: v => '฿' + fmt(v) } } }
+        }
+    });
+
+    const mTotals = byMonth.reduce((a, r) => {
+        a.items += Number(r.items); a.qty += Number(r.total_qty); a.price += Number(r.total_price);
+        return a;
+    }, { items: 0, qty: 0, price: 0 });
+
+    $('tableTypeDetailMonth').innerHTML = byMonth.map(r => {
+        const dateFrom = r.month + '-01';
+        const dateTo = monthLastDay(r.month);
+        const url = 'index.php?type=' + encodeURIComponent(type) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
+        return `<tr>
+            <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
+            <td class="text-end">${fmt(r.items)}</td>
+            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmt(r.total_price)}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="4" class="text-center text-muted py-2">No data</td></tr>';
+
+    $('footTypeDetailMonth').innerHTML = `<tr>
+        <td>Total</td>
+        <td class="text-end">${fmt(mTotals.items)}</td>
+        <td class="text-end">${fmt(mTotals.qty)}</td>
+        <td class="text-end">${fmt(mTotals.price)}</td>
     </tr>`;
 }
 

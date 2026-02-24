@@ -243,7 +243,27 @@ function handleReportDaily(PDO $pdo): void
         ORDER BY month DESC
     ")->fetchAll(PDO::FETCH_COLUMN);
 
-    jsonResponse(['data' => $rows, 'months' => $months]);
+    // Type breakdown for this month
+    $stmtType = $pdo->prepare("
+        SELECT type, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
+        FROM items
+        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND type != '' AND type != '-'
+        GROUP BY type ORDER BY total_price DESC
+    ");
+    $stmtType->execute([':month' => $month]);
+    $byType = $stmtType->fetchAll();
+
+    // Idol breakdown for this month
+    $stmtIdol = $pdo->prepare("
+        SELECT idol, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
+        FROM items
+        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND idol != '' AND idol != '-'
+        GROUP BY idol ORDER BY total_price DESC
+    ");
+    $stmtIdol->execute([':month' => $month]);
+    $byIdol = $stmtIdol->fetchAll();
+
+    jsonResponse(['data' => $rows, 'months' => $months, 'by_type' => $byType, 'by_idol' => $byIdol]);
 }
 
 function handleReportIdol(PDO $pdo): void
@@ -751,7 +771,18 @@ function handleReportTypeDetail(PDO $pdo): void
         ];
     }
 
-    jsonResponse(['members' => $members]);
+    // Monthly breakdown for this type
+    $stmtMonth = $pdo->prepare("
+        SELECT strftime('%Y-%m', order_date) as month, COUNT(*) as items,
+               SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
+        FROM items
+        WHERE type = :type AND order_date != ''
+        GROUP BY month ORDER BY month
+    ");
+    $stmtMonth->execute([':type' => $type]);
+    $byMonth = $stmtMonth->fetchAll();
+
+    jsonResponse(['members' => $members, 'by_month' => $byMonth]);
 }
 
 function handleTypeSave(PDO $pdo): void
