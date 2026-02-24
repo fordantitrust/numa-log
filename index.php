@@ -65,6 +65,15 @@
         .ms-item:hover { background: #f3f0ff; }
         .ms-item.sel { color: var(--primary); }
         .ms-empty { padding: 8px 10px; color: #9ca3af; font-size: 12px; font-style: italic; }
+        /* Mobile */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .ms-drop, .sd-list { -webkit-overflow-scrolling: touch; }
+        @media (max-width: 575.98px) {
+            input[type="text"], input[type="date"], input[type="password"],
+            select, textarea, .ms-search { font-size: 16px !important; }
+            .ms-item, .sd-list .sd-item { font-size: 15px; min-height: 40px; }
+            .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+        }
     </style>
     <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken()) ?>">
 </head>
@@ -93,26 +102,26 @@ window.fetch = function(url, opts = {}) {
         <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-bar-chart-line"></i> Report
+                <i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span>
             </a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-people"></i> Idols
+                <i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span>
             </a>
             <a href="types.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-tags"></i> Types
+                <i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span>
             </a>
             <?php if (ALLOW_IMPORT): ?>
             <button class="btn btn-outline-light btn-sm me-2" onclick="showImportModal()">
-                <i class="bi bi-file-earmark-arrow-up"></i> Import Excel
+                <i class="bi bi-file-earmark-arrow-up"></i><span class="d-none d-sm-inline"> Import Excel</span>
             </button>
             <?php endif; ?>
             <button class="btn btn-light btn-sm me-2" onclick="showFormModal()">
-                <i class="bi bi-plus-lg"></i> Add Item
+                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> Add Item</span>
             </button>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
+                    <i class="bi bi-person-circle"></i><span class="d-none d-sm-inline"> <?= htmlspecialchars($u['display_name']) ?></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
@@ -135,25 +144,25 @@ window.fetch = function(url, opts = {}) {
 <div class="container-fluid py-3">
     <!-- Summary Cards -->
     <div class="row g-3 mb-3">
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
                 <div class="small opacity-75">Total Items</div>
                 <div class="display-6" id="sumTotal">0</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
                 <div class="small opacity-75">Total Quantity</div>
                 <div class="display-6" id="sumQty">0</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
                 <div class="small opacity-75">Total Spent</div>
                 <div class="display-6" id="sumPrice">&#3647;0</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
                 <div class="small opacity-75">Avg per Item</div>
                 <div class="display-6" id="sumAvg">&#3647;0</div>
@@ -165,11 +174,11 @@ window.fetch = function(url, opts = {}) {
     <div class="card mb-3">
         <div class="card-body py-2">
             <form id="filterForm" class="row g-2 align-items-end">
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0">Search</label>
                     <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="Search title...">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0">Idol</label>
                     <div class="ms-wrap" id="msIdol">
                         <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
@@ -179,7 +188,7 @@ window.fetch = function(url, opts = {}) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0">Type</label>
                     <div class="ms-wrap" id="msType">
                         <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
@@ -189,15 +198,15 @@ window.fetch = function(url, opts = {}) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0">From</label>
                     <input type="date" class="form-control form-control-sm" id="fDateFrom">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0">To</label>
                     <input type="date" class="form-control form-control-sm" id="fDateTo">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <div class="d-flex gap-1">
                         <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetFilters()">
                             <i class="bi bi-x-lg"></i> Clear

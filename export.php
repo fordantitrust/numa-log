@@ -92,18 +92,25 @@ foreach (range('A', 'H') as $col) {
 // Freeze header row
 $sheet->freezePane('A2');
 
+// Validate and sanitize date params before using in filename
+$safeFrom = (isset($_GET['date_from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_from']))
+    ? $_GET['date_from'] : '';
+$safeTo = (isset($_GET['date_to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_to']))
+    ? $_GET['date_to'] : '';
+
 // Filename: include date range or current date
 $parts = ['numa-log'];
-if (!empty($_GET['date_from']) && !empty($_GET['date_to'])) {
-    $parts[] = $_GET['date_from'] . '_' . $_GET['date_to'];
-} elseif (!empty($_GET['date_from'])) {
-    $parts[] = 'from-' . $_GET['date_from'];
-} elseif (!empty($_GET['date_to'])) {
-    $parts[] = 'to-' . $_GET['date_to'];
+if ($safeFrom !== '' && $safeTo !== '') {
+    $parts[] = $safeFrom . '_' . $safeTo;
+} elseif ($safeFrom !== '') {
+    $parts[] = 'from-' . $safeFrom;
+} elseif ($safeTo !== '') {
+    $parts[] = 'to-' . $safeTo;
 } else {
     $parts[] = date('Y-m-d');
 }
-$filename = implode('_', $parts) . '.xlsx';
+// Only allow safe characters in filename to prevent header injection
+$filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', implode('_', $parts)) . '.xlsx';
 
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="' . $filename . '"');

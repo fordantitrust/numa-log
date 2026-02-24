@@ -188,6 +188,8 @@ If you placed the project under XAMPP's `htdocs`, just refresh the browser — s
 
 | Upgrading to | Notes |
 |---|---|
+| **v1.3.8** | No manual steps required. CSS-only changes; no schema changes. |
+| **v1.3.7** | No manual steps required. The `login_attempts` table is created automatically on first load. Existing passwords shorter than 12 characters remain valid until changed. Any user whose password is still `admin` will be forced to change it on next login. |
 | **v1.3.x** | No manual steps required. SQLite indexes and PRAGMA settings are applied automatically on first load. |
 | **v1.1.0** | CSRF protection was added. If you have custom forms or scripts that POST to `api.php`, add a `csrf_token` field. |
 | **v1.0.0** | Initial release — fresh install only. |

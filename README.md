@@ -268,7 +268,7 @@ All API calls go through `api.php` with `action` parameter.
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.6 — Idol and Type filters now support multi-select (select multiple values simultaneously); Export button moved to the filter row.
+**Latest:** v1.3.8 — Mobile responsiveness: navbar icon-only on narrow screens, stacking column layout on mobile, filter row 2-per-row on small screens, responsive chart height, iOS input zoom prevention, horizontal table scroll with touch momentum.
 
 ## License
 

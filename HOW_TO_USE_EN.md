@@ -72,7 +72,9 @@ The SQLite database will be created automatically on first load.
 |----------|----------|------|
 | `admin` | `admin` | Admin |
 
-> **Important:** Change the default password immediately after first login via the Users page.
+> **Important:** When logging in with the default `admin` password, the system will immediately force you to change it before accessing the application (new password must be at least 12 characters).
+
+> **Brute-force protection:** After 5 failed login attempts within 15 minutes, the IP address is temporarily blocked for 15 minutes.
 
 ### Role Permissions
 
@@ -269,7 +271,7 @@ The bottom of the Types page includes a **Members by Type** accordion:
 1. Click the **"Add User"** button
 2. Fill in the details:
    - **Username** - Login username
-   - **Password** - Password
+   - **Password** - Password (minimum **12 characters**)
    - **Display Name** - Display name
    - **Role** - Permission level (`admin` or `user`)
 3. Click **"Save"**
@@ -278,6 +280,7 @@ The bottom of the Types page includes a **Members by Type** accordion:
 
 - All users can change their own password
 - Click the **"Change Password"** button next to your name
+- New password must be at least **12 characters**
 
 ---
 

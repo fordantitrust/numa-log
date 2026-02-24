@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-define('APP_VERSION', '1.3.6');
+define('APP_VERSION', '1.3.8');
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -89,13 +89,23 @@ function initDB(): void
         )
     ");
 
+    // Login attempt tracking for brute force protection
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL,
+            attempted_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        )
+    ");
+
     // Indexes for common query patterns
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_idol       ON items(idol)');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_type       ON items(type)');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_order_date ON items(order_date)');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_type_idol  ON items(type, idol)');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_parent_id     ON idol_entities(parent_id)');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_category      ON idol_entities(category)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_idol         ON items(idol)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_type         ON items(type)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_order_date   ON items(order_date)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_items_type_idol    ON items(type, idol)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_parent_id       ON idol_entities(parent_id)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_category        ON idol_entities(category)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_ip  ON login_attempts(ip, attempted_at)');
 }
 
 initDB();
@@ -110,21 +120,42 @@ if (!is_dir(BACKUP_DIR)) {
 function sendSecurityHeaders(): void
 {
     header('X-Content-Type-Options: nosniff');
-    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Frame-Options: DENY');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');
+    // CSP: allow CDN for Bootstrap/Chart.js/Icons; unsafe-inline required for inline scripts/styles
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'");
 }
 
 // Auth helpers
 function startAppSession(): void
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start([
-            'cookie_lifetime' => SESSION_LIFETIME,
-            'cookie_httponly' => true,
-            'cookie_samesite' => 'Strict',
-            'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-        ]);
+    if (session_status() !== PHP_SESSION_NONE) {
+        return;
+    }
+
+    $opts = [
+        'cookie_lifetime' => SESSION_LIFETIME,
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'gc_maxlifetime' => SESSION_LIFETIME,
+    ];
+
+    session_start($opts);
+
+    // Enforce server-side session timeout
+    if (isset($_SESSION['user_id'], $_SESSION['_last_activity'])) {
+        if (time() - $_SESSION['_last_activity'] > SESSION_LIFETIME) {
+            session_unset();
+            session_destroy();
+            session_start($opts);
+            return;
+        }
+        $_SESSION['_last_activity'] = time();
+    } elseif (isset($_SESSION['user_id'])) {
+        // First request after login — initialise activity timestamp
+        $_SESSION['_last_activity'] = time();
     }
 }
 
@@ -162,6 +193,14 @@ function requireAuth(): void
         }
         header('Location: login.php');
         exit;
+    }
+    // Force password change if the user is still on the default password
+    if (!empty($_SESSION['force_password_change'])) {
+        $script = basename($_SERVER['SCRIPT_FILENAME'] ?? '');
+        if ($script !== 'change_password_required.php') {
+            header('Location: change_password_required.php');
+            exit;
+        }
     }
 }
 

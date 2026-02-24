@@ -64,6 +64,9 @@ function handleUserSave(PDO $pdo, array $me): void
     if ($id > 0) {
         // Update
         if ($password !== '') {
+            if (strlen($password) < 12) {
+                jsonResp(['error' => 'Password must be at least 12 characters'], 400);
+            }
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("UPDATE users SET display_name = :dn, password = :pw, role = :role WHERE id = :id");
             $stmt->execute([':dn' => $displayName, ':pw' => $hash, ':role' => $role, ':id' => $id]);
@@ -75,6 +78,9 @@ function handleUserSave(PDO $pdo, array $me): void
         // Create
         if ($password === '') {
             jsonResp(['error' => 'Password is required for new users'], 400);
+        }
+        if (strlen($password) < 12) {
+            jsonResp(['error' => 'Password must be at least 12 characters'], 400);
         }
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO users (username, password, display_name, role) VALUES (:u, :pw, :dn, :role)");
@@ -111,8 +117,8 @@ function handleChangePassword(PDO $pdo, array $me): void
     if ($currentPassword === '' || $newPassword === '') {
         jsonResp(['error' => 'Both passwords are required'], 400);
     }
-    if (strlen($newPassword) < 4) {
-        jsonResp(['error' => 'Password must be at least 4 characters'], 400);
+    if (strlen($newPassword) < 12) {
+        jsonResp(['error' => 'Password must be at least 12 characters'], 400);
     }
 
     // Verify current password

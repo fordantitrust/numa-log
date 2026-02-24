@@ -22,6 +22,13 @@ $me = currentUser();
         .table th { font-size: 12px; text-transform: uppercase; color: #6b7280; }
         .badge-admin { background: #dc2626; color: white; }
         .badge-user { background: #16a34a; color: white; }
+        /* --- Mobile --- */
+        .card-body.p-0 { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 575.98px) {
+            input[type="text"], input[type="date"], input[type="password"],
+            select, textarea { font-size: 16px !important; }
+            .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+        }
     </style>
     <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken()) ?>">
 </head>
@@ -34,12 +41,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-people-fill"></i> User Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Items</a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i> Report</a>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i><span class="d-none d-sm-inline"> Items</span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
             <?php if (AUTH_ENABLED && $me): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($me['display_name']) ?>
+                    <i class="bi bi-person-circle"></i><span class="d-none d-sm-inline"> <?= htmlspecialchars($me['display_name']) ?></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($me['username']) ?> (<?= $me['role'] ?>)</span></li>
@@ -60,7 +67,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
 <div class="container-fluid py-3">
     <div class="row g-3">
-        <div class="col-lg-8">
+        <div class="col-12 col-lg-8">
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
                     <strong><i class="bi bi-people-fill"></i> Users</strong>
@@ -90,7 +97,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
             </div>
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-12 col-lg-4">
             <div class="card mb-3">
                 <div class="card-header py-2"><strong>Current User</strong></div>
                 <div class="card-body py-2">

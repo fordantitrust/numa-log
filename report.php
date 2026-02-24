@@ -22,7 +22,15 @@
         .rank-2 { color: #9ca3af; font-weight: 700; }
         .rank-3 { color: #b45309; font-weight: 700; }
         .chart-container { position: relative; height: 400px; }
-        .table-scroll { max-height: 500px; overflow-y: auto; }
+        .table-scroll { max-height: 500px; overflow-y: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        /* Mobile */
+        @media (max-width: 767.98px) { .chart-container { height: 250px; } }
+        @media (max-width: 575.98px) {
+            input[type="text"], input[type="date"], input[type="password"],
+            select, textarea { font-size: 16px !important; }
+            .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+            .nav-pills .nav-link { padding: .375rem .5rem; font-size: 13px; }
+        }
         .progress-bar-custom { height: 6px; border-radius: 3px; background: #e5e7eb; }
         .progress-bar-custom .fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--primary), #a78bfa); }
         .badge-type { background: #fce7f3; color: #9d174d; }
@@ -38,13 +46,13 @@
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-bar-chart-line"></i> Report <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i> Items</a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i> Idols</a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i> Types</a>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i><span class="d-none d-sm-inline"> Items</span></a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
+            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
+                    <i class="bi bi-person-circle"></i><span class="d-none d-sm-inline"> <?= htmlspecialchars($u['display_name']) ?></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
@@ -100,7 +108,7 @@
             <!-- Monthly overview -->
             <div id="monthlyMainView">
                 <div class="row g-3">
-                    <div class="col-lg-8">
+                    <div class="col-12 col-lg-8">
                         <div class="card p-3">
                             <h6 class="card-title mb-3">Monthly Spending</h6>
                             <div class="chart-container">
@@ -108,7 +116,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-12 col-lg-4">
                         <div class="card">
                             <div class="card-header py-2"><strong>Monthly Breakdown</strong> <span class="text-muted small">- click to view daily</span></div>
                             <div class="table-scroll">
@@ -166,7 +174,7 @@
                     </div>
                 </div>
                 <div class="row g-3">
-                    <div class="col-lg-8">
+                    <div class="col-12 col-lg-8">
                         <div class="card p-3">
                             <h6 class="card-title mb-3">Daily Spending</h6>
                             <div class="chart-container">
@@ -174,7 +182,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-12 col-lg-4">
                         <div class="card">
                             <div class="card-header py-2"><strong>Daily Breakdown</strong></div>
                             <div class="table-scroll">

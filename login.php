@@ -40,25 +40,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter username and password.';
     } else {
         $pdo = getDB();
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :u");
-        $stmt->execute([':u' => $username]);
-        $user = $stmt->fetch();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
-        if ($user && password_verify($password, $user['password'])) {
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['display_name'] = $user['display_name'];
-            $_SESSION['role'] = $user['role'];
-
-            // Update last login
-            $pdo->prepare("UPDATE users SET last_login = datetime('now','localtime') WHERE id = :id")
-                ->execute([':id' => $user['id']]);
-
-            header('Location: index.php');
-            exit;
+        // Brute-force protection: max 5 failed attempts per IP per 15 minutes
+        $stmtCheck = $pdo->prepare(
+            "SELECT COUNT(*) FROM login_attempts WHERE ip = :ip AND attempted_at >= datetime('now', '-15 minutes', 'localtime')"
+        );
+        $stmtCheck->execute([':ip' => $ip]);
+        if ((int) $stmtCheck->fetchColumn() >= 5) {
+            $error = 'Too many failed login attempts. Please try again in 15 minutes.';
         } else {
-            $error = 'Invalid username or password.';
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :u");
+            $stmt->execute([':u' => $username]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($password, $user['password'])) {
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['display_name'] = $user['display_name'];
+                $_SESSION['role'] = $user['role'];
+
+                // Update last login
+                $pdo->prepare("UPDATE users SET last_login = datetime('now','localtime') WHERE id = :id")
+                    ->execute([':id' => $user['id']]);
+
+                // Clean up old login attempts for this IP on successful login
+                $pdo->prepare("DELETE FROM login_attempts WHERE ip = :ip")
+                    ->execute([':ip' => $ip]);
+
+                // Force password change if still using the default 'admin' password
+                if (password_verify('admin', $user['password'])) {
+                    $_SESSION['force_password_change'] = true;
+                    header('Location: change_password_required.php');
+                    exit;
+                }
+
+                header('Location: index.php');
+                exit;
+            } else {
+                // Record failed attempt
+                $pdo->prepare("INSERT INTO login_attempts (ip) VALUES (:ip)")
+                    ->execute([':ip' => $ip]);
+
+                // Purge attempts older than 1 hour to keep the table small
+                $pdo->exec("DELETE FROM login_attempts WHERE attempted_at < datetime('now', '-1 hour', 'localtime')");
+
+                $error = 'Invalid username or password.';
+            }
         }
     }
 }
@@ -78,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
         .login-card { width: 100%; max-width: 400px; border: none; box-shadow: 0 4px 24px rgba(0,0,0,.1); border-radius: 12px; }
         .login-header { background: var(--primary); color: white; border-radius: 12px 12px 0 0; padding: 2rem; text-align: center; }
+        @media (max-width: 575.98px) {
+            input[type="text"], input[type="password"] { font-size: 16px !important; }
+        }
     </style>
 </head>
 <body>

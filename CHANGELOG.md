@@ -4,6 +4,39 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.3.8 (2026-02-24)
+
+Mobile responsiveness release.
+
+### Changed
+- **Navbar button labels** (all pages) — Button text labels are hidden on extra-small screens (< 576 px); only icons are shown. Labels reappear on ≥ 576 px screens. No functionality is changed
+- **Layout columns** (`report.php`, `idols.php`, `types.php`, `users.php`, `backup.php`) — Added `col-12` prefix to all `col-lg-*` column classes so that panels stack vertically on mobile instead of overflowing the viewport
+- **Filter row** (`index.php`) — Changed filter column classes from `col-md-2` to `col-6 col-md-2` so filters display as two per row on narrow screens (three rows of two) rather than collapsing
+- **Summary cards** (`index.php`) — Changed from `col-md-3` to `col-6 col-md-3` so cards show two per row on mobile
+- **Chart height** (`report.php`) — Chart containers shrink to 250 px on screens ≤ 767 px to avoid excessive vertical scroll
+- **iOS input zoom prevention** (all pages) — Added `font-size: 16px !important` for text/date/password inputs on ≤ 575 px screens, preventing automatic zoom-in on iOS Safari
+- **Horizontal table scroll** (all pages) — Added `overflow-x: auto` and `-webkit-overflow-scrolling: touch` on `.table-responsive` and `.card-body.p-0` wrappers so tables scroll horizontally on narrow screens instead of overflowing
+- **Multi-select dropdowns** (`index.php`) — Added `-webkit-overflow-scrolling: touch` on `.ms-drop` and `.sd-list` for smooth iOS scrolling inside dropdown lists
+- **Tree view padding** (`idols.php`) — Reduced tree item indentation on < 576 px screens to prevent excessive nesting overflow
+
+---
+
+## v1.3.7 (2026-02-24)
+
+Security hardening release.
+
+### Security
+- **Brute-force protection** (`login.php`) — Login is blocked for 15 minutes after 5 consecutive failed attempts from the same IP address. Failed attempts are recorded in the `login_attempts` table; records older than 1 hour are purged automatically. Successful login clears previous attempt records for the IP
+- **Password minimum length** (`api_users.php`) — Minimum password length raised from 4 to **12 characters** (NIST 2024 recommendation), enforced on new user creation, admin password update, and self-service password change
+- **Content Security Policy** (`config.php`) — Added `Content-Security-Policy` header restricting resource origins to `self` and trusted CDN (`cdn.jsdelivr.net`); `frame-ancestors 'none'` replaces `X-Frame-Options`
+- **Server-side session timeout** (`config.php`) — Sessions are now expired server-side after `SESSION_LIFETIME` (24 hours) regardless of cookie lifetime; `gc_maxlifetime` aligned with session lifetime
+- **Date input validation** (`api.php`, `export.php`) — `date_from` and `date_to` parameters are validated against `YYYY-MM-DD` format and rejected with HTTP 400 if invalid
+- **Filename sanitization** (`export.php`) — Export filename is sanitized with `preg_replace` to prevent header injection
+- **SQLite file protection** (`.htaccess`) — Added root `.htaccess` to deny direct HTTP access to `.sqlite`, `.sqlite3`, and `.db` files
+- **Forced password change on first login** (`change_password_required.php`, `login.php`, `config.php`) — Users logging in with the default `admin` password are automatically redirected to a dedicated change-password page. All other pages are blocked until the new password (min 12 characters) is saved. A Logout link is provided as the only exit
+
+---
+
 ## v1.3.6 (2026-02-24)
 
 Multi-select filter release.

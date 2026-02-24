@@ -83,10 +83,16 @@ function handleList(PDO $pdo): void
         $params[':search'] = '%' . $_GET['search'] . '%';
     }
     if (!empty($_GET['date_from'])) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_from'])) {
+            jsonResponse(['error' => 'Invalid date_from format'], 400);
+        }
         $where[] = 'order_date >= :date_from';
         $params[':date_from'] = $_GET['date_from'];
     }
     if (!empty($_GET['date_to'])) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_to'])) {
+            jsonResponse(['error' => 'Invalid date_to format'], 400);
+        }
         $where[] = 'order_date <= :date_to';
         $params[':date_to'] = $_GET['date_to'];
     }
