@@ -15,45 +15,60 @@ docker compose up -d
 
 **Default login:** `admin` / `admin` — change the password after first login.
 
+## Tech Stack
+
+- **Backend:** PHP 8.2, PDO/SQLite
+- **Frontend:** Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Chart.js 4.4.7
+- **Database:** SQLite with WAL mode
+- **Import:** PhpSpreadsheet (Composer)
+- **CI/CD:** GitHub Actions (Docker build)
+
 ## Features
 
 ### Item Management (`index.php`)
 
 - Full CRUD for purchase items (Add, Edit, Clone, Delete)
-- Searchable dropdown for Idol and Type fields
-- Sortable columns, pagination, filters (by Idol, Type, date range, search)
-- Summary cards showing total items, quantity, and spending
+- **Multi-select filters** for Idol and Type — select multiple values with badge display and inline search
+- Sortable columns, pagination, text search, and date range filter
+- Summary cards: total items, quantity, and spending (updates with active filters)
+- URL parameter pre-fill — `idol`, `date_from`, `date_to` applied automatically on load (used by report drill-downs)
+- **Export to Excel** — export all filtered items to `.xlsx` with auto-sized columns and filename based on active date range
+- Searchable dropdown for Idol and Type fields in the Add/Edit form
+- Mobile responsive: 2-per-row cards and filters, horizontal table scroll
 
 ### Reports (`report.php`)
 
 | Tab | Description |
 |-----|-------------|
-| **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view (with Type Breakdown & Idol Breakdown charts). Click any day in the daily breakdown to view filtered items for that day. |
-| **By Member** | Ranking of individual idol members by spending. Click name for detail (type breakdown + monthly chart). Click any month in the monthly breakdown to view filtered items for that member and month. |
-| **By Group** | Aggregated spending per group/unit. Click to see member breakdown. |
-| **By Company** | Aggregated spending per company. Click to see groups under that company. |
-| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company) and Monthly Breakdown chart. |
+| **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view — includes **Type Breakdown** doughnut chart and **Idol Breakdown** doughnut chart (top 10 + others). Click any day to view filtered items for that day. |
+| **By Member** | Ranking of individual idol members by spending. Click a name for detail: type breakdown + monthly spending chart. Click any month row to view filtered items for that member and month. |
+| **By Group** | Aggregated spending per group/unit, rolling up all member spending. Click to see member breakdown. |
+| **By Company** | Aggregated spending per company with group sub-breakdown. Click to see groups under that company. |
+| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company) and **Monthly Breakdown** chart. Click any month row to view filtered items for that type and month. |
 
 ### Idol Management (`idols.php`)
 
 - Hierarchical tree view: Company > Group/Unit > Member
 - CRUD for idol entities with category and parent assignment
-- Stats showing items count and spending per entity
-- Unmapped names panel with quick-add button
+- Stats showing items count, quantity, and spending per entity
+- Unmapped names panel — idol names in items not yet linked to any entity, with quick-add button
+- Re-seed button (admin only, requires `ALLOW_RESEED`)
 
 ### Type Management (`types.php`)
 
 - CRUD for type categories with description and sort order
 - Usage stats (rows, quantity, spending)
 - Unmapped type names panel with quick-add button
-- **Members by Type** report — accordion view showing which members, groups, and companies appear under each type
+- **Members by Type** accordion — shows which members, groups, and companies appear under each type
 
 ### User Management (`users.php`)
 
 - Admin can create, edit, and delete users
 - Two roles: `admin` and `user`
-- Change own password (available to all users)
+- Change own password (available to all users), minimum 12 characters
 - Session-based authentication (24-hour lifetime)
+- **Brute-force protection** — login blocked for 15 minutes after 5 consecutive failed attempts from the same IP
+- **Forced password change** — new installs redirect to password change page until the default `admin` password is replaced
 
 #### Role Permissions
 
@@ -61,6 +76,7 @@ docker compose up -d
 |---------|:-----:|:----:|
 | View items list | O | O |
 | Add / Edit / Clone / Delete items | O | O |
+| Export Excel | O | O |
 | View reports | O | O |
 | Manage idols (add/edit/delete) | O | O |
 | Manage types (add/edit/delete) | O | O |
@@ -74,7 +90,7 @@ docker compose up -d
 
 - **Admin only**
 - Create labeled backup snapshots
-- Restore from any backup (auto-backup created before restore)
+- Restore from any backup (auto-backup created automatically before restore)
 - Download / Upload / Delete backups
 - Protected `backups/` directory
 
@@ -82,7 +98,13 @@ docker compose up -d
 
 - Import data from `.xlsx` file into SQLite
 - Handles Excel serial date numbers
-- Controlled by `ALLOW_IMPORT` config flag
+- Admin only; controlled by `ALLOW_IMPORT` config flag
+
+### Help & Guide (`help.php` / `help_en.php`)
+
+- In-app usage guide available in **Thai** and **English**
+- TH/EN language switcher on the help page
+- Covers all features with step-by-step instructions, tips, and FAQ
 
 ## Configuration
 
@@ -118,151 +140,15 @@ define('ALLOW_RESEED', true);   // Shows Re-seed button on Idols page
 
 ## Project Structure
 
-```
-numa-log/
-├── .github/
-│   └── workflows/
-│       └── docker-build.yml  # GitHub Actions: build Docker image
-├── config.php                # Database connection, schema, auth helpers
-├── index.php                 # Main item list (CRUD)
-├── api.php                   # REST API for items, reports, idols, types, backups
-├── api_users.php             # REST API for user management
-├── report.php                # Reports page (Monthly, Member, Group, Company, Type)
-├── idols.php                 # Idol hierarchy management
-├── types.php                 # Type category management
-├── users.php                 # User management
-├── login.php                 # Login page
-├── backup.php                # Backup & restore management
-├── backup_upload.php         # Backup file upload handler
-├── import.php                # Excel to SQLite importer
-├── seed_idols.php            # Idol entity seeder
-├── help.php                  # Help & guide page (Thai)
-├── help_en.php               # Help & guide page (English)
-├── HOW_TO_USE.md             # How to use documentation (Thai)
-├── HOW_TO_USE_EN.md          # How to use documentation (English)
-├── INSTALL.md                # Installation & upgrade guide
-├── CHANGELOG.md              # Version history
-├── Dockerfile                # Docker image definition
-├── docker-compose.yml        # Docker Compose configuration
-├── .dockerignore             # Docker build exclusions
-├── .gitignore                # Git ignored files
-├── composer.json             # Composer dependencies
-├── database.sqlite           # SQLite database (auto-created)
-├── data/                     # Persistent data directory (Docker)
-│   ├── database.sqlite
-│   └── backups/
-└── backups/                  # Backup snapshots directory (manual)
-    └── .htaccess             # Deny direct access
-```
+See **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** for the full directory layout.
 
 ## Database Schema
 
-### `items`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER PK | Auto-increment ID |
-| order_date | TEXT | Purchase date (YYYY-MM-DD) |
-| event_date | TEXT | Event date (YYYY-MM-DD) |
-| title | TEXT | Item name |
-| idol | TEXT | Idol / group name |
-| type | TEXT | Item type |
-| price_per_qty | REAL | Price per unit |
-| qty | INTEGER | Quantity |
-| created_at | TEXT | Record creation timestamp |
-| updated_at | TEXT | Last update timestamp |
-
-### `idol_entities`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER PK | Auto-increment ID |
-| name | TEXT UNIQUE | Entity name |
-| category | TEXT | `company`, `group`, `unit`, or `member` |
-| parent_id | INTEGER | Parent entity reference |
-| sort_order | INTEGER | Display order |
-
-### `type_categories`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER PK | Auto-increment ID |
-| name | TEXT UNIQUE | Type name |
-| description | TEXT | Description |
-| sort_order | INTEGER | Display order |
-
-### `users`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER PK | Auto-increment ID |
-| username | TEXT UNIQUE | Login username |
-| password | TEXT | Bcrypt hashed password |
-| display_name | TEXT | Display name |
-| role | TEXT | `admin` or `user` |
-| last_login | TEXT | Last login timestamp |
+See **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** for all table definitions.
 
 ## API Endpoints
 
-All API calls go through `api.php` with `action` parameter.
-
-### Items
-| Action | Method | Description |
-|--------|--------|-------------|
-| `list` | GET | List items (paginated, filterable, sortable) |
-| `get` | GET | Get single item by ID |
-| `create` | POST | Create new item |
-| `update` | POST | Update existing item |
-| `delete` | POST | Delete item |
-| `filters` | GET | Get distinct idol/type values for filter dropdowns |
-
-### Reports
-| Action | Method | Description |
-|--------|--------|-------------|
-| `report_monthly` | GET | Monthly spending aggregation |
-| `report_daily` | GET | Daily breakdown for a given month (`?month=YYYY-MM`) |
-| `report_idol` | GET | Spending by member (filtered to member category) |
-| `report_type` | GET | Spending by type |
-| `report_idol_detail` | GET | Detail for single idol (`?idol=Name`) |
-| `report_by_group` | GET | Spending aggregated by group/unit |
-| `report_by_company` | GET | Spending aggregated by company |
-| `report_type_detail` | GET | Member breakdown for a single type (`?type=Name`) |
-
-### Idol Entities
-| Action | Method | Description |
-|--------|--------|-------------|
-| `idol_entities_tree` | GET | Get all entities with stats |
-| `idol_entity_save` | POST | Create/update entity |
-| `idol_entity_delete` | POST | Delete entity |
-
-### Type Categories
-| Action | Method | Description |
-|--------|--------|-------------|
-| `type_list` | GET | List types with usage stats |
-| `type_members_report` | GET | All types with member/group/company breakdown |
-| `type_save` | POST | Create/update type |
-| `type_delete` | POST | Delete type |
-
-### Backups (Admin only)
-| Action | Method | Description |
-|--------|--------|-------------|
-| `backup_list` | GET | List all backups |
-| `backup_create` | POST | Create new backup |
-| `backup_restore` | POST | Restore from backup |
-| `backup_delete` | POST | Delete backup |
-| `backup_download` | GET | Download backup file |
-
-### Users (`api_users.php`)
-| Action | Method | Description |
-|--------|--------|-------------|
-| `list` | GET | List all users |
-| `save` | POST | Create/update user (admin) |
-| `delete` | POST | Delete user (admin) |
-| `change_password` | POST | Change own password |
-
-## Tech Stack
-
-- **Backend:** PHP 8.2, PDO/SQLite
-- **Frontend:** Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Chart.js 4.4.7
-- **Database:** SQLite with WAL mode
-- **Import:** PhpSpreadsheet (Composer)
-- **CI/CD:** GitHub Actions (Docker build)
+See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation including authentication, parameters, and response formats.
 
 ## Changelog
 
