@@ -14,7 +14,7 @@ Numa Log is a web application for recording and analyzing idol merchandise purch
 6. [Type Management](#6-type-management-typesphp)
 7. [User Management](#7-user-management-usersphp)
 8. [Backup & Restore](#8-backup--restore-backupphp)
-9. [Excel Import](#9-excel-import)
+9. [Excel Import & Export](#9-excel-import--export)
 10. [Configuration](#10-configuration)
 
 ---
@@ -83,6 +83,7 @@ The SQLite database will be created automatically on first load.
 | Manage idol data | ✅ | ✅ |
 | Manage item types | ✅ | ✅ |
 | Change own password | ✅ | ✅ |
+| Export Excel data | ✅ | ✅ |
 | Import Excel data | ✅ | ❌ |
 | Backup/Restore data | ✅ | ❌ |
 | Manage users | ✅ | ❌ |
@@ -130,10 +131,14 @@ Use the filters above the table to find items:
 
 | Filter | Description |
 |--------|-------------|
-| **Idol** | Filter by idol/group name |
-| **Type** | Filter by item type |
+| **Idol** | Filter by idol/group name — **supports multi-select** |
+| **Type** | Filter by item type — **supports multi-select** |
 | **Date Range** | Filter by date range |
 | **Search** | Search by item title |
+
+> **Idol** and **Type** support multi-select: click to open the dropdown → type to search → select multiple values at once → selected values appear as badges (click × to remove individual selections).
+
+The filter row also has an **Export** button (green) to download the currently filtered data as Excel, and a **Clear** button to reset all filters.
 
 ### Sorting
 
@@ -305,7 +310,34 @@ The bottom of the Types page includes a **Members by Type** accordion:
 
 ---
 
-## 9. Excel Import
+## 9. Excel Import & Export
+
+### Export Excel
+
+Export all items matching the current filters (or all items if no filter is applied).
+
+1. Apply filters on the Items page if you want to export a specific subset
+2. Click the **"Export Excel"** button in the navbar
+3. The `.xlsx` file will download immediately
+
+Exported column format:
+
+| Column | Field |
+|--------|-------|
+| A | Order Date |
+| B | Event Date |
+| C | Title |
+| D | Idol |
+| E | Type |
+| F | Price per Qty |
+| G | Qty |
+| H | Price Total (F × G) |
+
+> Export is available to all users (Admin and User).
+
+---
+
+### Import Excel
 
 > Admin only | Must be enabled in config first
 
@@ -361,6 +393,6 @@ define('ALLOW_RESEED', true);   // Show Re-seed button on Idols page
 | Backend | PHP 8.2, PDO/SQLite |
 | Frontend | Bootstrap 5.3.3, Bootstrap Icons 1.11.3 |
 | Charts | Chart.js 4.4.7 |
-| Excel Import | PhpSpreadsheet |
+| Excel Import / Export | PhpSpreadsheet |
 | Database | SQLite (WAL mode) |
 | Container | Docker & Docker Compose |

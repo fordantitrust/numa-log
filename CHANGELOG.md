@@ -4,6 +4,28 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.3.6 (2026-02-24)
+
+Multi-select filter release.
+
+### Changed
+- **Idol & Type filters** (`index.php`) — Replaced single-select dropdowns with custom multi-select components. Users can now select multiple idols and/or multiple types simultaneously. Selected values are shown as removable badges; an inline search box filters the list
+- **Export Excel button** (`index.php`) — Moved from navbar to the filter row, placed next to the **Clear** button, making it visually clear that Export respects the active filters
+- **API** (`api.php`) and **Export** (`export.php`) — Filter logic updated from `idol = :idol` to `idol IN (...)` to support multi-value selection
+
+---
+
+## v1.3.5 (2026-02-24)
+
+Excel export release.
+
+### Added
+- **Export Excel** (`export.php`) — Export all items matching the current filters to `.xlsx`. The button appears in the Items page navbar and is available to all users (Admin and User). Filters (idol, type, date range, search) are passed through automatically
+- Exported file columns match the import format: `Order Date`, `Event Date`, `Title`, `Idol`, `Type`, `Price per Qty`, `Qty`, plus an additional `Price Total` column (Excel formula `=F*G`)
+- Filename is auto-generated based on the active date filter (e.g. `numa-log_2025-01-01_2025-12-31.xlsx`) or the current date if no date filter is set
+
+---
+
 ## v1.3.4 (2026-02-24)
 
 Report enhancement release.

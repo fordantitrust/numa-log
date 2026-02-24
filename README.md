@@ -268,7 +268,7 @@ All API calls go through `api.php` with `action` parameter.
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.4 — Monthly Type/Idol Breakdown charts and By Type Monthly Breakdown chart added to reports.
+**Latest:** v1.3.6 — Idol and Type filters now support multi-select (select multiple values simultaneously); Export button moved to the filter row.
 
 ## License
 

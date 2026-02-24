@@ -66,13 +66,17 @@ function handleList(PDO $pdo): void
     $where = [];
     $params = [];
 
-    if (!empty($_GET['idol'])) {
-        $where[] = 'idol = :idol';
-        $params[':idol'] = $_GET['idol'];
+    $idols = array_values(array_filter((array) ($_GET['idol'] ?? [])));
+    if (!empty($idols)) {
+        $phs = implode(',', array_map(fn($i) => ":idol$i", array_keys($idols)));
+        $where[] = "idol IN ($phs)";
+        foreach ($idols as $i => $v) { $params[":idol$i"] = $v; }
     }
-    if (!empty($_GET['type'])) {
-        $where[] = 'type = :type';
-        $params[':type'] = $_GET['type'];
+    $types = array_values(array_filter((array) ($_GET['type'] ?? [])));
+    if (!empty($types)) {
+        $phs = implode(',', array_map(fn($i) => ":type$i", array_keys($types)));
+        $where[] = "type IN ($phs)";
+        foreach ($types as $i => $v) { $params[":type$i"] = $v; }
     }
     if (!empty($_GET['search'])) {
         $where[] = 'title LIKE :search';

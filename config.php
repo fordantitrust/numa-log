@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-define('APP_VERSION', '1.3.4');
+define('APP_VERSION', '1.3.6');
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;

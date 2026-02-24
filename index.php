@@ -52,6 +52,19 @@
         }
         .sd-list .sd-item:hover, .sd-list .sd-item.active { background: #f3f0ff; color: var(--primary); }
         .sd-list .sd-empty { padding: 8px 10px; color: #9ca3af; font-size: 12px; font-style: italic; }
+        /* Multi-select filter */
+        .ms-wrap { position: relative; }
+        .ms-box { min-height: 31px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; padding: 2px 8px; }
+        .ms-box .badge { font-size: 11px; font-weight: 500; }
+        .ms-ph { color: #6c757d; font-size: 13px; line-height: 1.5; }
+        .ms-drop { position: absolute; top: 100%; left: 0; right: 0; z-index: 1060; background: white; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 .375rem .375rem; box-shadow: 0 4px 12px rgba(0,0,0,.15); display: none; }
+        .ms-drop.show { display: block; }
+        .ms-search { border: none; border-bottom: 1px solid #dee2e6; border-radius: 0; font-size: 13px; width: 100%; padding: 5px 10px; outline: none; }
+        .ms-list { max-height: 180px; overflow-y: auto; }
+        .ms-item { padding: 5px 10px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+        .ms-item:hover { background: #f3f0ff; }
+        .ms-item.sel { color: var(--primary); }
+        .ms-empty { padding: 8px 10px; color: #9ca3af; font-size: 12px; font-style: italic; }
     </style>
     <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken()) ?>">
 </head>
@@ -90,7 +103,7 @@ window.fetch = function(url, opts = {}) {
             </a>
             <?php if (ALLOW_IMPORT): ?>
             <button class="btn btn-outline-light btn-sm me-2" onclick="showImportModal()">
-                <i class="bi bi-file-earmark-excel"></i> Import Excel
+                <i class="bi bi-file-earmark-arrow-up"></i> Import Excel
             </button>
             <?php endif; ?>
             <button class="btn btn-light btn-sm me-2" onclick="showFormModal()">
@@ -152,17 +165,29 @@ window.fetch = function(url, opts = {}) {
     <div class="card mb-3">
         <div class="card-body py-2">
             <form id="filterForm" class="row g-2 align-items-end">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small mb-0">Search</label>
                     <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="Search title...">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small mb-0">Idol</label>
-                    <select class="form-select form-select-sm" id="fIdol"><option value="">All</option></select>
+                    <div class="ms-wrap" id="msIdol">
+                        <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
+                        <div class="ms-drop">
+                            <input type="text" class="ms-search" placeholder="Search...">
+                            <div class="ms-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small mb-0">Type</label>
-                    <select class="form-select form-select-sm" id="fType"><option value="">All</option></select>
+                    <div class="ms-wrap" id="msType">
+                        <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
+                        <div class="ms-drop">
+                            <input type="text" class="ms-search" placeholder="Search...">
+                            <div class="ms-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small mb-0">From</label>
@@ -172,10 +197,15 @@ window.fetch = function(url, opts = {}) {
                     <label class="form-label small mb-0">To</label>
                     <input type="date" class="form-control form-control-sm" id="fDateTo">
                 </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilters()">
-                        <i class="bi bi-x-lg"></i> Clear
-                    </button>
+                <div class="col-md-2">
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetFilters()">
+                            <i class="bi bi-x-lg"></i> Clear
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm flex-fill" onclick="exportExcel()">
+                            <i class="bi bi-file-earmark-arrow-down"></i> Export
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -321,6 +351,7 @@ let currentDir = 'desc';
 let currentPage = 1;
 let debounceTimer = null;
 let filtersData = { idols: [], types: [] };
+let msIdol, msType;
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -334,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadFilters();
 
-    if (pIdol) $('fIdol').value = pIdol;
+    if (pIdol) msIdol.setSelected([pIdol]);
 
     loadData();
     setupSort();
@@ -362,7 +393,7 @@ function setupSort() {
 
 function setupFilterEvents() {
     $('fSearch').addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { currentPage = 1; loadData(); }, 300); });
-    ['fIdol', 'fType', 'fDateFrom', 'fDateTo'].forEach(id => {
+    ['fDateFrom', 'fDateTo'].forEach(id => {
         $(id).addEventListener('change', () => { currentPage = 1; loadData(); });
     });
 }
@@ -375,18 +406,10 @@ async function api(url, opts = {}) {
 
 async function loadFilters() {
     filtersData = await api('api.php?action=filters');
-    populateSelect('fIdol', filtersData.idols);
-    populateSelect('fType', filtersData.types);
+    msIdol = initMultiSelect('msIdol', () => filtersData.idols, () => { currentPage = 1; loadData(); });
+    msType = initMultiSelect('msType', () => filtersData.types, () => { currentPage = 1; loadData(); });
     initSearchableDropdown('itemIdol', 'idolDropdown', () => filtersData.idols);
     initSearchableDropdown('itemType', 'typeDropdown', () => filtersData.types);
-}
-
-function populateSelect(id, items) {
-    const sel = $(id);
-    const val = sel.value;
-    sel.innerHTML = '<option value="">All</option>';
-    items.forEach(i => { const o = document.createElement('option'); o.value = i; o.textContent = i; sel.appendChild(o); });
-    sel.value = val;
 }
 
 function initSearchableDropdown(inputId, listId, getItems) {
@@ -444,6 +467,68 @@ function initSearchableDropdown(inputId, listId, getItems) {
     });
 }
 
+function initMultiSelect(wrapId, getItems, onChange) {
+    const wrap = document.getElementById(wrapId);
+    const box  = wrap.querySelector('.ms-box');
+    const drop = wrap.querySelector('.ms-drop');
+    const srch = wrap.querySelector('.ms-search');
+    const lst  = wrap.querySelector('.ms-list');
+    let selected = [];
+
+    function renderBox() {
+        box.innerHTML = '';
+        if (selected.length === 0) {
+            box.innerHTML = '<span class="ms-ph">All</span>';
+        } else {
+            selected.forEach(val => {
+                const tag = document.createElement('span');
+                tag.className = 'badge badge-idol d-inline-flex align-items-center gap-1';
+                tag.innerHTML = escHtml(val) + '<i class="bi bi-x" style="cursor:pointer;font-size:10px"></i>';
+                tag.querySelector('i').addEventListener('click', e => {
+                    e.stopPropagation();
+                    selected = selected.filter(v => v !== val);
+                    renderBox(); renderList(); onChange(selected);
+                });
+                box.appendChild(tag);
+            });
+        }
+    }
+
+    function renderList() {
+        const q = srch.value.toLowerCase();
+        const items = getItems().filter(i => !q || i.toLowerCase().includes(q));
+        if (items.length === 0) {
+            lst.innerHTML = '<div class="ms-empty">No match</div>';
+        } else {
+            lst.innerHTML = items.map(item => {
+                const sel = selected.includes(item);
+                return `<div class="ms-item${sel ? ' sel' : ''}" data-val="${escHtml(item)}">
+                    <i class="bi ${sel ? 'bi-check-square-fill' : 'bi-square'}" style="color:${sel ? 'var(--primary)' : '#adb5bd'}"></i>
+                    ${escHtml(item)}
+                </div>`;
+            }).join('');
+            lst.querySelectorAll('.ms-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const val = el.dataset.val;
+                    selected = selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val];
+                    renderBox(); renderList(); onChange(selected);
+                });
+            });
+        }
+    }
+
+    box.addEventListener('click', () => { srch.value = ''; renderList(); drop.classList.toggle('show'); });
+    srch.addEventListener('input', renderList);
+    document.addEventListener('click', e => { if (!wrap.contains(e.target)) drop.classList.remove('show'); });
+
+    renderBox();
+    return {
+        getSelected: () => [...selected],
+        clear()            { selected = []; renderBox(); },
+        setSelected(arr)   { selected = [...arr]; renderBox(); },
+    };
+}
+
 async function loadData() {
     const params = new URLSearchParams({
         action: 'list',
@@ -452,11 +537,11 @@ async function loadData() {
         sort: currentSort,
         dir: currentDir,
         search: $('fSearch').value,
-        idol: $('fIdol').value,
-        type: $('fType').value,
         date_from: $('fDateFrom').value,
         date_to: $('fDateTo').value,
     });
+    if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
+    if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
 
     const res = await api('api.php?' + params);
     renderTable(res);
@@ -645,12 +730,26 @@ async function doImport() {
 
 function resetFilters() {
     $('fSearch').value = '';
-    $('fIdol').value = '';
-    $('fType').value = '';
     $('fDateFrom').value = '';
     $('fDateTo').value = '';
+    if (msIdol) msIdol.clear();
+    if (msType) msType.clear();
     currentPage = 1;
     loadData();
+}
+
+// --- Export ---
+function exportExcel() {
+    const params = new URLSearchParams();
+    const search = $('fSearch').value;
+    const from   = $('fDateFrom').value;
+    const to     = $('fDateTo').value;
+    if (search) params.set('search', search);
+    if (from)   params.set('date_from', from);
+    if (to)     params.set('date_to', to);
+    if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
+    if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
+    window.location.href = 'export.php?' + params.toString();
 }
 
 // --- Helpers ---
