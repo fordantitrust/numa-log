@@ -198,7 +198,7 @@
                 <div class="row g-3 mt-2">
                     <div class="col-lg-6">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Spending by Type</h6>
+                            <h6 class="card-title mb-3">Top 10 by Type</h6>
                             <div class="chart-container" style="height:280px">
                                 <canvas id="chartDailyType"></canvas>
                             </div>
@@ -225,7 +225,7 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Spending by Idol</h6>
+                            <h6 class="card-title mb-3">Top 10 by Idol</h6>
                             <div class="chart-container" style="height:280px">
                                 <canvas id="chartDailyIdol"></canvas>
                             </div>

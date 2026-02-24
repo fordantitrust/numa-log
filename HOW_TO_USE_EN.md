@@ -156,8 +156,8 @@ The reports page has 5 tabs, each showing data from a different perspective:
 
 - Bar chart (spending) + line chart (quantity) by month
 - **Click on any month** to drill down to daily details, including:
-  - **Type Breakdown** — Doughnut chart and table showing spending share by item type for that month
-  - **Idol Breakdown** — Doughnut chart and table showing spending share by idol for that month (click any idol name to jump to their detail view)
+  - **Type Breakdown** — "Top 10 by Type" doughnut chart and full table showing spending share by item type for that month
+  - **Idol Breakdown** — "Top 10 by Idol" doughnut chart (top 10 + Others) and full table showing spending share by idol for that month (click any idol name to jump to their detail view)
 - **Click on any day in the Daily Breakdown table** to go to the Items page filtered to that specific day
 
 ### 4.2 By Member

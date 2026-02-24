@@ -381,8 +381,8 @@ All API calls go through `api.php` with `action` parameter.
 Report enhancement release.
 
 #### Added
-- **Monthly → Type Breakdown** (`report.php`) — When drilling into a month's daily view, a Type Breakdown doughnut chart and table are now shown, displaying spending share per item type for that month
-- **Monthly → Idol Breakdown** (`report.php`) — When drilling into a month's daily view, an Idol Breakdown doughnut chart and table are shown, displaying spending share per idol for that month (top 10 + Others). Click idol name to navigate to Idol detail view
+- **Monthly → Type Breakdown** (`report.php`) — When drilling into a month's daily view, a "Top 10 by Type" doughnut chart and full Type Breakdown table are now shown, displaying spending share per item type for that month
+- **Monthly → Idol Breakdown** (`report.php`) — When drilling into a month's daily view, a "Top 10 by Idol" doughnut chart (top 10 + Others) and full Idol Breakdown table are shown. Click any idol name to navigate to their detail view
 - **By Type → Monthly Breakdown** (`report.php`) — When clicking into a type's detail view, a Monthly Spending bar chart and monthly breakdown table are now shown. Click any month row to view filtered items for that type and month
 - **API:** `report_daily` now returns `by_type` and `by_idol` breakdowns alongside daily data
 - **API:** `report_type_detail` now returns `by_month` breakdown alongside member data
