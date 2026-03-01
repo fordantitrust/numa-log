@@ -4,6 +4,15 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.3.9 (2026-03-01)
+
+Bug fix release.
+
+### Fixed
+- **Filter/search menus broken after add or clone** (`index.php`) — After saving or cloning an item while a filter was active, the multi-select dropdowns for Idol and Type became unresponsive. Clicking the box toggled the dropdown open and immediately closed it, and the Clear button had no effect. Root cause: `loadFilters()` was calling `initMultiSelect()` a second time, adding duplicate event listeners on the same DOM elements — the two `toggle('show')` calls cancelled each other out. Fixed by adding an initialisation guard (`_msInit` flag on the wrapper element) so that subsequent calls to `initMultiSelect()` return the existing instance instead of creating a new one. Filter data (`filtersData`) continues to refresh normally via the closure reference, so newly added idol/type names still appear in the dropdowns
+
+---
+
 ## v1.3.8 (2026-02-24)
 
 Mobile responsiveness release.

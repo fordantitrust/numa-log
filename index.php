@@ -478,6 +478,8 @@ function initSearchableDropdown(inputId, listId, getItems) {
 
 function initMultiSelect(wrapId, getItems, onChange) {
     const wrap = document.getElementById(wrapId);
+    if (wrap._msInit) return wrap._msInst;
+    wrap._msInit = true;
     const box  = wrap.querySelector('.ms-box');
     const drop = wrap.querySelector('.ms-drop');
     const srch = wrap.querySelector('.ms-search');
@@ -531,11 +533,12 @@ function initMultiSelect(wrapId, getItems, onChange) {
     document.addEventListener('click', e => { if (!wrap.contains(e.target)) drop.classList.remove('show'); });
 
     renderBox();
-    return {
+    wrap._msInst = {
         getSelected: () => [...selected],
         clear()            { selected = []; renderBox(); },
         setSelected(arr)   { selected = [...arr]; renderBox(); },
     };
+    return wrap._msInst;
 }
 
 async function loadData() {

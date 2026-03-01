@@ -154,7 +154,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.8 — Mobile responsiveness: navbar icon-only on narrow screens, stacking column layout on mobile, filter row 2-per-row on small screens, responsive chart height, iOS input zoom prevention, horizontal table scroll with touch momentum.
+**Latest:** v1.3.9 — Bug fix: multi-select filter dropdowns (Idol/Type) are no longer broken after adding or cloning an item while a filter is active.
 
 ## License
 
