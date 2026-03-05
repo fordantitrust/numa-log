@@ -4,6 +4,16 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.3.11 (2026-03-05)
+
+Timezone fix release.
+
+### Fixed
+- **Timezone (Asia/Bangkok)** — เพิ่ม `date_default_timezone_set('Asia/Bangkok')` ใน `config.php` เพื่อให้ PHP `date()` และ function เวลาทุกตัวใช้เวลาไทย (UTC+7) ครอบคลุมทั้ง local และ Docker environment
+- **Dockerfile timezone** — เพิ่มการตั้ง OS timezone (`/etc/localtime` → `Asia/Bangkok`) และ `date.timezone = Asia/Bangkok` ใน `security.ini` เพื่อให้ timezone ถูกต้องในทุก layer ของ Docker image (ไม่ต้องพึ่ง `TZ` env var จาก docker-compose เพียงอย่างเดียว)
+
+---
+
 ## v1.3.10 (2026-03-05)
 
 Docker security hardening release.

@@ -53,6 +53,9 @@ RUN a2enmod rewrite headers
 # ---------------------------------------------------------------------------
 # PHP security hardening
 # ---------------------------------------------------------------------------
+# Set timezone at OS level
+RUN ln -snf /usr/share/zoneinfo/Asia/Bangkok /etc/localtime && echo "Asia/Bangkok" > /etc/timezone
+
 RUN { \
     echo "upload_max_filesize = 50M"; \
     echo "post_max_size = 50M"; \
@@ -66,6 +69,7 @@ RUN { \
     echo "session.cookie_httponly = On"; \
     echo "session.use_strict_mode = On"; \
     echo "session.use_only_cookies = On"; \
+    echo "date.timezone = Asia/Bangkok"; \
 } > /usr/local/etc/php/conf.d/security.ini
 
 # ---------------------------------------------------------------------------

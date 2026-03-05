@@ -188,6 +188,7 @@ If you placed the project under XAMPP's `htdocs`, just refresh the browser — s
 
 | Upgrading to | Notes |
 |---|---|
+| **v1.3.11** | No manual steps required. Timezone fix only; no schema changes. Rebuild Docker image with `docker compose up -d --build`. |
 | **v1.3.10** | No manual steps required. Docker-only changes; no schema or application code changes. Rebuild image with `docker build -t numa-log:1.3.10 .` |
 | **v1.3.9** | No manual steps required. JavaScript-only bug fix; no schema changes. |
 | **v1.3.8** | No manual steps required. CSS-only changes; no schema changes. |

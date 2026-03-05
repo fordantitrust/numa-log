@@ -154,7 +154,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.10 — Docker security hardening: multi-stage build, PHP/Apache security config, HEALTHCHECK, and improved file permissions.
+**Latest:** v1.3.11 — Timezone fix: set `Asia/Bangkok` in PHP (`date_default_timezone_set`), Dockerfile OS timezone, and PHP ini (`date.timezone`).
 
 ## License
 
