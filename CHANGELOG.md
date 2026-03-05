@@ -4,6 +4,21 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.3.10 (2026-03-05)
+
+Docker security hardening release.
+
+### Changed
+- **Multi-stage Docker build** — แยก builder stage (compile PHP extensions + Composer) ออกจาก runtime stage เพื่อตัด `git`, `unzip`, และ Composer binary ออกจาก final image
+- **PHP security hardening** (`security.ini`) — เพิ่ม `expose_php=Off`, `display_errors=Off`, `log_errors` → stderr, `disable_functions` สำหรับ shell execution, session cookie hardening
+- **Apache security hardening** (`hardening.conf`) — เพิ่ม `ServerTokens Prod`, `ServerSignature Off`, `TraceEnable Off`, และ security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`)
+- **File permissions** — ใช้ `find` แยก permission ระหว่าง file (644) และ directory (755) แทน `chmod -R`
+- **HEALTHCHECK** — เพิ่ม Docker health check ด้วย `curl` ทุก 30 วินาที
+- **`--no-install-recommends`** — ลด package footprint ใน apt install ทุกขั้นตอน
+- **`.dockerignore`** — เพิ่ม exclusion สำหรับ `.claude/`, `.vscode/`, `Dockerfile`, `docker-compose*`, `tests/`, `*.log`, `*.xlsx`, `*.csv`
+
+---
+
 ## v1.3.9 (2026-03-01)
 
 Bug fix release.

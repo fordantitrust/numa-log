@@ -154,7 +154,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.9 — Bug fix: multi-select filter dropdowns (Idol/Type) are no longer broken after adding or cloning an item while a filter is active.
+**Latest:** v1.3.10 — Docker security hardening: multi-stage build, PHP/Apache security config, HEALTHCHECK, and improved file permissions.
 
 ## License
 

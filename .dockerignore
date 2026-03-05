@@ -1,10 +1,44 @@
+# Version control
 .git
 .gitignore
+.gitattributes
+
+# Documentation
 *.md
+LICENSE
+
+# Claude / IDE
+.claude/
+.vscode/
+.idea/
+
+# Docker files (no need to copy into image)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Runtime data (injected via volume at runtime)
 database.sqlite
 database.sqlite-wal
 database.sqlite-shm
-backups/
 data/
+backups/
+
+# Vendor (installed fresh during build)
 vendor/
+
+# Dev / test artifacts
+*.log
+*.tmp
+tests/
+phpunit.xml*
+.phpunit*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Misc
 idols.xlsx
+*.xlsx
+*.csv
