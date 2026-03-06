@@ -1,0 +1,1064 @@
+<?php
+
+/**
+ * Numa Log — Integration Test Suite
+ *
+ * Usage:
+ *   php tests/run.php
+ *
+ * Requirements:
+ *   - PHP CLI with curl extension
+ *   - No external dependencies (no PHPUnit needed)
+ *
+ * What it does:
+ *   1. Creates an isolated test SQLite database in the system temp directory
+ *   2. Starts PHP built-in server on a free port with prepend.php overriding DB_PATH
+ *   3. Logs in as admin and runs ~50 tests covering all API endpoints
+ *   4. Prints a colour-coded summary and exits with code 0 (pass) or 1 (fail)
+ */
+
+declare(strict_types=1);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+
+$PROJECT_DIR  = realpath(__DIR__ . '/..');
+$PREPEND_FILE = __DIR__ . '/prepend.php';
+$TEST_DIR     = sys_get_temp_dir() . '/numa_log_tests';
+$TEST_DB      = $TEST_DIR . '/test.sqlite';
+$TEST_BACKUP  = $TEST_DIR . '/backups';
+$PORT         = findFreePort(8765);
+$BASE_URL     = "http://127.0.0.1:{$PORT}"; // explicit IPv4 to avoid ::1 ambiguity
+$COOKIE_FILE  = tempnam(sys_get_temp_dir(), 'numa_cookies_');
+
+// Admin credentials used for tests (strong enough to avoid force-change flow)
+$ADMIN_PASS = 'TestAdmin2024!';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Colour helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function green(string $s): string  { return "\033[32m{$s}\033[0m"; }
+function red(string $s): string    { return "\033[31m{$s}\033[0m"; }
+function yellow(string $s): string { return "\033[33m{$s}\033[0m"; }
+function bold(string $s): string   { return "\033[1m{$s}\033[0m"; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Test counters
+// ─────────────────────────────────────────────────────────────────────────────
+
+$PASS = 0;
+$FAIL = 0;
+$ERRORS = [];
+
+function pass(string $name): void {
+    global $PASS;
+    $PASS++;
+    echo '  ' . green('✓') . " {$name}\n";
+}
+
+function fail(string $name, string $reason): void {
+    global $FAIL, $ERRORS;
+    $FAIL++;
+    $ERRORS[] = "FAIL [{$name}]: {$reason}";
+    echo '  ' . red('✗') . " {$name}\n";
+    echo '    ' . yellow($reason) . "\n";
+}
+
+function section(string $title): void {
+    echo "\n" . bold($title) . "\n";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Assertions
+// ─────────────────────────────────────────────────────────────────────────────
+
+function assertStatus(string $test, array $res, int $expected): bool {
+    if ($res['status'] !== $expected) {
+        fail($test, "Expected HTTP {$expected}, got {$res['status']}. Body: " . substr($res['body'], 0, 200));
+        return false;
+    }
+    pass($test);
+    return true;
+}
+
+function assertJson(string $test, array $res, int $expectedStatus, callable $check): bool {
+    if ($res['status'] !== $expectedStatus) {
+        fail($test, "Expected HTTP {$expectedStatus}, got {$res['status']}. Body: " . substr($res['body'], 0, 200));
+        return false;
+    }
+    $data = json_decode($res['body'], true);
+    if ($data === null) {
+        fail($test, "Invalid JSON: " . substr($res['body'], 0, 200));
+        return false;
+    }
+    $reason = $check($data);
+    if ($reason !== null) {
+        fail($test, $reason);
+        return false;
+    }
+    pass($test);
+    return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HTTP helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function httpGet(string $url, string $cookieFile, array $headers = []): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HEADER         => true,
+        CURLOPT_COOKIEJAR      => $cookieFile,
+        CURLOPT_COOKIEFILE     => $cookieFile,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_HTTPHEADER     => array_merge(['Accept: application/json'], $headers),
+    ]);
+    $response   = curl_exec($ch);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $status     = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error      = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['status' => 0, 'headers' => '', 'body' => $error];
+    }
+    return [
+        'status'  => $status,
+        'headers' => substr($response, 0, $headerSize),
+        'body'    => substr($response, $headerSize),
+    ];
+}
+
+function httpPost(string $url, array $data, string $cookieFile, array $headers = []): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HEADER         => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => http_build_query($data),
+        CURLOPT_COOKIEJAR      => $cookieFile,
+        CURLOPT_COOKIEFILE     => $cookieFile,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_HTTPHEADER     => array_merge([
+            'Content-Type: application/x-www-form-urlencoded',
+            'Accept: application/json',
+        ], $headers),
+    ]);
+    $response   = curl_exec($ch);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $status     = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error      = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['status' => 0, 'headers' => '', 'body' => $error];
+    }
+    return [
+        'status'  => $status,
+        'headers' => substr($response, 0, $headerSize),
+        'body'    => substr($response, $headerSize),
+    ];
+}
+
+function apiGet(string $base, string $action, array $params, string $cookieFile): array {
+    $qs  = http_build_query(array_merge(['action' => $action], $params));
+    $url = "{$base}/api.php?{$qs}";
+    return httpGet($url, $cookieFile);
+}
+
+function apiPost(string $base, string $action, array $data, string $csrf, string $cookieFile): array {
+    $url  = "{$base}/api.php?action={$action}";
+    $data = array_merge(['csrf_token' => $csrf], $data);
+    return httpPost($url, $data, $cookieFile);
+}
+
+function usersApiGet(string $base, string $action, array $params, string $cookieFile): array {
+    $qs  = http_build_query(array_merge(['action' => $action], $params));
+    $url = "{$base}/api_users.php?{$qs}";
+    return httpGet($url, $cookieFile);
+}
+
+function usersApiPost(string $base, string $action, array $data, string $csrf, string $cookieFile): array {
+    $url  = "{$base}/api_users.php?action={$action}";
+    $data = array_merge(['csrf_token' => $csrf], $data);
+    return httpPost($url, $data, $cookieFile);
+}
+
+function extractCsrfToken(string $html): string {
+    if (preg_match('/name="csrf_token"\s+value="([a-f0-9]+)"/', $html, $m)) {
+        return $m[1];
+    }
+    if (preg_match('/value="([a-f0-9]+)"\s+name="csrf_token"/', $html, $m)) {
+        return $m[1];
+    }
+    return '';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Port helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+function findFreePort(int $start = 8765): int {
+    for ($port = $start; $port < $start + 100; $port++) {
+        // Check both IPv4 and IPv6 — Windows resolves "localhost" to ::1
+        $ipv4 = @fsockopen('127.0.0.1', $port, $e, $s, 0.2);
+        $ipv6 = @fsockopen('[::1]',     $port, $e, $s, 0.2);
+        if (!$ipv4 && !$ipv6) {
+            return $port;
+        }
+        if ($ipv4) fclose($ipv4);
+        if ($ipv6) fclose($ipv6);
+    }
+    return $start;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Server management
+// ─────────────────────────────────────────────────────────────────────────────
+
+function startServer(string $projectDir, int $port, string $prependFile): mixed {
+    // display_errors=Off keeps constant-redefinition warnings out of HTTP bodies
+    $cmd = sprintf(
+        'php -S 127.0.0.1:%d -t %s -d auto_prepend_file=%s -d display_errors=Off -d log_errors=On',
+        $port,
+        escapeshellarg($projectDir),
+        escapeshellarg($prependFile)
+    );
+
+    // Redirect stdout/stderr to a log file to prevent pipe-buffer deadlocks.
+    // Using pipes causes the server to block once the OS buffer fills.
+    // stdin must be a readable pipe (not NUL) so the server can accept sockets.
+    $logFile = sys_get_temp_dir() . '/numa_test_server.log';
+
+    $descriptors = [
+        0 => ['pipe', 'r'],           // stdin — pipe kept open so server runs
+        1 => ['file', $logFile, 'w'], // stdout → log file
+        2 => ['file', $logFile, 'a'], // stderr → log file
+    ];
+
+    $proc = proc_open($cmd, $descriptors, $pipes);
+
+    if (!is_resource($proc)) {
+        echo red("Failed to start PHP server.\n");
+        exit(1);
+    }
+
+    // Do NOT close $pipes[0] — the built-in server needs stdin to remain open.
+
+    // Wait up to 3 s for the server to become ready
+    $baseUrl = "http://127.0.0.1:{$port}";
+    $waited  = 0;
+    while ($waited < 3000) {
+        usleep(100_000); // 100 ms
+        $waited += 100;
+        $ch = curl_init("{$baseUrl}/login.php");
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 1]);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        if ($res !== false) {
+            break;
+        }
+    }
+
+    return $proc;
+}
+
+function stopServer(mixed $proc): void {
+    if (is_resource($proc)) {
+        proc_terminate($proc);
+        proc_close($proc);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Test database setup
+// ─────────────────────────────────────────────────────────────────────────────
+
+function setupTestDatabase(string $testDir, string $testDb, string $testBackup, string $adminPass): void {
+    // Remove old test DB if present
+    if (file_exists($testDb)) {
+        unlink($testDb);
+    }
+
+    if (!is_dir($testDir)) {
+        mkdir($testDir, 0755, true);
+    }
+    if (!is_dir($testBackup)) {
+        mkdir($testBackup, 0755, true);
+    }
+
+    $pdo = new PDO("sqlite:{$testDb}", null, null, [
+        PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+    $pdo->exec('PRAGMA journal_mode=WAL');
+    $pdo->exec('PRAGMA foreign_keys=ON');
+
+    // Schema (mirrors config.php initDB)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_date TEXT,
+            event_date TEXT,
+            title TEXT NOT NULL,
+            idol TEXT NOT NULL,
+            type TEXT NOT NULL,
+            price_per_qty REAL NOT NULL DEFAULT 0,
+            qty INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            updated_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS type_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT DEFAULT '',
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            display_name TEXT NOT NULL DEFAULT '',
+            role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin','user')),
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            last_login TEXT
+        )
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS idol_entities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            category TEXT NOT NULL DEFAULT 'member' CHECK(category IN ('company','group','unit','member')),
+            parent_id INTEGER NULL REFERENCES idol_entities(id) ON DELETE SET NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL,
+            attempted_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        )
+    ");
+
+    // Seed admin with a strong password to bypass the force-change flow
+    $hash = password_hash($adminPass, PASSWORD_DEFAULT);
+    $pdo->prepare("INSERT INTO users (username, password, display_name, role) VALUES ('admin', :pw, 'Administrator', 'admin')")
+        ->execute([':pw' => $hash]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function loginAdmin(string $baseUrl, string $cookieFile, string $adminPass): string {
+    // Step 1: GET login page to obtain CSRF token
+    $loginPage  = httpGet("{$baseUrl}/login.php", $cookieFile);
+    $csrfToken  = extractCsrfToken($loginPage['body']);
+
+    if ($csrfToken === '') {
+        echo red("Could not extract CSRF token from login page.\n");
+        exit(1);
+    }
+
+    // Step 2: POST credentials
+    $res = httpPost("{$baseUrl}/login.php", [
+        'username'   => 'admin',
+        'password'   => $adminPass,
+        'csrf_token' => $csrfToken,
+    ], $cookieFile);
+
+    if ($res['status'] !== 302) {
+        echo red("Login failed (expected 302, got {$res['status']}).\n");
+        echo $res['body'] . "\n";
+        exit(1);
+    }
+
+    // The CSRF token persists in the session after login — reuse it for API calls
+    return $csrfToken;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cleanup
+// ─────────────────────────────────────────────────────────────────────────────
+
+function cleanup(mixed $proc, string $cookieFile, string $testDir): void {
+    stopServer($proc);
+
+    if (file_exists($cookieFile)) {
+        unlink($cookieFile);
+    }
+
+    // Remove test database and backups
+    array_map('unlink', glob("{$testDir}/backups/*.sqlite") ?: []);
+    if (file_exists("{$testDir}/test.sqlite")) {
+        unlink("{$testDir}/test.sqlite");
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN — setup
+// ─────────────────────────────────────────────────────────────────────────────
+
+echo bold("\n=== Numa Log Integration Tests ===\n");
+echo "  Project : {$PROJECT_DIR}\n";
+echo "  Base URL: {$BASE_URL}\n";
+echo "  Test DB : {$TEST_DB}\n\n";
+
+setupTestDatabase($TEST_DIR, $TEST_DB, $TEST_BACKUP, $ADMIN_PASS);
+
+echo "Starting PHP built-in server on port {$PORT}...";
+$serverProc = startServer($PROJECT_DIR, $PORT, $PREPEND_FILE);
+echo green(" OK\n");
+
+// Register cleanup on script exit
+register_shutdown_function(function () use (&$serverProc, $COOKIE_FILE, $TEST_DIR) {
+    cleanup($serverProc, $COOKIE_FILE, $TEST_DIR);
+});
+
+// Login
+echo "Logging in as admin...";
+$CSRF = loginAdmin($BASE_URL, $COOKIE_FILE, $ADMIN_PASS);
+echo green(" OK\n\n");
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 1 — Authentication
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('1. Authentication');
+
+// 1a. Unauthenticated API request returns 401
+$fresh = tempnam(sys_get_temp_dir(), 'numa_anon_');
+$res = httpGet("{$BASE_URL}/api.php?action=list", $fresh);
+assertJson('Unauthenticated API → 401', $res, 401, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+unlink($fresh);
+
+// 1b. Login page renders (use a fresh anonymous cookie — logged-in session redirects to index)
+$anonCookie = tempnam(sys_get_temp_dir(), 'numa_anon2_');
+$res = httpGet("{$BASE_URL}/login.php", $anonCookie);
+unlink($anonCookie);
+assertStatus('Login page renders', $res, 200);
+
+// 1c. Wrong password stays on login page
+$freshCookie = tempnam(sys_get_temp_dir(), 'numa_bad_');
+$loginPage = httpGet("{$BASE_URL}/login.php", $freshCookie);
+$badCsrf   = extractCsrfToken($loginPage['body']);
+$res = httpPost("{$BASE_URL}/login.php", [
+    'username'   => 'admin',
+    'password'   => 'wrongpassword',
+    'csrf_token' => $badCsrf,
+], $freshCookie);
+assertStatus('Wrong password → 200 (stays on login)', $res, 200);
+unlink($freshCookie);
+
+// 1d. Missing CSRF token → 403
+$noCsrfCookie = tempnam(sys_get_temp_dir(), 'numa_nocsrf_');
+$res = httpPost("{$BASE_URL}/api.php?action=create", ['title' => 'x', 'idol' => 'y', 'type' => 'z', 'price_per_qty' => 0, 'qty' => 1], $COOKIE_FILE);
+assertStatus('Missing CSRF → 403', $res, 403);
+unlink($noCsrfCookie);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 2 — Items CRUD
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('2. Items CRUD');
+
+// 2a. List items — empty
+assertJson('List items (empty)', apiGet($BASE_URL, 'list', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['data'], $d['total'])) return 'Missing data/total fields';
+    if ($d['total'] !== 0)              return "Expected 0 items, got {$d['total']}";
+    return null;
+});
+
+// 2b. Create item
+$res = apiPost($BASE_URL, 'create', [
+    'order_date'    => '2024-01-15',
+    'event_date'    => '2024-02-01',
+    'title'         => 'Test Photo Card',
+    'idol'          => 'Member A',
+    'type'          => 'Photo',
+    'price_per_qty' => 350,
+    'qty'           => 2,
+], $CSRF, $COOKIE_FILE);
+$createdId = null;
+assertJson('Create item', $res, 200, function ($d) use (&$createdId) {
+    if (empty($d['success']))  return 'Expected success=true';
+    if (!isset($d['id']))      return 'Missing id in response';
+    $createdId = (int) $d['id'];
+    return null;
+});
+
+// 2c. Get item by ID
+assertJson('Get item by ID', apiGet($BASE_URL, 'get', ['id' => $createdId], $COOKIE_FILE), 200, function ($d) use ($createdId) {
+    if (!isset($d['data']))              return 'Missing data field';
+    if ((int)$d['data']['id'] !== $createdId) return 'ID mismatch';
+    if ($d['data']['title'] !== 'Test Photo Card') return 'Title mismatch';
+    if ((float)$d['data']['price_per_qty'] !== 350.0) return 'Price mismatch';
+    return null;
+});
+
+// 2d. Get non-existent item → 404
+assertJson('Get missing item → 404', apiGet($BASE_URL, 'get', ['id' => 99999], $COOKIE_FILE), 404, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 2e. Update item
+assertJson('Update item', apiPost($BASE_URL, 'update', [
+    'id'            => $createdId,
+    'order_date'    => '2024-01-20',
+    'event_date'    => '',
+    'title'         => 'Updated Photo Card',
+    'idol'          => 'Member A',
+    'type'          => 'Photo',
+    'price_per_qty' => 400,
+    'qty'           => 3,
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// Confirm update was persisted
+assertJson('Updated fields persisted', apiGet($BASE_URL, 'get', ['id' => $createdId], $COOKIE_FILE), 200, function ($d) {
+    if ($d['data']['title'] !== 'Updated Photo Card') return "Title was '{$d['data']['title']}'";
+    if ((float)$d['data']['price_per_qty'] !== 400.0) return 'Price not updated';
+    return null;
+});
+
+// 2f. Update with missing ID → 400
+assertJson('Update without ID → 400', apiPost($BASE_URL, 'update', [
+    'title' => 'No ID', 'idol' => 'x', 'type' => 'y', 'price_per_qty' => 0, 'qty' => 1,
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 2g. Create more items for filter/report tests
+apiPost($BASE_URL, 'create', [
+    'order_date' => '2024-02-10', 'event_date' => '',
+    'title' => 'Concert Ticket', 'idol' => 'Member B',
+    'type' => 'Ticket', 'price_per_qty' => 1500, 'qty' => 1,
+], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'create', [
+    'order_date' => '2024-02-15', 'event_date' => '',
+    'title' => 'Photobook Vol.1', 'idol' => 'Member A',
+    'type' => 'Photobook', 'price_per_qty' => 800, 'qty' => 1,
+], $CSRF, $COOKIE_FILE);
+
+// 2h. List items shows correct total
+assertJson('List items (3 items)', apiGet($BASE_URL, 'list', [], $COOKIE_FILE), 200, function ($d) {
+    if ($d['total'] !== 3) return "Expected 3 items, got {$d['total']}";
+    return null;
+});
+
+// 2i. List items with idol filter
+assertJson('Filter by idol=Member A', apiGet($BASE_URL, 'list', ['idol' => ['Member A']], $COOKIE_FILE), 200, function ($d) {
+    if ($d['total'] !== 2) return "Expected 2 items for Member A, got {$d['total']}";
+    return null;
+});
+
+// 2j. List items with type filter
+assertJson('Filter by type=Ticket', apiGet($BASE_URL, 'list', ['type' => ['Ticket']], $COOKIE_FILE), 200, function ($d) {
+    if ($d['total'] !== 1) return "Expected 1 Ticket, got {$d['total']}";
+    return null;
+});
+
+// 2k. List items with search filter
+assertJson('Search "Concert"', apiGet($BASE_URL, 'list', ['search' => 'Concert'], $COOKIE_FILE), 200, function ($d) {
+    if ($d['total'] !== 1) return "Expected 1 match, got {$d['total']}";
+    return null;
+});
+
+// 2l. Date range filter
+assertJson('Date range filter', apiGet($BASE_URL, 'list', ['date_from' => '2024-02-01', 'date_to' => '2024-02-28'], $COOKIE_FILE), 200, function ($d) {
+    if ($d['total'] !== 2) return "Expected 2 in Feb 2024, got {$d['total']}";
+    return null;
+});
+
+// 2m. Invalid date_from → 400
+assertJson('Invalid date_from → 400', apiGet($BASE_URL, 'list', ['date_from' => 'not-a-date'], $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 2n. Pagination
+assertJson('Pagination per_page=2', apiGet($BASE_URL, 'list', ['per_page' => 2], $COOKIE_FILE), 200, function ($d) {
+    if (count($d['data']) !== 2)    return "Expected 2 items on page, got " . count($d['data']);
+    if ($d['total_pages'] !== 2)    return "Expected 2 pages, got {$d['total_pages']}";
+    return null;
+});
+
+// 2o. Summary totals
+assertJson('Summary totals', apiGet($BASE_URL, 'list', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['summary']['total_price'])) return 'Missing summary.total_price';
+    if (!isset($d['summary']['total_qty']))   return 'Missing summary.total_qty';
+    // Updated item: 400*3=1200, Ticket: 1500*1=1500, Photobook: 800*1=800 → 3500
+    if ((float)$d['summary']['total_price'] !== 3500.0) return "Expected total_price=3500, got {$d['summary']['total_price']}";
+    return null;
+});
+
+// 2p. Filters endpoint
+assertJson('Filters endpoint', apiGet($BASE_URL, 'filters', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['idols'], $d['types'])) return 'Missing idols/types fields';
+    if (!in_array('Member A', $d['idols'])) return 'Member A not in idols';
+    if (!in_array('Photo', $d['types']))    return 'Photo not in types';
+    return null;
+});
+
+// 2q. Sort by price descending
+assertJson('Sort by price desc', apiGet($BASE_URL, 'list', ['sort' => 'price_per_qty', 'dir' => 'desc'], $COOKIE_FILE), 200, function ($d) {
+    $prices = array_column($d['data'], 'price_per_qty');
+    for ($i = 1; $i < count($prices); $i++) {
+        if ((float)$prices[$i] > (float)$prices[$i - 1]) {
+            return 'Items not sorted descending by price';
+        }
+    }
+    return null;
+});
+
+// 2r. Delete item
+$res4 = apiPost($BASE_URL, 'create', [
+    'order_date' => '2024-03-01', 'event_date' => '',
+    'title' => 'To Delete', 'idol' => 'Member C',
+    'type' => 'Merch', 'price_per_qty' => 100, 'qty' => 1,
+], $CSRF, $COOKIE_FILE);
+$toDeleteId = (int)(json_decode($res4['body'], true)['id'] ?? 0);
+
+assertJson('Delete item', apiPost($BASE_URL, 'delete', ['id' => $toDeleteId], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// Verify deleted
+assertJson('Deleted item → 404', apiGet($BASE_URL, 'get', ['id' => $toDeleteId], $COOKIE_FILE), 404, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 2s. Delete without ID → 400
+assertJson('Delete without ID → 400', apiPost($BASE_URL, 'delete', [], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 3 — Reports
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('3. Reports');
+
+// 3a. Monthly report
+assertJson('report_monthly', apiGet($BASE_URL, 'report_monthly', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['data'])) return 'Missing data field';
+    if (!is_array($d['data'])) return 'data is not array';
+    // Should have entries for 2024-01 and 2024-02
+    $months = array_column($d['data'], 'month');
+    if (!in_array('2024-01', $months)) return '2024-01 not in monthly report';
+    if (!in_array('2024-02', $months)) return '2024-02 not in monthly report';
+    return null;
+});
+
+// 3b. Daily report
+assertJson('report_daily for 2024-02', apiGet($BASE_URL, 'report_daily', ['month' => '2024-02'], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['data'], $d['months'], $d['by_type'], $d['by_idol'])) {
+        return 'Missing required fields in daily report';
+    }
+    return null;
+});
+
+// 3c. Daily report without month → 400
+assertJson('report_daily missing month → 400', apiGet($BASE_URL, 'report_daily', [], $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 3d. Idol report
+assertJson('report_idol', apiGet($BASE_URL, 'report_idol', [], $COOKIE_FILE), 200, function ($d) {
+    return isset($d['data']) ? null : 'Missing data field';
+});
+
+// 3e. Type report
+assertJson('report_type', apiGet($BASE_URL, 'report_type', [], $COOKIE_FILE), 200, function ($d) {
+    return isset($d['data']) ? null : 'Missing data field';
+});
+
+// 3f. Idol detail report
+assertJson('report_idol_detail for Member A', apiGet($BASE_URL, 'report_idol_detail', ['idol' => 'Member A'], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['by_type'], $d['by_month'])) return 'Missing by_type or by_month';
+    return null;
+});
+
+// 3g. Type detail report
+assertJson('report_type_detail for Photo', apiGet($BASE_URL, 'report_type_detail', ['type' => 'Photo'], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['members'], $d['by_month'])) return 'Missing members or by_month';
+    return null;
+});
+
+// 3h. Group report
+assertJson('report_by_group', apiGet($BASE_URL, 'report_by_group', [], $COOKIE_FILE), 200, function ($d) {
+    return isset($d['data']) ? null : 'Missing data field';
+});
+
+// 3i. Company report
+assertJson('report_by_company', apiGet($BASE_URL, 'report_by_company', [], $COOKIE_FILE), 200, function ($d) {
+    return isset($d['data']) ? null : 'Missing data field';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 4 — Idol Entities
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('4. Idol Entities');
+
+// 4a. Empty tree
+assertJson('idol_entities_tree (empty)', apiGet($BASE_URL, 'idol_entities_tree', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['entities'], $d['parents'])) return 'Missing entities/parents fields';
+    if (count($d['entities']) !== 0) return 'Expected empty entities';
+    return null;
+});
+
+// 4b. Create company
+$res = apiPost($BASE_URL, 'idol_entity_save', [
+    'name' => 'Test Company', 'category' => 'company', 'parent_id' => '', 'sort_order' => 1,
+], $CSRF, $COOKIE_FILE);
+$companyId = null;
+assertJson('Create company entity', $res, 200, function ($d) use (&$companyId) {
+    if (empty($d['success'])) return 'Expected success=true';
+    $companyId = (int)$d['id'];
+    return null;
+});
+
+// 4c. Create group under company
+$res = apiPost($BASE_URL, 'idol_entity_save', [
+    'name' => 'Test Group', 'category' => 'group', 'parent_id' => $companyId, 'sort_order' => 1,
+], $CSRF, $COOKIE_FILE);
+$groupId = null;
+assertJson('Create group entity', $res, 200, function ($d) use (&$groupId) {
+    if (empty($d['success'])) return 'Expected success=true';
+    $groupId = (int)$d['id'];
+    return null;
+});
+
+// 4d. Create member under group
+$res = apiPost($BASE_URL, 'idol_entity_save', [
+    'name' => 'Member A', 'category' => 'member', 'parent_id' => $groupId, 'sort_order' => 1,
+], $CSRF, $COOKIE_FILE);
+$memberId = null;
+assertJson('Create member entity', $res, 200, function ($d) use (&$memberId) {
+    if (empty($d['success'])) return 'Expected success=true';
+    $memberId = (int)$d['id'];
+    return null;
+});
+
+// 4e. Tree now has 3 entities
+assertJson('idol_entities_tree has 3 entities', apiGet($BASE_URL, 'idol_entities_tree', [], $COOKIE_FILE), 200, function ($d) {
+    if (count($d['entities']) !== 3) return "Expected 3 entities, got " . count($d['entities']);
+    return null;
+});
+
+// 4f. Duplicate name → error
+// App relies on SQLite UNIQUE constraint → exception caught by global handler → 500
+assertJson('Duplicate entity name → error (500)', apiPost($BASE_URL, 'idol_entity_save', [
+    'name' => 'Test Company', 'category' => 'company', 'parent_id' => '', 'sort_order' => 0,
+], $CSRF, $COOKIE_FILE), 500, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 4g. Update entity
+assertJson('Update entity', apiPost($BASE_URL, 'idol_entity_save', [
+    'id' => $companyId, 'name' => 'Test Company Updated', 'category' => 'company', 'parent_id' => '', 'sort_order' => 2,
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// 4h. Delete member entity
+assertJson('Delete member entity', apiPost($BASE_URL, 'idol_entity_delete', ['id' => $memberId], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// 4i. Delete without ID → error
+assertJson('Delete entity without ID → error', apiPost($BASE_URL, 'idol_entity_delete', [], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 5 — Type Categories
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('5. Type Categories');
+
+// 5a. List types (empty)
+assertJson('type_list (empty)', apiGet($BASE_URL, 'type_list', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['types'], $d['unmapped'])) return 'Missing types/unmapped fields';
+    // Items exist with types Photo, Ticket, Photobook — all should be in unmapped
+    if (!in_array('Photo', $d['unmapped'])) return 'Photo not in unmapped';
+    return null;
+});
+
+// 5b. Create type category
+$res = apiPost($BASE_URL, 'type_save', [
+    'name' => 'Photo', 'description' => 'Photo cards and sets', 'sort_order' => 1,
+], $CSRF, $COOKIE_FILE);
+$typeId = null;
+assertJson('Create type category', $res, 200, function ($d) use (&$typeId) {
+    if (empty($d['success'])) return 'Expected success=true';
+    $typeId = (int)$d['id'];
+    return null;
+});
+
+// 5c. Create another type
+apiPost($BASE_URL, 'type_save', [
+    'name' => 'Ticket', 'description' => 'Concert tickets', 'sort_order' => 2,
+], $CSRF, $COOKIE_FILE);
+
+// 5d. List types now has 2, Photo no longer unmapped
+assertJson('type_list has 2 categories', apiGet($BASE_URL, 'type_list', [], $COOKIE_FILE), 200, function ($d) {
+    if (count($d['types']) !== 2) return "Expected 2 types, got " . count($d['types']);
+    if (in_array('Photo', $d['unmapped'])) return 'Photo should not be unmapped now';
+    return null;
+});
+
+// 5e. type_members_report
+assertJson('type_members_report', apiGet($BASE_URL, 'type_members_report', [], $COOKIE_FILE), 200, function ($d) {
+    return isset($d['by_type']) ? null : 'Missing by_type field';
+});
+
+// 5f. Update type category
+assertJson('Update type category', apiPost($BASE_URL, 'type_save', [
+    'id' => $typeId, 'name' => 'Photo', 'description' => 'Updated description', 'sort_order' => 10,
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// 5g. Delete type category
+assertJson('Delete type category', apiPost($BASE_URL, 'type_delete', ['id' => $typeId], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// 5h. Delete without ID → error
+assertJson('Delete type without ID → error', apiPost($BASE_URL, 'type_delete', [], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 6 — Users
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('6. Users');
+
+// 6a. List users
+assertJson('List users', usersApiGet($BASE_URL, 'list', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['users'])) return 'Missing users field';
+    if (count($d['users']) < 1) return 'Expected at least 1 user (admin)';
+    $roles = array_column($d['users'], 'username');
+    if (!in_array('admin', $roles)) return 'admin not in users list';
+    return null;
+});
+
+// 6b. Create regular user
+$res = usersApiPost($BASE_URL, 'save', [
+    'username'     => 'testuser',
+    'display_name' => 'Test User',
+    'password'     => 'UserPassword123!',
+    'role'         => 'user',
+], $CSRF, $COOKIE_FILE);
+$newUserId = null;
+assertJson('Create user', $res, 200, function ($d) use (&$newUserId) {
+    if (empty($d['success'])) return 'Expected success=true';
+    $newUserId = (int)$d['id'];
+    return null;
+});
+
+// 6c. Password too short → error
+assertJson('Create user short password → error', usersApiPost($BASE_URL, 'save', [
+    'username' => 'shortpw', 'display_name' => 'Short', 'password' => 'short', 'role' => 'user',
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 6d. Missing username → error
+assertJson('Create user missing username → error', usersApiPost($BASE_URL, 'save', [
+    'username' => '', 'display_name' => 'No Username', 'password' => 'ValidPass123!', 'role' => 'user',
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 6e. Update user (change display name only)
+assertJson('Update user display name', usersApiPost($BASE_URL, 'save', [
+    'id' => $newUserId, 'username' => 'testuser', 'display_name' => 'Updated User', 'password' => '', 'role' => 'user',
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// 6f. Change own password
+assertJson('Change admin password', usersApiPost($BASE_URL, 'change_password', [
+    'current_password' => $ADMIN_PASS,
+    'new_password'     => 'NewAdminPass456!',
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+// Restore admin password for subsequent tests
+usersApiPost($BASE_URL, 'change_password', [
+    'current_password' => 'NewAdminPass456!',
+    'new_password'     => $ADMIN_PASS,
+], $CSRF, $COOKIE_FILE);
+
+// 6g. Wrong current password → error
+assertJson('Change password wrong current → error', usersApiPost($BASE_URL, 'change_password', [
+    'current_password' => 'WrongCurrentPass!',
+    'new_password'     => 'ValidNewPass123!',
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 6h. New password too short → error
+assertJson('Change password too short → error', usersApiPost($BASE_URL, 'change_password', [
+    'current_password' => $ADMIN_PASS,
+    'new_password'     => 'short',
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 6i. Non-admin cannot delete users
+// Login as testuser
+$userCookie = tempnam(sys_get_temp_dir(), 'numa_user_');
+$userPage   = httpGet("{$BASE_URL}/login.php", $userCookie);
+$userCsrf   = extractCsrfToken($userPage['body']);
+httpPost("{$BASE_URL}/login.php", [
+    'username' => 'testuser', 'password' => 'UserPassword123!', 'csrf_token' => $userCsrf,
+], $userCookie);
+
+assertJson('Non-admin delete → 403', usersApiPost($BASE_URL, 'delete', ['id' => 1], $userCsrf, $userCookie), 403, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+unlink($userCookie);
+
+// 6j. Cannot delete yourself
+assertJson('Cannot delete self → error', usersApiPost($BASE_URL, 'delete', ['id' => 1], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 6k. Delete test user
+assertJson('Delete test user', usersApiPost($BASE_URL, 'delete', ['id' => $newUserId], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 7 — Backups (admin only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('7. Backups');
+
+// 7a. List backups (empty)
+assertJson('backup_list (empty)', apiGet($BASE_URL, 'backup_list', [], $COOKIE_FILE), 200, function ($d) {
+    if (!isset($d['backups'])) return 'Missing backups field';
+    return null;
+});
+
+// 7b. Non-admin cannot create backup
+$userCookie2 = tempnam(sys_get_temp_dir(), 'numa_user2_');
+$userPage2   = httpGet("{$BASE_URL}/login.php", $userCookie2);
+$userCsrf2   = extractCsrfToken($userPage2['body']);
+// First recreate testuser for this test
+usersApiPost($BASE_URL, 'save', [
+    'username' => 'testuser2', 'display_name' => 'Test User 2',
+    'password' => 'UserPassword123!', 'role' => 'user',
+], $CSRF, $COOKIE_FILE);
+httpPost("{$BASE_URL}/login.php", [
+    'username' => 'testuser2', 'password' => 'UserPassword123!', 'csrf_token' => $userCsrf2,
+], $userCookie2);
+
+assertJson('Non-admin backup_create → 403', apiPost($BASE_URL, 'backup_create', [], $userCsrf2, $userCookie2), 403, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+unlink($userCookie2);
+
+// Clean up testuser2
+$listRes = usersApiGet($BASE_URL, 'list', [], $COOKIE_FILE);
+$listData = json_decode($listRes['body'], true);
+foreach ($listData['users'] ?? [] as $u) {
+    if ($u['username'] === 'testuser2') {
+        usersApiPost($BASE_URL, 'delete', ['id' => $u['id']], $CSRF, $COOKIE_FILE);
+        break;
+    }
+}
+
+// 7c. Create backup
+$backupFilename = null;
+assertJson('backup_create', apiPost($BASE_URL, 'backup_create', ['label' => 'test_backup'], $CSRF, $COOKIE_FILE), 200, function ($d) use (&$backupFilename) {
+    if (empty($d['success']))  return 'Expected success=true';
+    if (empty($d['filename'])) return 'Missing filename in response';
+    $backupFilename = $d['filename'];
+    return null;
+});
+
+// 7d. Backup appears in list
+assertJson('backup_list shows created backup', apiGet($BASE_URL, 'backup_list', [], $COOKIE_FILE), 200, function ($d) use ($backupFilename) {
+    $filenames = array_column($d['backups'], 'filename');
+    if (!in_array($backupFilename, $filenames)) return "Backup {$backupFilename} not in list";
+    return null;
+});
+
+// 7e. Download backup
+if ($backupFilename) {
+    $dlRes = httpGet("{$BASE_URL}/api.php?action=backup_download&filename=" . urlencode($backupFilename), $COOKIE_FILE);
+    assertStatus('backup_download', $dlRes, 200);
+} else {
+    fail('backup_download', 'Skipped — no backup filename (backup_create failed)');
+}
+
+// 7f. Download non-existent backup → 404
+$dlBad = httpGet("{$BASE_URL}/api.php?action=backup_download&filename=nonexistent.sqlite", $COOKIE_FILE);
+assertStatus('backup_download missing file → 404', $dlBad, 404);
+
+// 7g. Restore backup
+if ($backupFilename) {
+    assertJson('backup_restore', apiPost($BASE_URL, 'backup_restore', ['filename' => $backupFilename], $CSRF, $COOKIE_FILE), 200, function ($d) {
+        return empty($d['success']) ? 'Expected success=true' : null;
+    });
+
+    // 7h. After restore, items still exist (backup was taken after items were created)
+    assertJson('Items survive backup restore', apiGet($BASE_URL, 'list', [], $COOKIE_FILE), 200, function ($d) {
+        if ($d['total'] < 1) return "Expected items after restore, got {$d['total']}";
+        return null;
+    });
+
+    // 7i. Delete original backup (restore auto-creates a pre-restore backup)
+    assertJson('backup_delete', apiPost($BASE_URL, 'backup_delete', ['filename' => $backupFilename], $CSRF, $COOKIE_FILE), 200, function ($d) {
+        return empty($d['success']) ? 'Expected success=true' : null;
+    });
+} else {
+    fail('backup_restore',  'Skipped — no backup filename');
+    fail('backup_delete',   'Skipped — no backup filename');
+}
+
+// 7j. Unknown action → 400
+assertJson('Unknown action → 400', apiGet($BASE_URL, 'unknown_action', [], $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUMMARY
+// ─────────────────────────────────────────────────────────────────────────────
+
+$total = $PASS + $FAIL;
+echo "\n" . bold('=== Results ===') . "\n";
+echo green("  Passed: {$PASS}") . " / {$total}\n";
+
+if ($FAIL > 0) {
+    echo red("  Failed: {$FAIL}") . " / {$total}\n\n";
+    echo bold("Failed tests:\n");
+    foreach ($ERRORS as $e) {
+        echo '  ' . red('•') . " {$e}\n";
+    }
+    echo "\n";
+    exit(1);
+} else {
+    echo "\n  " . green('All tests passed!') . "\n\n";
+    exit(0);
+}

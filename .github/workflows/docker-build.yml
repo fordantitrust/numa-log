@@ -1,4 +1,4 @@
-name: Build Docker Image
+name: CI
 
 on:
   push:
@@ -10,8 +10,33 @@ env:
   IMAGE_NAME: numa-log
 
 jobs:
-  build:
+  # ── Job 1: Integration tests ─────────────────────────────────────────────────
+  test:
+    name: Integration Tests
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, curl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: php composer.phar install --no-interaction --no-progress --prefer-dist
+
+      - name: Run integration tests
+        run: php tests/run.php
+
+  # ── Job 2: Docker build (runs only after tests pass) ─────────────────────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Checkout code
