@@ -27,7 +27,7 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: php composer.phar install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run integration tests
         run: php tests/run.php
