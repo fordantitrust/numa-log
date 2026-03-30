@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.3.11');
+define('APP_VERSION', '1.3.12');
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;

@@ -664,9 +664,10 @@ async function cloneItem(id) {
     const res = await api('api.php?action=get&id=' + id);
     if (res.error) { alert(res.error); return; }
     const d = res.data;
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
     $('itemId').value = '';
-    $('itemOrderDate').value = d.order_date || '';
-    $('itemEventDate').value = d.event_date || '';
+    $('itemOrderDate').value = today;
+    $('itemEventDate').value = today;
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
     $('itemType').value = d.type;

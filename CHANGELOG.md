@@ -4,13 +4,20 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.3.12 (2026-03-30)
+
+### Changed
+- **Clone Item** — Order Date and Event Date are now set to the current date instead of being copied from the original item
+
+---
+
 ## v1.3.11 (2026-03-05)
 
 Timezone fix release.
 
 ### Fixed
-- **Timezone (Asia/Bangkok)** — เพิ่ม `date_default_timezone_set('Asia/Bangkok')` ใน `config.php` เพื่อให้ PHP `date()` และ function เวลาทุกตัวใช้เวลาไทย (UTC+7) ครอบคลุมทั้ง local และ Docker environment
-- **Dockerfile timezone** — เพิ่มการตั้ง OS timezone (`/etc/localtime` → `Asia/Bangkok`) และ `date.timezone = Asia/Bangkok` ใน `security.ini` เพื่อให้ timezone ถูกต้องในทุก layer ของ Docker image (ไม่ต้องพึ่ง `TZ` env var จาก docker-compose เพียงอย่างเดียว)
+- **Timezone (Asia/Bangkok)** — Added `date_default_timezone_set('Asia/Bangkok')` in `config.php` so that PHP `date()` and all time functions use Thai time (UTC+7), covering both local and Docker environments
+- **Dockerfile timezone** — Added OS timezone configuration (`/etc/localtime` → `Asia/Bangkok`) and `date.timezone = Asia/Bangkok` in `security.ini` to ensure correct timezone at every layer of the Docker image (no longer reliant solely on the `TZ` env var from docker-compose)
 
 ---
 
@@ -19,13 +26,13 @@ Timezone fix release.
 Docker security hardening release.
 
 ### Changed
-- **Multi-stage Docker build** — แยก builder stage (compile PHP extensions + Composer) ออกจาก runtime stage เพื่อตัด `git`, `unzip`, และ Composer binary ออกจาก final image
-- **PHP security hardening** (`security.ini`) — เพิ่ม `expose_php=Off`, `display_errors=Off`, `log_errors` → stderr, `disable_functions` สำหรับ shell execution, session cookie hardening
-- **Apache security hardening** (`hardening.conf`) — เพิ่ม `ServerTokens Prod`, `ServerSignature Off`, `TraceEnable Off`, และ security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`)
-- **File permissions** — ใช้ `find` แยก permission ระหว่าง file (644) และ directory (755) แทน `chmod -R`
-- **HEALTHCHECK** — เพิ่ม Docker health check ด้วย `curl` ทุก 30 วินาที
-- **`--no-install-recommends`** — ลด package footprint ใน apt install ทุกขั้นตอน
-- **`.dockerignore`** — เพิ่ม exclusion สำหรับ `.claude/`, `.vscode/`, `Dockerfile`, `docker-compose*`, `tests/`, `*.log`, `*.xlsx`, `*.csv`
+- **Multi-stage Docker build** — Separated the builder stage (compile PHP extensions + Composer) from the runtime stage to remove `git`, `unzip`, and the Composer binary from the final image
+- **PHP security hardening** (`security.ini`) — Added `expose_php=Off`, `display_errors=Off`, `log_errors` → stderr, `disable_functions` for shell execution, and session cookie hardening
+- **Apache security hardening** (`hardening.conf`) — Added `ServerTokens Prod`, `ServerSignature Off`, `TraceEnable Off`, and security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`)
+- **File permissions** — Used `find` to set permissions separately for files (644) and directories (755) instead of `chmod -R`
+- **HEALTHCHECK** — Added Docker health check via `curl` every 30 seconds
+- **`--no-install-recommends`** — Reduced package footprint in all apt install steps
+- **`.dockerignore`** — Added exclusions for `.claude/`, `.vscode/`, `Dockerfile`, `docker-compose*`, `tests/`, `*.log`, `*.xlsx`, `*.csv`
 
 ---
 

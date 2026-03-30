@@ -154,7 +154,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.11 — Timezone fix: set `Asia/Bangkok` in PHP (`date_default_timezone_set`), Dockerfile OS timezone, and PHP ini (`date.timezone`).
+**Latest:** v1.3.12 — Clone Item now sets Order Date and Event Date to the current date instead of copying from the original item.
 
 ## License
 
