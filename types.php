@@ -185,7 +185,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const fmt = n => new Intl.NumberFormat('th-TH').format(n);
+const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 let allTypes = [];
 
 document.addEventListener('DOMContentLoaded', () => {

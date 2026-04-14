@@ -562,7 +562,7 @@ async function loadData() {
 }
 
 function formatNumber(n) {
-    return new Intl.NumberFormat('th-TH').format(n);
+    return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 }
 
 function formatDate(d) {

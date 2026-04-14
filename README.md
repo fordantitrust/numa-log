@@ -154,8 +154,19 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.3.12 — Clone Item now sets Order Date and Event Date to the current date instead of copying from the original item.
+**Latest:** v1.4.0 — All currency amounts now display with exactly 2 decimal places (e.g., ฿1,234.56) across all pages.
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+
+---
+
+### ❤️ Donation & Sponsorship
+
+If this project has been useful to you, consider supporting its continued development:
+
+- **GitHub Sponsors**: Sponsor the project directly on GitHub
+
+Your support helps keep the project actively maintained and free for the community.

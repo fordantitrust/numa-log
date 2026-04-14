@@ -4,6 +4,15 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.4.0 (2026-04-12)
+
+Decimal formatting release.
+
+### Changed
+- **Amount formatting** — All currency amounts are now displayed with exactly 2 decimal places (e.g., ฿1,234.56 instead of ฿1,234.6). Applied to Items page (`index.php`), Idols page (`idols.php`), Report page (`report.php`), and Types page (`types.php`) using `Intl.NumberFormat` with `minimumFractionDigits: 2` and `maximumFractionDigits: 2`
+
+---
+
 ## v1.3.12 (2026-03-30)
 
 ### Changed

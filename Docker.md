@@ -1,4 +1,4 @@
-# Dockerfile — v1.3.10
+# Dockerfile — v1.4.0
 
 > สรุปการปรับปรุง Dockerfile ตามแนวทาง Docker Security Best Practices
 

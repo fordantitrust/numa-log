@@ -636,7 +636,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const fmt = n => new Intl.NumberFormat('th-TH').format(n);
+const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const COLORS = [
     '#7c3aed','#ec4899','#f59e0b','#10b981','#3b82f6',
     '#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16',
