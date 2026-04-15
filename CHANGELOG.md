@@ -4,6 +4,13 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.4.1 (2026-04-15)
+
+### Fixed
+- **Qty and Item counts showing decimal places** — `formatNumber` / `fmt` functions were changed globally in v1.4.0 to enforce 2 decimal places, which incorrectly affected integer fields such as item counts and quantities. Fixed by introducing separate `formatInt` / `fmtInt` functions (no decimal places) for count/qty values, while keeping `formatNumber` / `fmt` with 2 decimal places exclusively for currency amounts (`index.php`, `report.php`)
+
+---
+
 ## v1.4.0 (2026-04-12)
 
 Decimal formatting release.

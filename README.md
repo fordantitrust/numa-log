@@ -154,7 +154,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.4.0 — All currency amounts now display with exactly 2 decimal places (e.g., ฿1,234.56) across all pages.
+**Latest:** v1.4.1 — Fixed Qty and Item counts incorrectly showing 2 decimal places (regression from v1.4.0).
 
 ## License
 

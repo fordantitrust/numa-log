@@ -565,6 +565,10 @@ function formatNumber(n) {
     return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 }
 
+function formatInt(n) {
+    return new Intl.NumberFormat('th-TH').format(n);
+}
+
 function formatDate(d) {
     if (!d) return '<span class="text-muted">-</span>';
     const dt = new Date(d + 'T00:00:00');
@@ -607,7 +611,7 @@ function renderTable(res) {
 function renderPagination(res) {
     const pg = $('pagination');
     const { page, total_pages } = res;
-    $('pageInfo').textContent = `Showing ${((page-1)*res.per_page)+1}-${Math.min(page*res.per_page, res.total)} of ${formatNumber(res.total)} items`;
+    $('pageInfo').textContent = `Showing ${((page-1)*res.per_page)+1}-${Math.min(page*res.per_page, res.total)} of ${formatInt(res.total)} items`;
 
     if (total_pages <= 1) { pg.innerHTML = ''; return; }
 
@@ -627,8 +631,8 @@ function renderPagination(res) {
 }
 
 function renderSummary(res) {
-    $('sumTotal').textContent = formatNumber(res.total);
-    $('sumQty').textContent = formatNumber(res.summary.total_qty);
+    $('sumTotal').textContent = formatInt(res.total);
+    $('sumQty').textContent = formatInt(res.summary.total_qty);
     $('sumPrice').textContent = '฿' + formatNumber(res.summary.total_price);
     const avg = res.total > 0 ? Math.round(res.summary.total_price / res.total) : 0;
     $('sumAvg').textContent = '฿' + formatNumber(avg);

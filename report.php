@@ -637,6 +637,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+const fmtInt = n => new Intl.NumberFormat('th-TH').format(n);
 const COLORS = [
     '#7c3aed','#ec4899','#f59e0b','#10b981','#3b82f6',
     '#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16',
@@ -707,14 +708,14 @@ async function loadMonthly() {
                     callbacks: {
                         label: ctx => {
                             if (ctx.dataset.yAxisID === 'y') return `Spending: ฿${fmt(ctx.raw)}`;
-                            return `Qty: ${fmt(ctx.raw)}`;
+                            return `Qty: ${fmtInt(ctx.raw)}`;
                         }
                     }
                 }
             },
             scales: {
                 y: { position: 'left', ticks: { callback: v => '฿' + fmt(v) } },
-                y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => fmt(v) + ' pcs' } },
+                y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => fmtInt(v) + ' pcs' } },
             }
         }
     });
@@ -730,8 +731,8 @@ async function loadMonthly() {
     $('tableMonthly').innerHTML = data.map(r => `
         <tr style="cursor:pointer" onclick="showDailyDetail('${r.month}')">
             <td><a href="#" class="text-decoration-none" onclick="return false">${formatMonth(r.month)}</a></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
         </tr>
     `).join('');
@@ -739,8 +740,8 @@ async function loadMonthly() {
     $('footMonthly').innerHTML = `
         <tr>
             <td>Total</td>
-            <td class="text-end">${fmt(totals.items)}</td>
-            <td class="text-end">${fmt(totals.qty)}</td>
+            <td class="text-end">${fmtInt(totals.items)}</td>
+            <td class="text-end">${fmtInt(totals.qty)}</td>
             <td class="text-end">${fmt(totals.price)}</td>
         </tr>`;
 
@@ -777,8 +778,8 @@ async function loadDaily(month) {
     const totQty = data.reduce((s, r) => s + Number(r.total_qty), 0);
     const totPrice = data.reduce((s, r) => s + Number(r.total_price), 0);
     $('dailyDays').textContent = data.length;
-    $('dailyItems').textContent = fmt(totItems);
-    $('dailyQty').textContent = fmt(totQty);
+    $('dailyItems').textContent = fmtInt(totItems);
+    $('dailyQty').textContent = fmtInt(totQty);
     $('dailySpent').textContent = '฿' + fmt(totPrice);
 
     // Chart
@@ -813,12 +814,12 @@ async function loadDaily(month) {
             plugins: {
                 tooltip: { callbacks: { label: ctx => {
                     if (ctx.dataset.yAxisID === 'y') return `Spending: ฿${fmt(ctx.raw)}`;
-                    return `Qty: ${fmt(ctx.raw)}`;
+                    return `Qty: ${fmtInt(ctx.raw)}`;
                 }}}
             },
             scales: {
                 y: { position: 'left', ticks: { callback: v => '฿' + fmt(v) } },
-                y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => fmt(v) + ' pcs' } },
+                y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => fmtInt(v) + ' pcs' } },
             }
         }
     });
@@ -827,8 +828,8 @@ async function loadDaily(month) {
     $('tableDaily').innerHTML = data.map(r => `
         <tr>
             <td><a href="index.php?date_from=${r.day}&date_to=${r.day}" class="text-decoration-none">${formatDay(r.day)}</a></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
         </tr>
     `).join('');
@@ -836,8 +837,8 @@ async function loadDaily(month) {
     $('footDaily').innerHTML = `
         <tr>
             <td>Total (${data.length} days)</td>
-            <td class="text-end">${fmt(totItems)}</td>
-            <td class="text-end">${fmt(totQty)}</td>
+            <td class="text-end">${fmtInt(totItems)}</td>
+            <td class="text-end">${fmtInt(totQty)}</td>
             <td class="text-end">${fmt(totPrice)}</td>
         </tr>`;
 
@@ -873,8 +874,8 @@ async function loadDaily(month) {
         return `<tr>
             <td>${i + 1}</td>
             <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -886,8 +887,8 @@ async function loadDaily(month) {
     const typeTotQty = byType.reduce((s, r) => s + Number(r.total_qty), 0);
     const typeTotPrice = byType.reduce((s, r) => s + Number(r.total_price), 0);
     $('footDailyType').innerHTML = `<tr><td></td><td>Total</td>
-        <td class="text-end">${fmt(typeTotItems)}</td>
-        <td class="text-end">${fmt(typeTotQty)}</td>
+        <td class="text-end">${fmtInt(typeTotItems)}</td>
+        <td class="text-end">${fmtInt(typeTotQty)}</td>
         <td class="text-end">${fmt(typeTotPrice)}</td>
         <td><span class="small text-muted">100%</span></td></tr>`;
 
@@ -930,8 +931,8 @@ async function loadDaily(month) {
             <td>${i + 1}</td>
             <td><a href="#" class="text-decoration-none fw-semibold"
                 onclick="document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol)}'),200);return false">${escHtml(r.idol)}</a></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -942,8 +943,8 @@ async function loadDaily(month) {
     const idolTotItems = byIdol.reduce((s, r) => s + Number(r.items), 0);
     const idolTotQty = byIdol.reduce((s, r) => s + Number(r.total_qty), 0);
     $('footDailyIdol').innerHTML = `<tr><td></td><td>Total</td>
-        <td class="text-end">${fmt(idolTotItems)}</td>
-        <td class="text-end">${fmt(idolTotQty)}</td>
+        <td class="text-end">${fmtInt(idolTotItems)}</td>
+        <td class="text-end">${fmtInt(idolTotQty)}</td>
         <td class="text-end">${fmt(idolTotPrice)}</td>
         <td><span class="small text-muted">100%</span></td></tr>`;
 }
@@ -1041,8 +1042,8 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
         <tr>
             <td class="${rankClass}">${rank}</td>
             <td>${nameHtml}</td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td>
                 <div class="d-flex align-items-center gap-1">
@@ -1059,8 +1060,8 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
         <tr>
             <td></td>
             <td>Total</td>
-            <td class="text-end">${fmt(totals.items)}</td>
-            <td class="text-end">${fmt(totals.qty)}</td>
+            <td class="text-end">${fmtInt(totals.items)}</td>
+            <td class="text-end">${fmtInt(totals.qty)}</td>
             <td class="text-end">${fmt(totals.price)}</td>
             <td><span class="small text-muted">100%</span></td>
         </tr>`;
@@ -1096,8 +1097,8 @@ async function showIdolDetail(idol) {
     const totItems = byType.reduce((s, r) => s + Number(r.items), 0);
     const totQty = byType.reduce((s, r) => s + Number(r.total_qty), 0);
     const totPrice = byType.reduce((s, r) => s + Number(r.total_price), 0);
-    $('idolDetItems').textContent = fmt(totItems);
-    $('idolDetQty').textContent = fmt(totQty);
+    $('idolDetItems').textContent = fmtInt(totItems);
+    $('idolDetQty').textContent = fmtInt(totQty);
     $('idolDetSpent').textContent = '฿' + fmt(totPrice);
     $('idolDetAvg').textContent = '฿' + fmt(totItems > 0 ? Math.round(totPrice / totItems) : 0);
 
@@ -1133,8 +1134,8 @@ async function showIdolDetail(idol) {
         return `<tr>
             <td>${i + 1}</td>
             <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -1145,8 +1146,8 @@ async function showIdolDetail(idol) {
 
     $('footIdolDetailType').innerHTML = `<tr>
         <td></td><td>Total</td>
-        <td class="text-end">${fmt(totItems)}</td>
-        <td class="text-end">${fmt(totQty)}</td>
+        <td class="text-end">${fmtInt(totItems)}</td>
+        <td class="text-end">${fmtInt(totQty)}</td>
         <td class="text-end">${fmt(totPrice)}</td>
         <td><span class="small text-muted">100%</span></td>
     </tr>`;
@@ -1186,16 +1187,16 @@ async function showIdolDetail(idol) {
         const url = 'index.php?idol=' + encodeURIComponent(idol) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
         return `<tr>
             <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
         </tr>`;
     }).join('');
 
     $('footIdolDetailMonth').innerHTML = `<tr>
         <td>Total</td>
-        <td class="text-end">${fmt(mTotals.items)}</td>
-        <td class="text-end">${fmt(mTotals.qty)}</td>
+        <td class="text-end">${fmtInt(mTotals.items)}</td>
+        <td class="text-end">${fmtInt(mTotals.qty)}</td>
         <td class="text-end">${fmt(mTotals.price)}</td>
     </tr>`;
 }
@@ -1259,8 +1260,8 @@ async function loadGroup() {
             <td class="${rankClass}">${rank}</td>
             <td><strong>${escHtml(r.name)}</strong>${medal}</td>
             <td>${catBadge(r.category)}</td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -1271,8 +1272,8 @@ async function loadGroup() {
 
     $('footGroup').innerHTML = `<tr>
         <td></td><td>Total</td><td></td>
-        <td class="text-end">${fmt(totals.items)}</td>
-        <td class="text-end">${fmt(totals.qty)}</td>
+        <td class="text-end">${fmtInt(totals.items)}</td>
+        <td class="text-end">${fmtInt(totals.qty)}</td>
         <td class="text-end">${fmt(totals.price)}</td>
         <td><span class="small text-muted">100%</span></td>
     </tr>`;
@@ -1303,8 +1304,8 @@ async function showGroupMembers(idx) {
         return `<tr>
             <td>${i + 1}</td>
             <td><a href="#" class="text-decoration-none fw-semibold" onclick="event.stopPropagation();document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol)}'),200);return false">${escHtml(r.idol)}</a></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -1360,8 +1361,8 @@ async function loadCompany() {
         return `<tr style="cursor:pointer" onclick="showCompanyGroups(${i})">
             <td class="${rankClass}">${rank}</td>
             <td><strong>${escHtml(r.name)}</strong>${medal}</td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -1372,8 +1373,8 @@ async function loadCompany() {
 
     $('footCompany').innerHTML = `<tr>
         <td></td><td>Total</td>
-        <td class="text-end">${fmt(totals.items)}</td>
-        <td class="text-end">${fmt(totals.qty)}</td>
+        <td class="text-end">${fmtInt(totals.items)}</td>
+        <td class="text-end">${fmtInt(totals.qty)}</td>
         <td class="text-end">${fmt(totals.price)}</td>
         <td><span class="small text-muted">100%</span></td>
     </tr>`;
@@ -1404,8 +1405,8 @@ function showCompanyGroups(idx) {
         return `<tr>
             <td>${i + 1}</td>
             <td>${catBadge(r.category)} <strong>${escHtml(r.name)}</strong></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -1429,8 +1430,8 @@ async function showTypeDetail(type) {
     const totQty   = members.reduce((s, r) => s + r.total_qty, 0);
     const totPrice = members.reduce((s, r) => s + r.total_price, 0);
 
-    $('typeDetItems').textContent   = fmt(totItems);
-    $('typeDetQty').textContent     = fmt(totQty);
+    $('typeDetItems').textContent   = fmtInt(totItems);
+    $('typeDetQty').textContent     = fmtInt(totQty);
     $('typeDetSpent').textContent   = '฿' + fmt(totPrice);
     $('typeDetMembers').textContent = members.length;
 
@@ -1450,8 +1451,8 @@ async function showTypeDetail(type) {
                 onclick="document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(m.member)}'),200);return false">${escHtml(m.member)}</a></td>
             <td class="text-muted">${m.group ? escHtml(m.group) : '-'}</td>
             <td class="text-muted">${m.company ? escHtml(m.company) : '-'}</td>
-            <td class="text-end">${fmt(m.items_count)}</td>
-            <td class="text-end">${fmt(m.total_qty)}</td>
+            <td class="text-end">${fmtInt(m.items_count)}</td>
+            <td class="text-end">${fmtInt(m.total_qty)}</td>
             <td class="text-end">${fmt(m.total_price)}</td>
             <td><div class="d-flex align-items-center gap-1">
                 <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
@@ -1462,8 +1463,8 @@ async function showTypeDetail(type) {
 
     $('footTypeDetail').innerHTML = `<tr>
         <td></td><td>Total</td><td></td><td></td>
-        <td class="text-end">${fmt(totItems)}</td>
-        <td class="text-end">${fmt(totQty)}</td>
+        <td class="text-end">${fmtInt(totItems)}</td>
+        <td class="text-end">${fmtInt(totQty)}</td>
         <td class="text-end">${fmt(totPrice)}</td>
         <td><span class="small text-muted">100%</span></td>
     </tr>`;
@@ -1503,16 +1504,16 @@ async function showTypeDetail(type) {
         const url = 'index.php?type=' + encodeURIComponent(type) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
         return `<tr>
             <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
-            <td class="text-end">${fmt(r.items)}</td>
-            <td class="text-end">${fmt(r.total_qty)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
         </tr>`;
     }).join('') || '<tr><td colspan="4" class="text-center text-muted py-2">No data</td></tr>';
 
     $('footTypeDetailMonth').innerHTML = `<tr>
         <td>Total</td>
-        <td class="text-end">${fmt(mTotals.items)}</td>
-        <td class="text-end">${fmt(mTotals.qty)}</td>
+        <td class="text-end">${fmtInt(mTotals.items)}</td>
+        <td class="text-end">${fmtInt(mTotals.qty)}</td>
         <td class="text-end">${fmt(mTotals.price)}</td>
     </tr>`;
 }
