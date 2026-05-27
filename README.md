@@ -50,6 +50,9 @@ docker compose up -d
 
 - Hierarchical tree view: Company > Group/Unit > Member
 - CRUD for idol entities with category and parent assignment
+- **Display hint** field for distinguishing same-name members (e.g. "Yuna [ITZY]" vs "Yuna [AKB48]"). Soft-suggest fires when a collision is detected
+- **Membership panel** inside member entity — track each (member, group, start_date, end_date) period; "Move to new group" shortcut closes the current membership and starts a new one in one click; primary vs sub-unit toggle
+- **Ambiguous mappings panel** — surfaces items whose `idol` text matches multiple entities, with a one-click bulk-remap UI
 - Stats showing items count, quantity, and spending per entity
 - Unmapped names panel — idol names in items not yet linked to any entity, with quick-add button
 - Re-seed button (admin only, requires `ALLOW_RESEED`)
@@ -154,7 +157,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.4.1 — Fixed Qty and Item counts incorrectly showing 2 decimal places (regression from v1.4.0).
+**Latest:** v1.5.0 — Membership history + ID-based idol reference. Track members across group moves, allow same-name members from different groups, and aggregate reports by the group in effect at the time of purchase.
 
 ## License
 

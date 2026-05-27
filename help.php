@@ -235,6 +235,9 @@
                                     <div class="tip-box">
                                         <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> ช่อง Idol และ Type เป็น searchable dropdown สามารถพิมพ์ชื่อเพื่อค้นหาได้ หรือพิมพ์ชื่อใหม่ได้เลยโดยไม่ต้องเพิ่มในหน้า Idols/Types ก่อน
                                     </div>
+                                    <div class="tip-box mt-2" style="background:#fff7ed;border-left:3px solid #f59e0b">
+                                        <i class="bi bi-info-circle"></i> <strong>v1.5:</strong> ถ้าชื่อ Idol ที่พิมพ์ตรงกับสมาชิกหลายคน (เช่น "Yuna" ใน ITZY และ AKB48) ฟอร์มจะขึ้นรายการ candidate ใต้ช่อง Idol ให้เลือกว่าหมายถึงคนไหน เมื่อเลือกแล้วระบบจะ save ให้อัตโนมัติ
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -360,25 +363,121 @@
                         <div class="feature-icon feature-icon-blue"><i class="bi bi-people"></i></div>
                         <h4 class="mb-0">จัดการข้อมูลไอดอล</h4>
                     </div>
-                    <p class="text-muted">จัดการโครงสร้างลำดับชั้นของไอดอล</p>
+                    <p class="text-muted">จัดการโครงสร้างลำดับชั้นของไอดอล &mdash; ตั้งแต่ v1.5 รองรับการย้ายวงและชื่อซ้ำ</p>
 
                     <h6>โครงสร้างลำดับชั้น</h6>
                     <div class="border rounded p-3 mb-3" style="background:#f9fafb; font-family: monospace; font-size:13px;">
                         <i class="bi bi-building"></i> <strong>Company</strong> (ค่าย)<br>
                         <span class="ms-3"><i class="bi bi-people"></i> <strong>Group / Unit</strong> (กลุ่ม / ยูนิต)</span><br>
-                        <span class="ms-5"><i class="bi bi-person"></i> <strong>Member</strong> (สมาชิก)</span>
+                        <span class="ms-5"><i class="bi bi-person"></i> <strong>Member</strong> (สมาชิก) &mdash; ผูกกับวงผ่าน <strong>Membership</strong> (มีช่วงเวลา)</span>
                     </div>
 
-                    <h6>วิธีเพิ่มข้อมูล</h6>
-                    <ol>
-                        <li>กดปุ่ม <span class="shortcut-key">Add Entity</span></li>
-                        <li>กรอก <strong>Name</strong>, เลือก <strong>Category</strong> (company / group / unit / member)</li>
-                        <li>เลือก <strong>Parent</strong> (สังกัด) เช่น สมาชิกอยู่ใต้กลุ่มไหน</li>
-                        <li>กดปุ่ม <strong>Save</strong></li>
-                    </ol>
+                    <div class="accordion" id="accIdols">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#idolAdd">
+                                    <i class="bi bi-plus-circle me-2"></i> เพิ่ม / แก้ไข Entity
+                                </button>
+                            </h2>
+                            <div id="idolAdd" class="accordion-collapse collapse show" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>กดปุ่ม <span class="shortcut-key">Add Entity</span></li>
+                                        <li>กรอก <strong>Name</strong>, เลือก <strong>Category</strong> (company / group / unit / member)</li>
+                                        <li>เลือก <strong>Parent</strong> (สังกัดเริ่มต้น) &mdash; สำหรับ Member จะใช้เป็นกลุ่มหลักอัตโนมัติ</li>
+                                        <li><strong>Display Hint</strong> (ทางเลือก) &mdash; ใส่ label สั้น ๆ เช่น <code>ITZY</code>, <code>AKB48 Team A</code> เพื่อแยกเวลามีชื่อซ้ำ</li>
+                                        <li>กดปุ่ม <strong>Save</strong> &mdash; ถ้าเป็น Member ระบบจะสร้าง Primary Membership ให้อัตโนมัติจาก Parent</li>
+                                    </ol>
+                                    <div class="tip-box">
+                                        <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> ถ้าตั้งชื่อซ้ำกับ Member ที่มีอยู่แล้ว ระบบจะเตือนและช่วยเติม Display Hint จาก Parent ให้อัตโนมัติ (แก้ได้)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <h6>Unmapped Names</h6>
-                    <p class="small text-muted mb-0">ระบบจะตรวจจับชื่อ Idol ในรายการสินค้าที่ยังไม่ได้จัดกลุ่ม แสดงเป็นรายการพร้อมปุ่ม <strong>Quick Add</strong> เพื่อเพิ่มเข้าระบบอย่างรวดเร็ว แต่ละ entity จะแสดงสถิติจำนวนรายการและยอดใช้จ่ายรวม</p>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#idolMembership">
+                                    <i class="bi bi-arrow-left-right me-2"></i> Membership &mdash; ย้ายวง / ติดตามประวัติสังกัด <span class="badge bg-info ms-2">v1.5</span>
+                                </button>
+                            </h2>
+                            <div id="idolMembership" class="accordion-collapse collapse" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <p>ตั้งแต่ v1.5 ทุก Member เก็บ <strong>ประวัติการสังกัด</strong> เป็นช่วงเวลา (start_date &rarr; end_date) ทำให้รายงาน By Group แยก items ก่อน/หลังย้ายวงได้อย่างถูกต้องโดยอัตโนมัติ ตามวันที่ใน Order Date ของแต่ละ item</p>
+
+                                    <h6 class="mt-3">ดูและจัดการ Memberships</h6>
+                                    <ol>
+                                        <li>เข้าหน้า <strong>Idols</strong> แล้วกดไอคอน <i class="bi bi-pencil"></i> แก้ไขที่ Member ที่ต้องการ</li>
+                                        <li>เลื่อนลงไปส่วน <strong>Memberships</strong> ในฟอร์ม &mdash; แสดงรายการ (Group, ช่วงวันที่, primary/sub-unit)</li>
+                                    </ol>
+
+                                    <h6>กรณีย้ายวง (วิธีเร็วสุด)</h6>
+                                    <ol>
+                                        <li>กดปุ่ม <span class="shortcut-key">Move to new group</span></li>
+                                        <li>เลือกวงใหม่ + ระบุวันที่ที่เริ่มสังกัดวงใหม่ (Move date)</li>
+                                        <li>กด <strong>Save</strong> &mdash; ระบบจะปิด membership ปัจจุบันที่ <em>Move date &minus; 1</em> และเปิดอันใหม่ที่ Move date โดยอัตโนมัติ</li>
+                                    </ol>
+
+                                    <h6>เพิ่ม Membership แบบกำหนดเอง</h6>
+                                    <ul>
+                                        <li>กด <span class="shortcut-key">Add membership</span> เพื่อเพิ่ม membership คู่ขนาน (เช่น sub-unit, project group)</li>
+                                        <li><strong>Primary</strong> (ติ๊กถูก) = วงหลัก ใช้คิดในรายงาน By Group / By Company &mdash; ต้องมีแค่ 1 ช่วง ณ เวลาเดียวเท่านั้น</li>
+                                        <li><strong>Sub-unit</strong> (ไม่ติ๊ก) = แสดงเฉพาะใน drill-down ของวง (ไม่นับซ้ำในยอดรวม)</li>
+                                    </ul>
+                                    <div class="tip-box">
+                                        <i class="bi bi-info-circle"></i> <strong>คำเตือน Overlap:</strong> ถ้ามี Primary 2 ช่วงซ้อนกัน ระบบจะเตือนแต่ยังบันทึกได้ (เพื่อให้แก้ไขย้อนหลังได้สะดวก)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#idolDuplicate">
+                                    <i class="bi bi-people-fill me-2"></i> ชื่อซ้ำ / Display Hint <span class="badge bg-info ms-2">v1.5</span>
+                                </button>
+                            </h2>
+                            <div id="idolDuplicate" class="accordion-collapse collapse" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <p>v1.5 อนุญาตให้มี Member ชื่อเดียวกันได้หลายคน (เช่น "Yuna" ใน ITZY และ AKB48) ระบบใช้ <strong>Display Hint</strong> ในการแยกแยะใน UI และใช้ <strong>idol_id</strong> ภายใต้ใน DB</p>
+
+                                    <h6>เวลาเพิ่ม Item ที่ชื่อ Idol ซ้ำ</h6>
+                                    <ul>
+                                        <li>ในฟอร์ม Add Item ถ้าพิมพ์ชื่อที่ตรงกับสมาชิกหลายคน ระบบจะขึ้นปุ่มให้เลือกว่าหมายถึงคนไหน เช่น <code>Yuna [ITZY]</code> หรือ <code>Yuna [AKB48]</code></li>
+                                        <li>เมื่อเลือกแล้วระบบจะผูก item เข้ากับ entity ที่ถูกต้องและ save อัตโนมัติ</li>
+                                    </ul>
+
+                                    <h6>Ambiguous Mappings (รายชื่อค้าง)</h6>
+                                    <p>หาก items เก่าที่ import มาก่อนหน้านี้ใช้ชื่อกำกวม จะค้างอยู่ใน <strong>Ambiguous Mappings panel</strong> ในหน้า Idols (ฝั่งขวา) และมี <em>banner เตือน</em> ที่หน้า Items ด้วย</p>
+                                    <ol>
+                                        <li>กดปุ่ม <span class="shortcut-key">Resolve Conflicts</span></li>
+                                        <li>ระบบจะแสดงรายชื่อกำกวมพร้อม candidate ทุกตัว</li>
+                                        <li>คลิกที่ candidate ที่ต้องการเพื่อ bulk-remap items ทุกอันที่มีชื่อเดียวกันไปยัง entity นั้น</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#idolUnmapped">
+                                    <i class="bi bi-question-circle me-2"></i> Unmapped Names &amp; Tree Stats
+                                </button>
+                            </h2>
+                            <div id="idolUnmapped" class="accordion-collapse collapse" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <h6>Unmapped Names</h6>
+                                    <p>ระบบตรวจจับชื่อ Idol ใน items ที่ยังไม่มี entity และแสดงเป็นรายการ <strong>Quick Add</strong> เพื่อสร้าง Member ใหม่ได้ในคลิกเดียว เมื่อสร้างแล้วระบบจะ <em>auto-backfill</em> idol_id ของ items ที่ใช้ชื่อตรงกันให้อัตโนมัติ (เฉพาะกรณีไม่กำกวม)</p>
+                                    <h6>Tree Stats</h6>
+                                    <ul class="mb-0">
+                                        <li>แต่ละ entity แสดงสถิติ <strong>จำนวนรายการ</strong> และ <strong>ยอดใช้จ่ายรวม</strong></li>
+                                        <li>Member ที่มีประวัติ membership มากกว่า 1 จะมีไอคอน <i class="bi bi-arrow-left-right text-info"></i> ข้างชื่อ</li>
+                                        <li>Member ที่ตั้งค่า Display Hint จะแสดงเป็น <code>Name [hint]</code> ในต้นไม้</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -551,6 +650,42 @@
                             <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accFaq">
                                 <div class="accordion-body">
                                     <p class="mb-0">เมื่อคุณบันทึกรายการสินค้าโดยพิมพ์ชื่อ Idol หรือ Type ที่ยังไม่ได้สร้างในหน้า Idols/Types ระบบจะแสดงชื่อเหล่านั้นเป็น "Unmapped Names" พร้อมปุ่ม Quick Add เพื่อให้คุณเพิ่มเข้าระบบได้อย่างรวดเร็ว การจัดกลุ่ม (map) จะช่วยให้รายงาน By Group / By Company ทำงานได้ถูกต้อง</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqMove">
+                                    <span class="badge bg-info me-2">v1.5</span> ไอดอลย้ายวง ทำยังไงให้รายงานก่อน/หลังย้ายแยกกัน?
+                                </button>
+                            </h2>
+                            <div id="faqMove" class="accordion-collapse collapse" data-bs-parent="#accFaq">
+                                <div class="accordion-body">
+                                    <ol class="mb-2">
+                                        <li>ไปหน้า <strong>Idols</strong> &rarr; กดไอคอน <i class="bi bi-pencil"></i> ที่ Member ที่ย้ายวง</li>
+                                        <li>เลื่อนลงไปส่วน <strong>Memberships</strong> &rarr; กดปุ่ม <span class="shortcut-key">Move to new group</span></li>
+                                        <li>เลือกวงใหม่ + ระบุวันที่เริ่มสังกัด (Move date) &rarr; กด Save</li>
+                                    </ol>
+                                    <p class="mb-0">ระบบจะปิด membership ปัจจุบันที่ <em>Move date &minus; 1</em> และเปิดอันใหม่ที่ Move date รายงาน By Group/By Company จะใช้ <code>order_date</code> ของแต่ละ item เทียบกับช่วง membership เพื่อ map เข้าวงที่ถูกต้องโดยอัตโนมัติ &mdash; <strong>ไม่ต้องแก้ items เก่าเอง</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqDuplicate">
+                                    <span class="badge bg-info me-2">v1.5</span> มีไอดอลชื่อซ้ำกัน 2 คน คนละวง ทำยังไง?
+                                </button>
+                            </h2>
+                            <div id="faqDuplicate" class="accordion-collapse collapse" data-bs-parent="#accFaq">
+                                <div class="accordion-body">
+                                    <p>v1.5 รองรับชื่อซ้ำได้ ใช้ <strong>Display Hint</strong> แยกใน UI:</p>
+                                    <ol>
+                                        <li>เพิ่มทั้ง 2 Member ตามปกติ ใช้ชื่อจริง (เช่น "Yuna" 2 entity)</li>
+                                        <li>กรอก <strong>Display Hint</strong> ของแต่ละคน เช่น <code>ITZY</code> และ <code>AKB48</code></li>
+                                        <li>ใน Tree View จะเห็นเป็น <code>Yuna [ITZY]</code> และ <code>Yuna [AKB48]</code></li>
+                                        <li>เวลาเพิ่ม Item ที่ชื่อกำกวม ฟอร์มจะให้เลือกว่าหมายถึงคนไหน</li>
+                                    </ol>
+                                    <p class="mb-0">หาก items เก่ามีชื่อกำกวมอยู่แล้ว ระบบจะเตือนผ่าน <strong>Ambiguous Mappings panel</strong> ที่หน้า Idols และมี banner ที่หน้า Items กดปุ่ม <span class="shortcut-key">Resolve Conflicts</span> เพื่อ map ทีละรายการ</p>
                                 </div>
                             </div>
                         </div>

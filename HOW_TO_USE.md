@@ -203,30 +203,45 @@ http://localhost/numa-log/
 
 1. กดปุ่ม **"Add Entity"**
 2. กรอกข้อมูล:
-   - **Name** - ชื่อ
-   - **Category** - ประเภท (`company`, `group`, `unit`, `member`)
-   - **Parent** - สังกัด (เช่น สมาชิกอยู่ใต้กลุ่มไหน)
-   - **Sort Order** - ลำดับการแสดงผล
-3. กดปุ่ม **"Save"**
+   - **Name** — ชื่อ (v1.5 อนุญาตให้ซ้ำได้ — ใช้ Display Hint แยก)
+   - **Category** — ประเภท (`company`, `group`, `unit`, `member`)
+   - **Parent** — สังกัดเริ่มต้น (default group ของสมาชิก)
+   - **Display Hint** — label สั้น ๆ เพื่อแยกเวลามีชื่อซ้ำ (เช่น "ITZY", "AKB48 Team A") — ระบบ auto-suggest จาก parent ให้ถ้าตรวจพบชื่อซ้ำ
+   - **Sort Order** — ลำดับการแสดงผล
+3. กดปุ่ม **"Save"** — สำหรับ Member ระบบจะสร้าง primary membership ให้อัตโนมัติจาก Parent
+
+### Membership (ตั้งแต่ v1.5)
+
+เปิดหน้าแก้ไข Member จะเห็นหมวด **Memberships** เพื่อ track ว่าสมาชิกอยู่กลุ่มไหนช่วงเวลาใด:
+
+- **Add membership** — ผูกสมาชิกกับวงอื่น พร้อมระบุ start/end date (ปล่อยว่างได้)
+- **Move to new group** — shortcut: ปิด membership ปัจจุบันที่ `move_date - 1` + เปิด membership ใหม่ในกลุ่มที่เลือก รายการสินค้าซื้อก่อนย้ายยังนับเข้าวงเก่า, ซื้อหลังย้ายขึ้นวงใหม่อัตโนมัติตามวันที่ใน `order_date`
+- **Primary vs sub-unit** — primary = นับใน By-Group/By-Company report, non-primary = ขึ้นเฉพาะ drill-down ของวง (รายการ sub-unit)
+- **คำเตือน overlap** — หากมี primary 2 แถวซ้อนช่วงกันสำหรับสมาชิกคนเดียวกัน ระบบจะบันทึกได้แต่ขึ้นข้อความเตือน
 
 ### โครงสร้างลำดับชั้น
 
 ```
 Company (ค่าย)
   └── Group / Unit (กลุ่ม / ยูนิต)
-        └── Member (สมาชิก)
+        └── Member (สมาชิก) — เชื่อมโยงกับกลุ่มผ่าน idol_memberships
 ```
 
 ### Unmapped Names (ชื่อที่ยังไม่ได้จัดกลุ่ม)
 
-- ระบบจะตรวจจับชื่อ Idol ในรายการสินค้าที่ยังไม่มีใน idol_entities
+- ระบบตรวจจับชื่อใน items ที่ยังไม่มีใน `idol_entities`
 - แสดงเป็นรายการพร้อมปุ่ม **Quick Add** เพื่อเพิ่มเข้าระบบอย่างรวดเร็ว
+
+### Ambiguous Mappings (ตั้งแต่ v1.5)
+
+ถ้าชื่อ idol ใน item ตรงกับสมาชิกหลายคน (เช่น "Yuna" มีทั้ง ITZY และ AKB48) item จะถูกพักไว้แบบ unmapped และโผล่ในแผง **Ambiguous Mappings** กดปุ่ม **Resolve Conflicts** เพื่อ bulk-map ทีละชื่อไปยัง entity ที่ถูกต้อง
 
 ### สถิติ
 
 แต่ละ entity จะแสดง:
 - จำนวนรายการ (Items)
 - ยอดใช้จ่ายรวม (Spending)
+- ไอคอน 🔄 หากสมาชิกมีประวัติ membership มากกว่า 1
 
 ---
 

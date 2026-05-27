@@ -76,7 +76,13 @@ Get a single item by ID.
 
 ### `create` — POST
 
-Create a new item.
+Create a new item. Uses the **hybrid idol resolution** policy:
+
+1. If `idol_id` is provided, the item is linked to that entity (text snapshot is overwritten with the entity name).
+2. Otherwise, the text `idol` is resolved against `idol_entities`:
+   - Unique match → `idol_id` is auto-filled.
+   - Ambiguous match → HTTP **409** with `candidates` array.
+   - No match → `idol_id` stays `NULL` (item appears as "Unassigned" in reports).
 
 **POST Body:**
 
@@ -85,15 +91,28 @@ Create a new item.
 | `order_date` | YYYY-MM-DD | Purchase date |
 | `event_date` | YYYY-MM-DD | Event date (can be empty) |
 | `title` | string | Item name |
-| `idol` | string | Idol / member name |
+| `idol` | string | Idol / member name (used when `idol_id` is omitted) |
+| `idol_id` | int | Optional — explicit reference to `idol_entities.id` (preferred) |
 | `type` | string | Item type |
 | `price_per_qty` | float | Price per unit |
 | `qty` | int | Quantity |
 | `csrf_token` | string | CSRF token |
 
-**Response:**
+**Response (success):**
 ```json
 { "success": true, "id": 43 }
+```
+
+**Response (ambiguous name, HTTP 409):**
+```json
+{
+  "error": "Ambiguous idol name — please specify idol_id",
+  "name": "Yuna",
+  "candidates": [
+    { "id": 42, "name": "Yuna", "display_hint": "ITZY",  "display": "Yuna [ITZY]" },
+    { "id": 87, "name": "Yuna", "display_hint": "AKB48", "display": "Yuna [AKB48]" }
+  ]
+}
 ```
 
 ---
@@ -185,9 +204,9 @@ Spending ranking by individual member (only `member` category entities, or all i
 
 ### `report_idol_detail` — GET
 
-Type breakdown and monthly breakdown for a single idol.
+Type breakdown and monthly breakdown for a single idol. Accepts either `idol_id` (preferred — disambiguates between same-name entities) or `idol` (legacy text match).
 
-**Query Parameters:** `idol` (string, required)
+**Query Parameters:** `idol_id` (int) **or** `idol` (string) — at least one required
 
 **Response:**
 ```json
@@ -288,22 +307,23 @@ Get all idol entities with hierarchy info and spending stats. Also returns paren
 
 ### `idol_entity_save` — POST
 
-Create or update an idol entity.
+Create or update an idol entity. For `member` entities, **a default primary membership** is auto-created from `parent_id` (one row in `idol_memberships`), and `items.idol_id` is auto-backfilled for previously-unmapped items whose name uniquely matches.
 
 **POST Body:**
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | int | Omit or `0` to create; provide to update |
-| `name` | string | Entity name (required) |
+| `name` | string | Entity name (required; duplicates allowed across the table) |
 | `category` | string | `company`, `group`, `unit`, or `member` |
 | `parent_id` | int | Parent entity ID (empty = no parent) |
 | `sort_order` | int | Display order |
+| `display_hint` | string | Optional disambiguation label (e.g. `"ITZY"`) |
 | `csrf_token` | string | CSRF token |
 
 **Response:**
 ```json
-{ "success": true, "id": 5 }
+{ "success": true, "id": 5, "backfilled_items": 3 }
 ```
 
 ---
@@ -523,4 +543,189 @@ Change your own password. Available to all authenticated users.
 **Response:**
 ```json
 { "success": true }
+```
+
+---
+
+## v5 Endpoints — Idol Resolution, Memberships, Conflict Handling
+
+### `idol_search` — GET
+
+Searchable lookup against `idol_entities`. Used by the item form to pick the right entity when names collide.
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `q` | string | — | Substring match against `name` |
+| `category` | string | `member` | `company`, `group`, `unit`, `member`, or `any` |
+
+**Response:**
+```json
+{
+  "data": [
+    { "id": 42, "name": "Yuna", "category": "member", "parent_id": 10, "display_hint": "ITZY", "display": "Yuna [ITZY]" }
+  ]
+}
+```
+
+---
+
+### `idol_resolve_name` — GET
+
+Resolve a free-text idol name to an entity (or report ambiguity).
+
+**Query Parameters:** `name` (string, required)
+
+**Response:**
+```json
+{
+  "id": null,
+  "ambiguous": true,
+  "candidates": [
+    { "id": 42, "name": "Yuna", "display_hint": "ITZY",  "display": "Yuna [ITZY]" },
+    { "id": 87, "name": "Yuna", "display_hint": "AKB48", "display": "Yuna [AKB48]" }
+  ]
+}
+```
+
+---
+
+### `item_remap` — POST
+
+Reassign a single item's `idol_id` (used by the Conflict Resolution UI).
+
+**POST Body:** `item_id` (int, required), `idol_id` (int, optional — set to empty to clear), `csrf_token`
+
+**Response:** `{ "success": true }`
+
+---
+
+### `item_bulk_remap` — POST
+
+Reassign all unmapped items with a matching `idol` text within an optional date range.
+
+**POST Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `idol_name` | string | Text to match against `items.idol` |
+| `idol_id` | int | Target entity ID |
+| `date_from` | YYYY-MM-DD | Optional lower bound on `order_date` |
+| `date_to` | YYYY-MM-DD | Optional upper bound on `order_date` |
+| `csrf_token` | string | CSRF token |
+
+**Response:** `{ "success": true, "updated": 23 }`
+
+---
+
+### `ambiguous_list` — GET
+
+List distinct `items.idol` values that are currently unmapped *and* have more than one matching member entity. Used by the Conflict Resolution UI.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "name": "Yuna",
+      "items_count": 45,
+      "candidates": [
+        { "id": 42, "name": "Yuna", "display_hint": "ITZY",  "display": "Yuna [ITZY]" },
+        { "id": 87, "name": "Yuna", "display_hint": "AKB48", "display": "Yuna [AKB48]" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### `membership_list` — GET
+
+List all memberships for a member, oldest first.
+
+**Query Parameters:** `member_id` (int, required)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 12, "member_id": 42, "group_id": 10, "is_primary": 1,
+      "start_date": null, "end_date": "2025-07-31",
+      "note": "", "group_name": "ITZY", "group_category": "group", "group_display": "ITZY"
+    }
+  ]
+}
+```
+
+---
+
+### `membership_save` — POST
+
+Create or update a membership row.
+
+**POST Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Omit to create; provide to update |
+| `member_id` | int | Member entity (required) |
+| `group_id` | int | Group/unit/company entity (required) |
+| `start_date` | YYYY-MM-DD | Optional — open lower bound if omitted |
+| `end_date` | YYYY-MM-DD | Optional — open upper bound if omitted |
+| `is_primary` | 0/1 | `1` = main group (default), `0` = sub-unit |
+| `note` | string | Optional free-text note |
+| `csrf_token` | string | CSRF token |
+
+**Response:**
+```json
+{ "success": true, "id": 12, "warnings": ["Primary membership overlaps with an existing primary period for this member."] }
+```
+
+`warnings` is non-empty when an overlapping primary period is detected (loose policy — save still succeeds).
+
+---
+
+### `membership_delete` — POST
+
+Delete a membership row.
+
+**POST Body:** `id` (int, required), `csrf_token`
+
+**Response:** `{ "success": true }`
+
+---
+
+### `membership_move` — POST
+
+Shortcut: close the current open primary membership on `move_date - 1` and create a new one starting on `move_date`.
+
+**POST Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `member_id` | int | Member to move (required) |
+| `new_group_id` | int | New group/unit (required) |
+| `move_date` | YYYY-MM-DD | Date the new membership starts (required) |
+| `csrf_token` | string | CSRF token |
+
+**Response:** `{ "success": true, "new_membership_id": 13 }`
+
+---
+
+### `report_group_detail` — GET
+
+Drill-down for a single group: primary members, sub-unit memberships (non-primary), and monthly breakdown.
+
+**Query Parameters:** `group_id` (int, preferred) **or** `group` (string)
+
+**Response:**
+```json
+{
+  "members":   [ { "idol_id": 42, "idol": "Yuna", "display": "Yuna [ITZY]", "items": 10, "total_qty": 15, "total_price": 4500.0 } ],
+  "sub_units": [ { "membership_id": 25, "idol_id": 42, "idol": "Yuna", "start_date": "2024-09-01", "end_date": null, "is_primary": 0 } ],
+  "by_month":  [ { "month": "2024-09", "items": 3, "total_qty": 5, "total_price": 1500.0 } ]
+}
 ```

@@ -79,7 +79,9 @@
 </head>
 <body>
 <script>
-// Auto-append CSRF token to all FormData POST requests
+// Auto-append CSRF token to all FormData POST requests + force no-store cache mode.
+// The no-store option bypasses the browser HTTP cache regardless of any stale
+// Cache-Control header from earlier responses — fixes "Add/Edit doesn't refresh".
 const _origAppend = FormData.prototype.append;
 const _origFetch = window.fetch;
 window.fetch = function(url, opts = {}) {
@@ -87,6 +89,7 @@ window.fetch = function(url, opts = {}) {
         const token = document.querySelector('meta[name="csrf-token"]')?.content;
         if (token && !opts.body.has('csrf_token')) opts.body.append('csrf_token', token);
     }
+    if (!opts.cache) opts.cache = 'no-store';
     return _origFetch.call(this, url, opts);
 };
 </script>
@@ -142,6 +145,16 @@ window.fetch = function(url, opts = {}) {
 </nav>
 
 <div class="container-fluid py-3">
+    <!-- Pending resolution banner (v5) -->
+    <div id="pendingBanner" class="alert alert-warning d-none justify-content-between align-items-center py-2 mb-3">
+        <span><i class="bi bi-exclamation-triangle"></i>
+            <strong id="pendingBannerCount">0</strong> idol name(s) have ambiguous mappings — items are not counted in group reports until resolved.
+        </span>
+        <a href="idols.php" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-tools"></i> Resolve
+        </a>
+    </div>
+
     <!-- Summary Cards -->
     <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
@@ -278,8 +291,10 @@ window.fetch = function(url, opts = {}) {
                             <label class="form-label small">Idol</label>
                             <div class="sd-wrap">
                                 <input type="text" class="form-control form-control-sm" id="itemIdol" required autocomplete="off" placeholder="Search or type...">
+                                <input type="hidden" id="itemIdolId">
                                 <div class="sd-list" id="idolDropdown"></div>
                             </div>
+                            <div class="form-text small text-info" id="itemIdolHint" style="display:none"></div>
                         </div>
                         <div class="col-6">
                             <label class="form-label small">Type</label>
@@ -419,6 +434,23 @@ async function loadFilters() {
     msType = initMultiSelect('msType', () => filtersData.types, () => { currentPage = 1; loadData(); });
     initSearchableDropdown('itemIdol', 'idolDropdown', () => filtersData.idols);
     initSearchableDropdown('itemType', 'typeDropdown', () => filtersData.types);
+    refreshPendingBanner();
+}
+
+async function refreshPendingBanner() {
+    try {
+        const res = await api('api.php?action=idol_entities_tree');
+        const count = res.ambiguous_count || 0;
+        const banner = $('pendingBanner');
+        if (count > 0) {
+            $('pendingBannerCount').textContent = count;
+            banner.classList.remove('d-none');
+            banner.classList.add('d-flex');
+        } else {
+            banner.classList.remove('d-flex');
+            banner.classList.add('d-none');
+        }
+    } catch (_) { /* non-blocking */ }
 }
 
 function initSearchableDropdown(inputId, listId, getItems) {
@@ -427,6 +459,16 @@ function initSearchableDropdown(inputId, listId, getItems) {
     if (input._sdInit) return;
     input._sdInit = true;
     let activeIdx = -1;
+
+    // If this dropdown drives the idol field, clear any cached idol_id when text changes.
+    if (inputId === 'itemIdol') {
+        input.addEventListener('input', () => {
+            const hidden = $('itemIdolId');
+            if (hidden) hidden.value = '';
+            const hint = $('itemIdolHint');
+            if (hint) hint.style.display = 'none';
+        });
+    }
 
     function render() {
         const q = input.value.toLowerCase();
@@ -643,6 +685,9 @@ function goPage(p) { currentPage = p; loadData(); }
 // --- CRUD ---
 function showFormModal(id = null) {
     $('itemId').value = '';
+    $('itemIdolId').value = '';
+    $('itemIdolHint').style.display = 'none';
+    $('itemIdolHint').innerHTML = '';
     $('itemForm').reset();
     $('formTitle').textContent = id ? 'Edit Item' : 'Add Item';
     new bootstrap.Modal($('formModal')).show();
@@ -657,6 +702,8 @@ async function editItem(id) {
     $('itemEventDate').value = d.event_date || '';
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
+    $('itemIdolId').value = d.idol_id || '';
+    $('itemIdolHint').style.display = 'none';
     $('itemType').value = d.type;
     $('itemPrice').value = d.price_per_qty;
     $('itemQty').value = d.qty;
@@ -674,6 +721,8 @@ async function cloneItem(id) {
     $('itemEventDate').value = today;
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
+    $('itemIdolId').value = d.idol_id || '';
+    $('itemIdolHint').style.display = 'none';
     $('itemType').value = d.type;
     $('itemPrice').value = d.price_per_qty;
     $('itemQty').value = d.qty;
@@ -681,7 +730,7 @@ async function cloneItem(id) {
     new bootstrap.Modal($('formModal')).show();
 }
 
-async function saveItem() {
+async function saveItem(explicitIdolId) {
     const form = $('itemForm');
     if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -693,18 +742,43 @@ async function saveItem() {
     body.append('event_date', $('itemEventDate').value);
     body.append('title', $('itemTitle').value);
     body.append('idol', $('itemIdol').value);
+    const idolId = explicitIdolId ?? $('itemIdolId').value;
+    if (idolId) body.append('idol_id', idolId);
     body.append('type', $('itemType').value);
     body.append('price_per_qty', $('itemPrice').value);
     body.append('qty', $('itemQty').value);
 
     showLoading(true);
-    const res = await api('api.php', { method: 'POST', body });
+    const res = await fetch('api.php', { method: 'POST', body });
+    const json = await res.json().catch(() => ({}));
     showLoading(false);
 
-    if (res.error) { alert(res.error); return; }
+    // 409 = ambiguous idol name — show picker to disambiguate
+    if (res.status === 409 && Array.isArray(json.candidates)) {
+        showIdolPicker(json.name || $('itemIdol').value, json.candidates);
+        return;
+    }
+    if (json.error) { alert(json.error); return; }
     bootstrap.Modal.getInstance($('formModal')).hide();
     loadFilters();
     loadData();
+}
+
+function showIdolPicker(name, candidates) {
+    const html = candidates.map(c => `
+        <button class="btn btn-outline-primary btn-sm me-1 mb-1" onclick="pickIdol(${c.id}, '${escJs(c.display)}')">
+            ${escHtml(c.display)}
+        </button>
+    `).join('');
+    const wrap = $('itemIdolHint');
+    wrap.innerHTML = `<strong>Multiple "${escHtml(name)}" exist — pick one:</strong><br>${html}`;
+    wrap.style.display = '';
+}
+
+function pickIdol(idolId, display) {
+    $('itemIdolId').value = idolId;
+    $('itemIdolHint').innerHTML = `<i class="bi bi-check-circle text-success"></i> Linked to: <strong>${escHtml(display)}</strong>`;
+    saveItem(idolId);
 }
 
 function deleteItem(id, title) {

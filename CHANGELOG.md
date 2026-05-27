@@ -4,6 +4,43 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.5.0 (2026-05-27)
+
+Major refactor of idol references to fix two long-standing limitations:
+1. **Membership history** — when an idol changes group, items purchased before the move now correctly stay with the old group while new items roll up under the new one.
+2. **Duplicate names** — two members can share a name (e.g. "Yuna" in ITZY and AKB48) and be tracked separately.
+
+### Schema (`v5` migration, applied automatically on first request after upgrade)
+- **New table `idol_memberships`** — `(member_id, group_id, start_date, end_date, is_primary, note)`. Report queries join by `i.order_date BETWEEN start_date AND end_date`, preferring `is_primary = 1`. Existing `parent_id` values are auto-backfilled as a single open-ended primary membership per member.
+- **`idol_entities`** — `UNIQUE` constraint on `name` dropped. New `display_hint` column for disambiguating same-name entities (e.g. "Yuna [ITZY]" vs "Yuna [AKB48]").
+- **`items.idol_id`** — new FK to `idol_entities`; canonical reference used by all report aggregations. `items.idol` (text) is preserved as an immutable snapshot of the name at purchase time. Auto-backfilled where the name uniquely matches one entity.
+- **`schema_meta`** — version tracking table; future migrations increment this.
+
+### Migration infrastructure (`migrations/`)
+- Self-contained migration scripts (one file per version) with auto-backup, `VACUUM INTO` snapshot, and transactional rollback.
+- Optional CLI runner (`migrate.php`) for Docker / scripted deploys.
+- See [migrations/README.md](migrations/README.md) for the system overview.
+
+### Backend (`api.php`, `helpers_idol.php`)
+- **Hybrid `item_save` policy** — `create`/`update` accept either `idol_id` (preferred) or free-text `idol`; ambiguous names return **HTTP 409** with a candidates list.
+- **New endpoints:** `idol_search`, `idol_resolve_name`, `item_remap`, `item_bulk_remap`, `ambiguous_list`, `membership_list`/`save`/`delete`/`move`, `report_group_detail`.
+- All eight report queries refactored to use `items.idol_id` + `idol_memberships` for time-aware group resolution.
+
+### UI
+- **Idol Management** (`idols.php`) — new membership panel inside the entity-edit modal (list, add, edit, delete, "Move to new group" shortcut). New `display_hint` field with soft-suggest when a name collision is detected. Tree view shows `[hint]` next to the name and a 🔄 icon for members with > 1 membership. New side panel summarising ambiguous mappings with a one-click conflict-resolution modal.
+- **Items** (`index.php`) — when the entered name is ambiguous the item form now surfaces the candidate entities inline; picking one retries the save with the explicit `idol_id`. A pending-resolution banner at the top of the page links to the resolver.
+- **Reports** (`report.php`) — By-Group drill-down now uses the v5 endpoint and displays sub-unit memberships under each group.
+
+### Import / Export
+- Excel import detects an optional `Idol ID` column (header match, position H or I) and uses it when present; rows with ambiguous names import successfully but are queued in the ambiguous panel.
+- Excel export adds a hidden `Idol ID` column for clean round-trips.
+
+### Documentation
+- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md), [API_ENDPOINTS.md](API_ENDPOINTS.md), [HOW_TO_USE.md](HOW_TO_USE.md), [HOW_TO_USE_EN.md](HOW_TO_USE_EN.md) updated.
+- See [MEMBERSHIP_HISTORY_PLAN.md](MEMBERSHIP_HISTORY_PLAN.md) for the design rationale.
+
+---
+
 ## v1.4.1 (2026-04-15)
 
 ### Fixed

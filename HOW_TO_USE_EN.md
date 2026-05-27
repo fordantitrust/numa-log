@@ -203,30 +203,45 @@ Manage the hierarchical structure of idols: **Company > Group/Unit > Member**
 
 1. Click the **"Add Entity"** button
 2. Fill in the details:
-   - **Name** - Entity name
-   - **Category** - Type (`company`, `group`, `unit`, `member`)
-   - **Parent** - Parent entity (e.g., which group a member belongs to)
-   - **Sort Order** - Display order
-3. Click **"Save"**
+   - **Name** — Entity name (duplicates are allowed since v1.5; see Display Hint below)
+   - **Category** — Type (`company`, `group`, `unit`, `member`)
+   - **Parent** — Parent entity (default group for a member)
+   - **Display Hint** — Optional short label rendered next to the name to disambiguate same-name members (e.g. "ITZY", "AKB48 Team A"). The form auto-suggests one from the parent group when it detects a name collision.
+   - **Sort Order** — Display order
+3. Click **"Save"** — for member entities, a default primary membership row is automatically created from the parent.
+
+### Memberships (v1.5+)
+
+For each member entity, you can track which group(s) they belong to over time. Open the member's edit modal to see the **Memberships** section:
+
+- **Add membership** — link the member to another group with optional start/end dates.
+- **Move to new group** — shortcut that closes the current open membership the day before `move_date` and starts a new one. Items purchased before the move stay attributed to the old group; items purchased after roll up under the new group.
+- **Primary vs. sub-unit** — `primary` memberships count in the By-Group / By-Company reports; non-primary ones are shown only in group drill-down (sub-unit list).
+- **Overlap warnings** — if two `primary` periods overlap for the same member, the save still succeeds but a warning is surfaced.
 
 ### Hierarchy Structure
 
 ```
 Company
   └── Group / Unit
-        └── Member
+        └── Member  (linked to its group(s) via idol_memberships)
 ```
 
 ### Unmapped Names
 
-- The system detects idol names in items that haven't been added to idol_entities
+- The system detects idol names in items that haven't been added to `idol_entities`
 - Displayed as a list with a **Quick Add** button for fast entry
+
+### Ambiguous Mappings (v1.5+)
+
+When an item's idol name matches **more than one** member entity, the item is left unmapped and shown in the **Ambiguous Mappings** panel. Click **Resolve Conflicts** to bulk-remap each name to the correct entity.
 
 ### Statistics
 
 Each entity shows:
 - Number of items
 - Total spending
+- 🔄 icon if the member has more than one membership row
 
 ---
 

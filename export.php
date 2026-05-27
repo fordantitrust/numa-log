@@ -46,7 +46,7 @@ if (!empty($_GET['date_to'])) {
 $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
 $stmt = $pdo->prepare("
-    SELECT order_date, event_date, title, idol, type, price_per_qty, qty
+    SELECT order_date, event_date, title, idol, type, price_per_qty, qty, idol_id
     FROM items {$whereSQL}
     ORDER BY order_date ASC, id ASC
 ");
@@ -58,14 +58,14 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('Items');
 
-// Header row — same column order as import format + Price Total
-$headers = ['Order Date', 'Event Date', 'Title', 'Idol', 'Type', 'Price per Qty', 'Qty', 'Price Total'];
+// Header row — same column order as import format + Price Total + Idol ID (v5)
+$headers = ['Order Date', 'Event Date', 'Title', 'Idol', 'Type', 'Price per Qty', 'Qty', 'Price Total', 'Idol ID'];
 foreach ($headers as $col => $header) {
     $sheet->setCellValue(chr(65 + $col) . '1', $header);
 }
 
 // Style header row
-$sheet->getStyle('A1:H1')->applyFromArray([
+$sheet->getStyle('A1:I1')->applyFromArray([
     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '7C3AED']],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
@@ -82,12 +82,17 @@ foreach ($rows as $i => $row) {
     $sheet->setCellValue('F' . $r, (float) $row['price_per_qty']);
     $sheet->setCellValue('G' . $r, (int) $row['qty']);
     $sheet->setCellValue('H' . $r, '=F' . $r . '*G' . $r);
+    if ($row['idol_id'] !== null) {
+        $sheet->setCellValue('I' . $r, (int) $row['idol_id']);
+    }
 }
 
 // Auto-size columns
-foreach (range('A', 'H') as $col) {
+foreach (range('A', 'I') as $col) {
     $sheet->getColumnDimension($col)->setAutoSize(true);
 }
+// Idol ID column is informational — hide by default; users can unhide if needed.
+$sheet->getColumnDimension('I')->setVisible(false);
 
 // Freeze header row
 $sheet->freezePane('A2');

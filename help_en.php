@@ -235,6 +235,9 @@
                                     <div class="tip-box">
                                         <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> The Idol and Type fields are searchable dropdowns. You can type to search, or enter a new name directly without adding it to the Idols/Types page first.
                                     </div>
+                                    <div class="tip-box mt-2" style="background:#fff7ed;border-left:3px solid #f59e0b">
+                                        <i class="bi bi-info-circle"></i> <strong>v1.5:</strong> If the entered idol name matches more than one member (e.g. "Yuna" in ITZY and AKB48), the form shows a candidate list under the Idol field for you to pick the correct one &mdash; the save retries automatically after you choose.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -360,25 +363,121 @@
                         <div class="feature-icon feature-icon-blue"><i class="bi bi-people"></i></div>
                         <h4 class="mb-0">Idol Management</h4>
                     </div>
-                    <p class="text-muted">Manage the hierarchical structure of idols.</p>
+                    <p class="text-muted">Manage the hierarchical structure of idols &mdash; since v1.5 the system tracks group moves and supports duplicate names.</p>
 
                     <h6>Hierarchy Structure</h6>
                     <div class="border rounded p-3 mb-3" style="background:#f9fafb; font-family: monospace; font-size:13px;">
                         <i class="bi bi-building"></i> <strong>Company</strong><br>
                         <span class="ms-3"><i class="bi bi-people"></i> <strong>Group / Unit</strong></span><br>
-                        <span class="ms-5"><i class="bi bi-person"></i> <strong>Member</strong></span>
+                        <span class="ms-5"><i class="bi bi-person"></i> <strong>Member</strong> &mdash; linked to groups via <strong>Memberships</strong> (time-bounded)</span>
                     </div>
 
-                    <h6>How to Add</h6>
-                    <ol>
-                        <li>Click the <span class="shortcut-key">Add Entity</span> button</li>
-                        <li>Enter <strong>Name</strong>, select <strong>Category</strong> (company / group / unit / member)</li>
-                        <li>Select <strong>Parent</strong> (e.g., which group a member belongs to)</li>
-                        <li>Click <strong>Save</strong></li>
-                    </ol>
+                    <div class="accordion" id="accIdols">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#idolAdd">
+                                    <i class="bi bi-plus-circle me-2"></i> Add / Edit Entity
+                                </button>
+                            </h2>
+                            <div id="idolAdd" class="accordion-collapse collapse show" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Click <span class="shortcut-key">Add Entity</span></li>
+                                        <li>Enter <strong>Name</strong>, select <strong>Category</strong> (company / group / unit / member)</li>
+                                        <li>Select <strong>Parent</strong> (the default group for a member)</li>
+                                        <li><strong>Display Hint</strong> (optional) &mdash; a short label like <code>ITZY</code> or <code>AKB48 Team A</code> to disambiguate same-name members</li>
+                                        <li>Click <strong>Save</strong> &mdash; for member entities a default primary membership is created automatically from the parent</li>
+                                    </ol>
+                                    <div class="tip-box">
+                                        <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> If you enter a name that already exists for another member, the form warns you and auto-fills the Display Hint from the parent group (you can edit it).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <h6>Unmapped Names</h6>
-                    <p class="small text-muted mb-0">The system detects idol names in items that haven't been categorized yet. They appear as a list with a <strong>Quick Add</strong> button for fast entry. Each entity shows statistics for item count and total spending.</p>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#idolMembership">
+                                    <i class="bi bi-arrow-left-right me-2"></i> Membership &mdash; group moves &amp; affiliation history <span class="badge bg-info ms-2">v1.5</span>
+                                </button>
+                            </h2>
+                            <div id="idolMembership" class="accordion-collapse collapse" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <p>Since v1.5 every member stores its <strong>affiliation history</strong> as time-bounded periods (start_date &rarr; end_date). By-Group reports automatically attribute each item to the correct group based on its <code>order_date</code>.</p>
+
+                                    <h6 class="mt-3">View and manage memberships</h6>
+                                    <ol>
+                                        <li>Open <strong>Idols</strong> and click the <i class="bi bi-pencil"></i> edit icon on the member</li>
+                                        <li>Scroll down to the <strong>Memberships</strong> section in the form &mdash; it lists each period (Group, date range, primary/sub-unit)</li>
+                                    </ol>
+
+                                    <h6>Move to a new group (one-click)</h6>
+                                    <ol>
+                                        <li>Click <span class="shortcut-key">Move to new group</span></li>
+                                        <li>Pick the new group and enter the <em>Move date</em></li>
+                                        <li>Click <strong>Save</strong> &mdash; the current open membership is closed on <em>Move date &minus; 1</em> and a new one is opened on Move date</li>
+                                    </ol>
+
+                                    <h6>Add a custom membership</h6>
+                                    <ul>
+                                        <li>Click <span class="shortcut-key">Add membership</span> to add a parallel membership (e.g. sub-unit, project group)</li>
+                                        <li><strong>Primary</strong> (checked) = main group, counted in By-Group / By-Company reports &mdash; only one primary membership may be active at a time</li>
+                                        <li><strong>Sub-unit</strong> (unchecked) = visible only in the group drill-down (not double-counted in totals)</li>
+                                    </ul>
+                                    <div class="tip-box">
+                                        <i class="bi bi-info-circle"></i> <strong>Overlap warning:</strong> If two primary periods overlap, the save still succeeds but a warning is surfaced so you can fix it later.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#idolDuplicate">
+                                    <i class="bi bi-people-fill me-2"></i> Duplicate names / Display Hint <span class="badge bg-info ms-2">v1.5</span>
+                                </button>
+                            </h2>
+                            <div id="idolDuplicate" class="accordion-collapse collapse" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <p>v1.5 allows multiple members to share a name (e.g. "Yuna" in ITZY and AKB48). The UI distinguishes them via <strong>Display Hint</strong>; under the hood items are linked by <strong>idol_id</strong>.</p>
+
+                                    <h6>Adding an item with an ambiguous idol name</h6>
+                                    <ul>
+                                        <li>If the typed name matches multiple members, the form surfaces candidate buttons such as <code>Yuna [ITZY]</code> or <code>Yuna [AKB48]</code></li>
+                                        <li>Click the correct candidate &mdash; the form retries the save with the right entity automatically</li>
+                                    </ul>
+
+                                    <h6>Ambiguous Mappings (queue)</h6>
+                                    <p>Items imported earlier with ambiguous names appear in the <strong>Ambiguous Mappings panel</strong> on the Idols page (right side), and a banner is shown on the Items page.</p>
+                                    <ol>
+                                        <li>Click <span class="shortcut-key">Resolve Conflicts</span></li>
+                                        <li>The modal lists every ambiguous name with its candidates</li>
+                                        <li>Click the desired candidate to bulk-remap all items with that name to the chosen entity</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#idolUnmapped">
+                                    <i class="bi bi-question-circle me-2"></i> Unmapped Names &amp; Tree Stats
+                                </button>
+                            </h2>
+                            <div id="idolUnmapped" class="accordion-collapse collapse" data-bs-parent="#accIdols">
+                                <div class="accordion-body">
+                                    <h6>Unmapped Names</h6>
+                                    <p>The system detects idol names in items that have no entity yet and lists them with a <strong>Quick Add</strong> button. After you create the entity, items whose name uniquely matches are <em>auto-backfilled</em> with the new <code>idol_id</code>.</p>
+                                    <h6>Tree Stats</h6>
+                                    <ul class="mb-0">
+                                        <li>Each entity shows <strong>item count</strong> and <strong>total spending</strong></li>
+                                        <li>Members with more than one membership row get an <i class="bi bi-arrow-left-right text-info"></i> icon next to the name</li>
+                                        <li>Members with a Display Hint render as <code>Name [hint]</code> in the tree</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -551,6 +650,42 @@
                             <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accFaq">
                                 <div class="accordion-body">
                                     <p class="mb-0">When you record items with idol or type names that haven't been created in the Idols/Types pages, the system shows them as "Unmapped Names" with a Quick Add button. Mapping these names enables accurate reporting in the By Group / By Company views.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqMove">
+                                    <span class="badge bg-info me-2">v1.5</span> A member moved groups &mdash; how do I keep old/new purchases attributed to the right group?
+                                </button>
+                            </h2>
+                            <div id="faqMove" class="accordion-collapse collapse" data-bs-parent="#accFaq">
+                                <div class="accordion-body">
+                                    <ol class="mb-2">
+                                        <li>Go to <strong>Idols</strong> and click <i class="bi bi-pencil"></i> on the member who moved</li>
+                                        <li>Scroll to the <strong>Memberships</strong> section and click <span class="shortcut-key">Move to new group</span></li>
+                                        <li>Pick the new group, enter the Move date, and click Save</li>
+                                    </ol>
+                                    <p class="mb-0">The current membership is closed on <em>Move date &minus; 1</em> and a new one opens on Move date. Reports compare each item's <code>order_date</code> against the membership timeline to attribute it to the correct group &mdash; <strong>no need to edit old items manually</strong>.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqDuplicate">
+                                    <span class="badge bg-info me-2">v1.5</span> Two different members share the same name &mdash; how do I tell them apart?
+                                </button>
+                            </h2>
+                            <div id="faqDuplicate" class="accordion-collapse collapse" data-bs-parent="#accFaq">
+                                <div class="accordion-body">
+                                    <p>v1.5 supports duplicate names. Use the <strong>Display Hint</strong> field to distinguish them in the UI:</p>
+                                    <ol>
+                                        <li>Add both members normally with their real name (e.g. two "Yuna" entities)</li>
+                                        <li>Fill the <strong>Display Hint</strong> for each, e.g. <code>ITZY</code> and <code>AKB48</code></li>
+                                        <li>The tree view will render them as <code>Yuna [ITZY]</code> and <code>Yuna [AKB48]</code></li>
+                                        <li>When adding an item with an ambiguous name the form asks you to pick the correct member</li>
+                                    </ol>
+                                    <p class="mb-0">Any pre-existing items with ambiguous names land in the <strong>Ambiguous Mappings panel</strong> on the Idols page (with a banner on the Items page). Click <span class="shortcut-key">Resolve Conflicts</span> to bulk-remap them.</p>
                                 </div>
                             </div>
                         </div>

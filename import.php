@@ -33,6 +33,19 @@ function importExcel(string $filePath): array
     $spreadsheet = IOFactory::load($filePath);
     $sheet = $spreadsheet->getActiveSheet();
     $highestRow = $sheet->getHighestRow();
+    $highestCol = $sheet->getHighestColumn();
+
+    // Detect optional idol_id column by header.
+    // Export uses column I; legacy/manual imports may put it in column H.
+    $idolIdCol = null;
+    foreach (['H', 'I'] as $col) {
+        if (strcasecmp($highestCol, $col) < 0) break;
+        $header = trim((string) $sheet->getCell("{$col}1")->getValue());
+        if (stripos($header, 'idol id') !== false || stripos($header, 'idol_id') !== false) {
+            $idolIdCol = $col;
+            break;
+        }
+    }
 
     $pdo = getDB();
 
@@ -40,12 +53,13 @@ function importExcel(string $filePath): array
     $pdo->exec('DELETE FROM items');
 
     $stmt = $pdo->prepare('
-        INSERT INTO items (order_date, event_date, title, idol, type, price_per_qty, qty)
-        VALUES (:order_date, :event_date, :title, :idol, :type, :price_per_qty, :qty)
+        INSERT INTO items (order_date, event_date, title, idol, type, price_per_qty, qty, idol_id)
+        VALUES (:order_date, :event_date, :title, :idol, :type, :price_per_qty, :qty, :idol_id)
     ');
 
-    $imported = 0;
-    $skipped = 0;
+    $imported  = 0;
+    $skipped   = 0;
+    $ambiguous = 0;     // items with idol name matching multiple entities → idol_id left NULL
 
     $pdo->beginTransaction();
 
@@ -61,21 +75,37 @@ function importExcel(string $filePath): array
             continue;
         }
 
-        $orderDate = excelDateToString($sheet->getCell("A{$row}")->getValue());
-        $eventDate = excelDateToString($sheet->getCell("B{$row}")->getValue());
-        $idol = (string) ($sheet->getCell("D{$row}")->getValue() ?? '');
-        $type = (string) ($sheet->getCell("E{$row}")->getValue() ?? '');
-        $pricePerQty = (float) ($sheet->getCell("F{$row}")->getValue() ?? 0);
-        $qty = (int) ($sheet->getCell("G{$row}")->getValue() ?? 1);
+        $orderDate    = excelDateToString($sheet->getCell("A{$row}")->getValue());
+        $eventDate    = excelDateToString($sheet->getCell("B{$row}")->getValue());
+        $idol         = (string) ($sheet->getCell("D{$row}")->getValue() ?? '');
+        $type         = (string) ($sheet->getCell("E{$row}")->getValue() ?? '');
+        $pricePerQty  = (float)  ($sheet->getCell("F{$row}")->getValue() ?? 0);
+        $qty          = (int)    ($sheet->getCell("G{$row}")->getValue() ?? 1);
+
+        // Idol resolution
+        $idolId = null;
+        if ($idolIdCol !== null) {
+            $explicitId = (int) ($sheet->getCell("{$idolIdCol}{$row}")->getValue() ?? 0);
+            if ($explicitId > 0) $idolId = $explicitId;
+        }
+        if ($idolId === null && $idol !== '') {
+            $r = resolveIdolByName($pdo, $idol);
+            if ($r['ambiguous']) {
+                $ambiguous++;     // queued for resolution UI, leave idol_id NULL
+            } else {
+                $idolId = $r['id'];
+            }
+        }
 
         $stmt->execute([
-            ':order_date' => $orderDate,
-            ':event_date' => $eventDate,
-            ':title' => $title,
-            ':idol' => $idol,
-            ':type' => $type,
+            ':order_date'    => $orderDate,
+            ':event_date'    => $eventDate,
+            ':title'         => $title,
+            ':idol'          => $idol,
+            ':type'          => $type,
             ':price_per_qty' => $pricePerQty,
-            ':qty' => $qty,
+            ':qty'           => $qty,
+            ':idol_id'       => $idolId,
         ]);
 
         $imported++;
@@ -83,9 +113,16 @@ function importExcel(string $filePath): array
 
     $pdo->commit();
 
+    $msg = "Import complete: {$imported} rows imported, {$skipped} rows skipped";
+    if ($ambiguous > 0) {
+        $msg .= ". {$ambiguous} row(s) had ambiguous idol names — open Idol Management to resolve.";
+    }
     return [
-        'success' => true,
-        'message' => "Import complete: {$imported} rows imported, {$skipped} rows skipped.",
+        'success'         => true,
+        'message'         => $msg,
+        'imported'        => $imported,
+        'skipped'         => $skipped,
+        'ambiguous_queued' => $ambiguous,
     ];
 }
 

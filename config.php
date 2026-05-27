@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.4.1');
+define('APP_VERSION', '1.5.0');
+const DB_SCHEMA_VERSION = 5;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -108,15 +109,24 @@ function initDB(): void
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_parent_id       ON idol_entities(parent_id)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_ie_category        ON idol_entities(category)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_ip  ON login_attempts(ip, attempted_at)');
+
+    require_once __DIR__ . '/migrations/_helpers.php';
+    $currentVer = getSchemaVersion($pdo);
+    if ($currentVer < 5) {
+        require_once __DIR__ . '/migrations/v5_idol_refactor.php';
+        runMigrationV5($pdo);
+    }
+}
+
+require_once __DIR__ . '/helpers_idol.php';
+
+// Ensure backup directory exists before initDB() (migrations write auto-backups here)
+if (!is_dir(BACKUP_DIR)) {
+    mkdir(BACKUP_DIR, 0755, true);
 }
 
 initDB();
 sendSecurityHeaders();
-
-// Create backup directory
-if (!is_dir(BACKUP_DIR)) {
-    mkdir(BACKUP_DIR, 0755, true);
-}
 
 // Security headers
 function sendSecurityHeaders(): void
@@ -125,8 +135,13 @@ function sendSecurityHeaders(): void
     header('X-Frame-Options: DENY');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    // CSP: allow CDN for Bootstrap/Chart.js/Icons; unsafe-inline required for inline scripts/styles
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'");
+    // CSP: allow CDN for Bootstrap/Chart.js/Icons; unsafe-inline required for inline scripts/styles.
+    // connect-src includes cdn.jsdelivr.net so DevTools can fetch sourcemaps (*.js.map / *.css.map).
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net; frame-ancestors 'none'");
+    // Dynamic responses must not be cached — otherwise GETs after a POST can return stale data.
+    // Excel export (export.php) sets its own Cache-Control which overrides this.
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
 }
 
 // Auth helpers

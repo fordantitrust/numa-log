@@ -30,9 +30,19 @@ try {
         'report_idol_detail' => handleReportIdolDetail($pdo),
         'report_by_group' => handleReportByGroup($pdo),
         'report_by_company' => handleReportByCompany($pdo),
+        'report_group_detail' => handleReportGroupDetail($pdo),
         'idol_entities_tree' => handleIdolEntitiesTree($pdo),
         'idol_entity_save' => handleIdolEntitySave($pdo),
         'idol_entity_delete' => handleIdolEntityDelete($pdo),
+        'idol_search' => handleIdolSearch($pdo),
+        'idol_resolve_name' => handleIdolResolveName($pdo),
+        'item_remap' => handleItemRemap($pdo),
+        'item_bulk_remap' => handleItemBulkRemap($pdo),
+        'ambiguous_list' => handleAmbiguousList($pdo),
+        'membership_list' => handleMembershipList($pdo),
+        'membership_save' => handleMembershipSave($pdo),
+        'membership_delete' => handleMembershipDelete($pdo),
+        'membership_move' => handleMembershipMove($pdo),
         'type_list' => handleTypeList($pdo),
         'type_members_report' => handleTypeByMembers($pdo),
         'report_type_detail' => handleReportTypeDetail($pdo),
@@ -159,9 +169,13 @@ function handleGet(PDO $pdo): void
 function handleCreate(PDO $pdo): void
 {
     $data = getInputData();
+    $idolResolved = resolveItemIdol($pdo, $data);
+    if (!$idolResolved['ok']) return;     // handler already sent response
+    $data[':idol_id'] = $idolResolved['idol_id'];
+
     $stmt = $pdo->prepare('
-        INSERT INTO items (order_date, event_date, title, idol, type, price_per_qty, qty)
-        VALUES (:order_date, :event_date, :title, :idol, :type, :price_per_qty, :qty)
+        INSERT INTO items (order_date, event_date, title, idol, type, price_per_qty, qty, idol_id)
+        VALUES (:order_date, :event_date, :title, :idol, :type, :price_per_qty, :qty, :idol_id)
     ');
     $stmt->execute($data);
     jsonResponse(['success' => true, 'id' => (int) $pdo->lastInsertId()]);
@@ -174,7 +188,11 @@ function handleUpdate(PDO $pdo): void
         jsonResponse(['error' => 'ID is required'], 400);
     }
     $data = getInputData();
+    $idolResolved = resolveItemIdol($pdo, $data);
+    if (!$idolResolved['ok']) return;
+    $data[':idol_id'] = $idolResolved['idol_id'];
     $data[':id'] = $id;
+
     $stmt = $pdo->prepare("
         UPDATE items SET
             order_date = :order_date,
@@ -184,11 +202,54 @@ function handleUpdate(PDO $pdo): void
             type = :type,
             price_per_qty = :price_per_qty,
             qty = :qty,
+            idol_id = :idol_id,
             updated_at = datetime('now','localtime')
         WHERE id = :id
     ");
     $stmt->execute($data);
     jsonResponse(['success' => true]);
+}
+
+/**
+ * Hybrid idol resolution for item create/update.
+ * - If `idol_id` is provided in $_POST, use it (and overwrite :idol text with entity name).
+ * - Else if `idol` text resolves unambiguously to one entity, use that id.
+ * - Else if ambiguous → respond 409 with candidates (returns ok=false).
+ * - Else (no match or empty name) → idol_id stays null.
+ *
+ * Mutates $data[':idol'] when an explicit idol_id was provided.
+ */
+function resolveItemIdol(PDO $pdo, array &$data): array
+{
+    $idolId = isset($_POST['idol_id']) && $_POST['idol_id'] !== '' ? (int) $_POST['idol_id'] : 0;
+
+    if ($idolId > 0) {
+        $stmt = $pdo->prepare("SELECT name FROM idol_entities WHERE id = :id AND category = 'member'");
+        $stmt->execute([':id' => $idolId]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            jsonResponse(['error' => "idol_id {$idolId} does not reference a member entity"], 400);
+            return ['ok' => false, 'idol_id' => null];
+        }
+        $data[':idol'] = $row['name'];     // snapshot the canonical name
+        return ['ok' => true, 'idol_id' => $idolId];
+    }
+
+    $idolText = $data[':idol'] ?? '';
+    if ($idolText === '' || $idolText === '-') {
+        return ['ok' => true, 'idol_id' => null];
+    }
+
+    $r = resolveIdolByName($pdo, $idolText);
+    if ($r['ambiguous']) {
+        jsonResponse([
+            'error'      => 'Ambiguous idol name — please specify idol_id',
+            'name'       => $idolText,
+            'candidates' => $r['candidates'],
+        ], 409);
+        return ['ok' => false, 'idol_id' => null];
+    }
+    return ['ok' => true, 'idol_id' => $r['id']];
 }
 
 function handleDelete(PDO $pdo): void
@@ -263,50 +324,64 @@ function handleReportDaily(PDO $pdo): void
     $stmtType->execute([':month' => $month]);
     $byType = $stmtType->fetchAll();
 
-    // Idol breakdown for this month
+    // Idol breakdown for this month (mapped via idol_id + unmapped fallback)
     $stmtIdol = $pdo->prepare("
-        SELECT idol, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
-        FROM items
-        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND idol != '' AND idol != '-'
-        GROUP BY idol ORDER BY total_price DESC
+        SELECT
+            i.idol_id                                   AS idol_id,
+            COALESCE(m.name, i.idol)                    AS idol,
+            COALESCE(m.display_hint, '')                AS display_hint,
+            COUNT(*)                                    AS items,
+            SUM(i.qty)                                  AS total_qty,
+            SUM(i.price_per_qty * i.qty)                AS total_price
+        FROM items i
+        LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
+        WHERE strftime('%Y-%m', i.order_date) = :month
+          AND i.order_date != '' AND i.idol != '' AND i.idol != '-'
+        GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
+        ORDER BY total_price DESC
     ");
     $stmtIdol->execute([':month' => $month]);
-    $byIdol = $stmtIdol->fetchAll();
+    $byIdol = array_map(fn($r) => enrichIdolRow($r), $stmtIdol->fetchAll());
 
     jsonResponse(['data' => $rows, 'months' => $months, 'by_type' => $byType, 'by_idol' => $byIdol]);
 }
 
+/**
+ * Normalize an idol-aggregate row for API response:
+ *   - cast types
+ *   - add 'display' = formatIdolDisplay(...)
+ *   - convert idol_id to int or null
+ */
+function enrichIdolRow(array $r): array
+{
+    $r['idol_id']     = isset($r['idol_id']) && $r['idol_id'] !== null ? (int) $r['idol_id'] : null;
+    $r['display']     = formatIdolDisplay(['name' => $r['idol'] ?? '', 'display_hint' => $r['display_hint'] ?? '']);
+    $r['items']       = (int) ($r['items'] ?? 0);
+    $r['total_qty']   = (int) ($r['total_qty'] ?? 0);
+    $r['total_price'] = (float) ($r['total_price'] ?? 0);
+    return $r;
+}
+
 function handleReportIdol(PDO $pdo): void
 {
-    $hasMemberEntities = (int) $pdo->query("SELECT COUNT(*) FROM idol_entities WHERE category = 'member'")->fetchColumn() > 0;
+    // Mapped (idol_id set) + unmapped (idol_id NULL) in one pass.
+    // For unmapped rows we group by raw idol text so they appear as "(Unassigned)" entries.
+    $rows = $pdo->query("
+        SELECT
+            i.idol_id                                   AS idol_id,
+            COALESCE(m.name, i.idol)                    AS idol,
+            COALESCE(m.display_hint, '')                AS display_hint,
+            COUNT(*)                                    AS items,
+            SUM(i.qty)                                  AS total_qty,
+            SUM(i.price_per_qty * i.qty)                AS total_price
+        FROM items i
+        LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
+        WHERE i.idol != '' AND i.idol != '-'
+        GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
+        ORDER BY total_price DESC
+    ")->fetchAll();
 
-    if ($hasMemberEntities) {
-        $rows = $pdo->query("
-            SELECT
-                i.idol,
-                COUNT(*) as items,
-                SUM(i.qty) as total_qty,
-                SUM(i.price_per_qty * i.qty) as total_price
-            FROM items i
-            JOIN idol_entities e ON e.name = i.idol AND e.category = 'member'
-            GROUP BY i.idol
-            ORDER BY total_price DESC
-        ")->fetchAll();
-    } else {
-        // Fallback: show all if no idol_entities defined
-        $rows = $pdo->query("
-            SELECT
-                idol,
-                COUNT(*) as items,
-                SUM(qty) as total_qty,
-                SUM(price_per_qty * qty) as total_price
-            FROM items
-            WHERE idol != '' AND idol != '-'
-            GROUP BY idol
-            ORDER BY total_price DESC
-        ")->fetchAll();
-    }
-
+    $rows = array_map(fn($r) => enrichIdolRow($r), $rows);
     jsonResponse(['data' => $rows]);
 }
 
@@ -328,39 +403,51 @@ function handleReportType(PDO $pdo): void
 
 function handleReportIdolDetail(PDO $pdo): void
 {
-    $idol = $_GET['idol'] ?? '';
-    if ($idol === '') {
-        jsonResponse(['error' => 'idol is required'], 400);
+    // Accept idol_id (preferred) or idol name (legacy).
+    $idolId = isset($_GET['idol_id']) && $_GET['idol_id'] !== '' ? (int) $_GET['idol_id'] : 0;
+    $idol   = $_GET['idol'] ?? '';
+
+    if ($idolId === 0 && $idol === '') {
+        jsonResponse(['error' => 'idol or idol_id is required'], 400);
+    }
+
+    if ($idolId > 0) {
+        $filterSql    = 'i.idol_id = :idol_id';
+        $filterParams = [':idol_id' => $idolId];
+    } else {
+        // Match by text against items.idol OR by entity name → idol_id of items
+        $filterSql    = '(i.idol = :idol OR i.idol_id IN (SELECT id FROM idol_entities WHERE name = :idol AND category = \'member\'))';
+        $filterParams = [':idol' => $idol];
     }
 
     // Breakdown by type
     $stmt = $pdo->prepare("
         SELECT
-            type,
-            COUNT(*) as items,
-            SUM(qty) as total_qty,
-            SUM(price_per_qty * qty) as total_price
-        FROM items
-        WHERE idol = :idol AND type != '' AND type != '-'
-        GROUP BY type
+            i.type,
+            COUNT(*)                       AS items,
+            SUM(i.qty)                     AS total_qty,
+            SUM(i.price_per_qty * i.qty)   AS total_price
+        FROM items i
+        WHERE {$filterSql} AND i.type != '' AND i.type != '-'
+        GROUP BY i.type
         ORDER BY total_price DESC
     ");
-    $stmt->execute([':idol' => $idol]);
+    $stmt->execute($filterParams);
     $byType = $stmt->fetchAll();
 
     // Breakdown by month
     $stmt2 = $pdo->prepare("
         SELECT
-            strftime('%Y-%m', order_date) as month,
-            COUNT(*) as items,
-            SUM(qty) as total_qty,
-            SUM(price_per_qty * qty) as total_price
-        FROM items
-        WHERE idol = :idol AND order_date != ''
+            strftime('%Y-%m', i.order_date) AS month,
+            COUNT(*)                        AS items,
+            SUM(i.qty)                      AS total_qty,
+            SUM(i.price_per_qty * i.qty)    AS total_price
+        FROM items i
+        WHERE {$filterSql} AND i.order_date != ''
         GROUP BY month
         ORDER BY month
     ");
-    $stmt2->execute([':idol' => $idol]);
+    $stmt2->execute($filterParams);
     $byMonth = $stmt2->fetchAll();
 
     jsonResponse(['by_type' => $byType, 'by_month' => $byMonth]);
@@ -368,207 +455,196 @@ function handleReportIdolDetail(PDO $pdo): void
 
 function handleReportByGroup(PDO $pdo): void
 {
-    // Get all entities with their hierarchy
-    $entities = $pdo->query("
-        SELECT e.id, e.name, e.category, e.parent_id,
-               p.name as parent_name, p.category as parent_category
-        FROM idol_entities e
-        LEFT JOIN idol_entities p ON e.parent_id = p.id
-        ORDER BY e.category, e.sort_order
+    // Aggregate items by primary group (resolved via idol_memberships at item.order_date).
+    // Items without idol_id, without matching membership, or matching a non-group entity
+    // are excluded — they appear in the unmapped/ambiguous panels instead.
+    $rows = $pdo->query("
+        SELECT
+            g.id                                          AS group_id,
+            g.name                                        AS group_name,
+            g.category                                    AS group_category,
+            c.name                                        AS company_name,
+            COUNT(*)                                      AS items,
+            SUM(i.qty)                                    AS total_qty,
+            SUM(i.price_per_qty * i.qty)                  AS total_price,
+            GROUP_CONCAT(DISTINCT m.name)                 AS member_names
+        FROM items i
+        JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        JOIN idol_memberships ms
+            ON ms.member_id = m.id
+            AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g
+            ON g.id = ms.group_id AND g.category IN ('group','unit')
+        LEFT JOIN idol_entities c
+            ON c.id = g.parent_id AND c.category = 'company'
+        GROUP BY g.id
+        ORDER BY total_price DESC
     ")->fetchAll();
 
-    // Build lookup: entity name -> list of all matching idol names (self + children recursively)
-    $entityById = [];
-    $childrenOf = [];
-    foreach ($entities as $e) {
-        $entityById[$e['id']] = $e;
-        $pid = $e['parent_id'] ?? 'root';
-        $childrenOf[$pid][] = $e;
-    }
-
-    // For each entity, collect all idol names that should be summed
-    // (the entity name itself + all descendant names)
-    function collectNames(array $entity, array &$childrenOf, array &$entityById): array {
-        $names = [$entity['name']];
-        $eid = $entity['id'];
-        if (isset($childrenOf[$eid])) {
-            foreach ($childrenOf[$eid] as $child) {
-                $names = array_merge($names, collectNames($child, $childrenOf, $entityById));
-            }
-        }
-        return $names;
-    }
-
-    // Get spending per idol name
-    $spendingRaw = $pdo->query("
-        SELECT idol, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
-        FROM items WHERE idol != '' AND idol != '-'
-        GROUP BY idol
-    ")->fetchAll();
-
-    $spendByName = [];
-    foreach ($spendingRaw as $r) {
-        $spendByName[$r['idol']] = $r;
-    }
-
-    // Build result per group-level entity (groups + companies without group)
-    $result = [];
-    foreach ($entities as $e) {
-        if ($e['category'] === 'group' || $e['category'] === 'unit') {
-            $names = collectNames($e, $childrenOf, $entityById);
-            $items = 0; $qty = 0; $price = 0;
-            foreach ($names as $n) {
-                if (isset($spendByName[$n])) {
-                    $items += (int) $spendByName[$n]['items'];
-                    $qty += (int) $spendByName[$n]['total_qty'];
-                    $price += (float) $spendByName[$n]['total_price'];
-                }
-            }
-            if ($price > 0) {
-                $result[] = [
-                    'name' => $e['name'],
-                    'category' => $e['category'],
-                    'parent' => $e['parent_name'],
-                    'items' => $items,
-                    'total_qty' => $qty,
-                    'total_price' => $price,
-                    'members' => array_values(array_filter($names, fn($n) => $n !== $e['name'])),
-                ];
-            }
-        }
-    }
-
-    // Add company-level direct members (not in any group)
-    foreach ($entities as $e) {
-        if ($e['category'] === 'company') {
-            // Direct member children of company (not group/unit children)
-            $directMembers = [];
-            if (isset($childrenOf[$e['id']])) {
-                foreach ($childrenOf[$e['id']] as $child) {
-                    if ($child['category'] === 'member') {
-                        $directMembers[] = $child['name'];
-                    }
-                }
-            }
-            if (!empty($directMembers)) {
-                $items = 0; $qty = 0; $price = 0;
-                foreach ($directMembers as $n) {
-                    if (isset($spendByName[$n])) {
-                        $items += (int) $spendByName[$n]['items'];
-                        $qty += (int) $spendByName[$n]['total_qty'];
-                        $price += (float) $spendByName[$n]['total_price'];
-                    }
-                }
-                if ($price > 0) {
-                    $result[] = [
-                        'name' => $e['name'] . ' (Solo)',
-                        'category' => 'solo',
-                        'parent' => $e['name'],
-                        'items' => $items,
-                        'total_qty' => $qty,
-                        'total_price' => $price,
-                        'members' => $directMembers,
-                    ];
-                }
-            }
-        }
-    }
-
-    // Sort by total_price desc
-    usort($result, fn($a, $b) => $b['total_price'] <=> $a['total_price']);
+    $result = array_map(fn($r) => [
+        'group_id'    => (int) $r['group_id'],
+        'name'        => $r['group_name'],
+        'category'    => $r['group_category'],
+        'parent'      => $r['company_name'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+        'members'     => $r['member_names'] !== null ? explode(',', $r['member_names']) : [],
+    ], $rows);
 
     jsonResponse(['data' => $result]);
 }
 
+/**
+ * Drill-down for a group: list members + sub-units (non-primary memberships) under it.
+ * Accepts ?group_id=N (preferred) or ?group=name.
+ */
+function handleReportGroupDetail(PDO $pdo): void
+{
+    $groupId = isset($_GET['group_id']) && $_GET['group_id'] !== '' ? (int) $_GET['group_id'] : 0;
+    $group   = trim($_GET['group'] ?? '');
+
+    if ($groupId === 0 && $group === '') {
+        jsonResponse(['error' => 'group or group_id is required'], 400);
+    }
+    if ($groupId === 0) {
+        $r = $pdo->prepare("SELECT id FROM idol_entities WHERE name = :n AND category IN ('group','unit') LIMIT 1");
+        $r->execute([':n' => $group]);
+        $groupId = (int) ($r->fetchColumn() ?: 0);
+        if ($groupId === 0) jsonResponse(['error' => 'Group not found'], 404);
+    }
+
+    // Members under this group (primary memberships)
+    $members = $pdo->prepare("
+        SELECT
+            m.id                              AS idol_id,
+            m.name                            AS idol,
+            m.display_hint                    AS display_hint,
+            COUNT(i.id)                       AS items,
+            COALESCE(SUM(i.qty), 0)           AS total_qty,
+            COALESCE(SUM(i.price_per_qty * i.qty), 0) AS total_price
+        FROM idol_memberships ms
+        JOIN idol_entities m ON m.id = ms.member_id AND m.category = 'member'
+        LEFT JOIN items i
+            ON i.idol_id = m.id
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        WHERE ms.group_id = :g AND ms.is_primary = 1
+        GROUP BY m.id
+        ORDER BY total_price DESC
+    ");
+    $members->execute([':g' => $groupId]);
+    $memberRows = array_map(fn($r) => enrichIdolRow($r), $members->fetchAll());
+
+    // Sub-units / project groups under this entity (non-primary memberships)
+    $subunits = $pdo->prepare("
+        SELECT
+            ms.id                             AS membership_id,
+            m.id                              AS idol_id,
+            m.name                            AS idol,
+            m.display_hint                    AS display_hint,
+            ms.start_date,
+            ms.end_date,
+            ms.is_primary
+        FROM idol_memberships ms
+        JOIN idol_entities m ON m.id = ms.member_id AND m.category = 'member'
+        WHERE ms.group_id = :g AND ms.is_primary = 0
+        ORDER BY m.name
+    ");
+    $subunits->execute([':g' => $groupId]);
+
+    // Monthly breakdown
+    $monthly = $pdo->prepare("
+        SELECT
+            strftime('%Y-%m', i.order_date) AS month,
+            COUNT(*) AS items,
+            SUM(i.qty) AS total_qty,
+            SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        JOIN idol_memberships ms
+            ON ms.member_id = i.idol_id
+            AND ms.group_id = :g
+            AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= i.order_date)
+            AND (ms.end_date   IS NULL OR ms.end_date   >= i.order_date)
+        WHERE i.order_date != ''
+        GROUP BY month
+        ORDER BY month
+    ");
+    $monthly->execute([':g' => $groupId]);
+
+    jsonResponse([
+        'members'    => $memberRows,
+        'sub_units'  => $subunits->fetchAll(),
+        'by_month'   => $monthly->fetchAll(),
+    ]);
+}
+
 function handleReportByCompany(PDO $pdo): void
 {
-    $entities = $pdo->query("SELECT id, name, category, parent_id FROM idol_entities ORDER BY sort_order")->fetchAll();
-
-    $entityById = [];
-    $childrenOf = [];
-    foreach ($entities as $e) {
-        $entityById[$e['id']] = $e;
-        $pid = $e['parent_id'] ?? 'root';
-        $childrenOf[$pid][] = $e;
-    }
-
-    // Collect all descendant names for a given entity
-    $collectAll = function (array $entity) use (&$collectAll, &$childrenOf): array {
-        $names = [$entity['name']];
-        if (isset($childrenOf[$entity['id']])) {
-            foreach ($childrenOf[$entity['id']] as $child) {
-                $names = array_merge($names, $collectAll($child));
-            }
-        }
-        return $names;
-    };
-
-    // Get spending per idol name
-    $spendingRaw = $pdo->query("
-        SELECT idol, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
-        FROM items WHERE idol != '' AND idol != '-'
-        GROUP BY idol
+    // Aggregate at the company level — same membership-aware join as handleReportByGroup,
+    // but rolled up one more level via group.parent_id → company.
+    $rows = $pdo->query("
+        SELECT
+            c.id                                          AS company_id,
+            c.name                                        AS company_name,
+            g.id                                          AS group_id,
+            g.name                                        AS group_name,
+            g.category                                    AS group_category,
+            COUNT(*)                                      AS items,
+            SUM(i.qty)                                    AS total_qty,
+            SUM(i.price_per_qty * i.qty)                  AS total_price
+        FROM items i
+        JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        JOIN idol_memberships ms
+            ON ms.member_id = m.id
+            AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g
+            ON g.id = ms.group_id AND g.category IN ('group','unit')
+        JOIN idol_entities c
+            ON c.id = g.parent_id AND c.category = 'company'
+        GROUP BY c.id, g.id
+        ORDER BY c.name
     ")->fetchAll();
-    $spendByName = [];
-    foreach ($spendingRaw as $r) {
-        $spendByName[$r['idol']] = $r;
-    }
 
-    // Build per-company aggregation
-    $result = [];
-    foreach ($entities as $e) {
-        if ($e['category'] !== 'company') continue;
-
-        $names = $collectAll($e);
-        $items = 0; $qty = 0; $price = 0;
-        foreach ($names as $n) {
-            if (isset($spendByName[$n])) {
-                $items += (int) $spendByName[$n]['items'];
-                $qty += (int) $spendByName[$n]['total_qty'];
-                $price += (float) $spendByName[$n]['total_price'];
-            }
-        }
-
-        // Also collect groups under this company
-        $groups = [];
-        if (isset($childrenOf[$e['id']])) {
-            foreach ($childrenOf[$e['id']] as $child) {
-                if ($child['category'] === 'group' || $child['category'] === 'unit') {
-                    $cNames = $collectAll($child);
-                    $gItems = 0; $gQty = 0; $gPrice = 0;
-                    foreach ($cNames as $n) {
-                        if (isset($spendByName[$n])) {
-                            $gItems += (int) $spendByName[$n]['items'];
-                            $gQty += (int) $spendByName[$n]['total_qty'];
-                            $gPrice += (float) $spendByName[$n]['total_price'];
-                        }
-                    }
-                    if ($gPrice > 0) {
-                        $groups[] = [
-                            'name' => $child['name'],
-                            'category' => $child['category'],
-                            'items' => $gItems,
-                            'total_qty' => $gQty,
-                            'total_price' => $gPrice,
-                        ];
-                    }
-                }
-            }
-            usort($groups, fn($a, $b) => $b['total_price'] <=> $a['total_price']);
-        }
-
-        if ($price > 0) {
-            $result[] = [
-                'name' => $e['name'],
-                'items' => $items,
-                'total_qty' => $qty,
-                'total_price' => $price,
-                'groups' => $groups,
+    // Pivot: company → list of groups + totals
+    $byCompany = [];
+    foreach ($rows as $r) {
+        $cid = (int) $r['company_id'];
+        if (!isset($byCompany[$cid])) {
+            $byCompany[$cid] = [
+                'name'        => $r['company_name'],
+                'items'       => 0,
+                'total_qty'   => 0,
+                'total_price' => 0.0,
+                'groups'      => [],
             ];
         }
+        $byCompany[$cid]['items']       += (int) $r['items'];
+        $byCompany[$cid]['total_qty']   += (int) $r['total_qty'];
+        $byCompany[$cid]['total_price'] += (float) $r['total_price'];
+        $byCompany[$cid]['groups'][] = [
+            'name'        => $r['group_name'],
+            'category'    => $r['group_category'],
+            'items'       => (int) $r['items'],
+            'total_qty'   => (int) $r['total_qty'],
+            'total_price' => (float) $r['total_price'],
+        ];
     }
 
+    $result = array_values($byCompany);
+    foreach ($result as &$c) {
+        usort($c['groups'], fn($a, $b) => $b['total_price'] <=> $a['total_price']);
+    }
+    unset($c);
     usort($result, fn($a, $b) => $b['total_price'] <=> $a['total_price']);
+
     jsonResponse(['data' => $result]);
 }
 
@@ -581,39 +657,105 @@ function handleIdolEntitiesTree(PDO $pdo): void
         ORDER BY e.sort_order, e.name
     ")->fetchAll();
 
-    // Also get spending stats per entity name
-    $stats = $pdo->query("
-        SELECT idol as name, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
-        FROM items WHERE idol != '' AND idol != '-'
-        GROUP BY idol
+    // Stats per member entity (via idol_id — handles duplicate names correctly).
+    $memberStats = $pdo->query("
+        SELECT idol_id, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
+        FROM items
+        WHERE idol_id IS NOT NULL
+        GROUP BY idol_id
     ")->fetchAll();
-    $statsMap = [];
-    foreach ($stats as $s) {
-        $statsMap[$s['name']] = $s;
+    $statsByMember = [];
+    foreach ($memberStats as $s) {
+        $statsByMember[(int) $s['idol_id']] = $s;
+    }
+
+    // Membership count per member (for tree icon)
+    $mbCounts = $pdo->query("
+        SELECT member_id, COUNT(*) as mb_count FROM idol_memberships GROUP BY member_id
+    ")->fetchAll();
+    $mbCountByMember = [];
+    foreach ($mbCounts as $r) {
+        $mbCountByMember[(int) $r['member_id']] = (int) $r['mb_count'];
+    }
+
+    // For groups/units/companies: roll up stats from descendant members (via membership graph).
+    // We compute member→group/company rollups by scanning items.
+    $groupSums = $pdo->query("
+        SELECT g.id AS group_id,
+               COUNT(*) AS items, SUM(i.qty) AS total_qty, SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        JOIN idol_memberships ms ON ms.member_id = i.idol_id AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g ON g.id = ms.group_id
+        GROUP BY g.id
+    ")->fetchAll();
+    $statsByGroup = [];
+    foreach ($groupSums as $g) {
+        $statsByGroup[(int) $g['group_id']] = $g;
+    }
+
+    $companySums = $pdo->query("
+        SELECT c.id AS company_id,
+               COUNT(*) AS items, SUM(i.qty) AS total_qty, SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        JOIN idol_memberships ms ON ms.member_id = i.idol_id AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g ON g.id = ms.group_id
+        JOIN idol_entities c ON c.id = g.parent_id AND c.category = 'company'
+        GROUP BY c.id
+    ")->fetchAll();
+    $statsByCompany = [];
+    foreach ($companySums as $c) {
+        $statsByCompany[(int) $c['company_id']] = $c;
     }
 
     // Attach stats
     foreach ($entities as &$e) {
-        $s = $statsMap[$e['name']] ?? null;
+        $eid = (int) $e['id'];
+        $s = null;
+        if ($e['category'] === 'member') {
+            $s = $statsByMember[$eid] ?? null;
+            $e['membership_count'] = $mbCountByMember[$eid] ?? 0;
+        } elseif ($e['category'] === 'group' || $e['category'] === 'unit') {
+            $s = $statsByGroup[$eid] ?? null;
+        } elseif ($e['category'] === 'company') {
+            $s = $statsByCompany[$eid] ?? null;
+        }
         $e['items_count'] = $s ? (int) $s['items'] : 0;
-        $e['total_qty'] = $s ? (int) $s['total_qty'] : 0;
+        $e['total_qty']   = $s ? (int) $s['total_qty'] : 0;
         $e['total_price'] = $s ? (float) $s['total_price'] : 0;
+        $e['display']     = formatIdolDisplay($e);
     }
     unset($e);
 
-    // Get all parents for dropdowns
-    $parents = $pdo->query("SELECT id, name, category FROM idol_entities WHERE category IN ('company','group','unit') ORDER BY category, sort_order, name")->fetchAll();
+    $parents = $pdo->query("SELECT id, name, category, display_hint FROM idol_entities WHERE category IN ('company','group','unit') ORDER BY category, sort_order, name")->fetchAll();
 
-    jsonResponse(['entities' => $entities, 'parents' => $parents]);
+    // Ambiguous mappings — distinct items.idol values where multiple member entities exist
+    $ambiguous = $pdo->query("
+        SELECT i.idol AS name, COUNT(DISTINCT i.id) AS items_count
+        FROM items i
+        WHERE i.idol_id IS NULL AND i.idol != '' AND i.idol != '-'
+          AND (SELECT COUNT(*) FROM idol_entities e WHERE e.name = i.idol AND e.category = 'member') > 1
+        GROUP BY i.idol
+    ")->fetchAll();
+
+    jsonResponse([
+        'entities'         => $entities,
+        'parents'          => $parents,
+        'ambiguous_count'  => count($ambiguous),
+    ]);
 }
 
 function handleIdolEntitySave(PDO $pdo): void
 {
-    $id = (int) ($_POST['id'] ?? 0);
-    $name = trim($_POST['name'] ?? '');
-    $category = trim($_POST['category'] ?? 'member');
-    $parentId = ($_POST['parent_id'] ?? '') !== '' ? (int) $_POST['parent_id'] : null;
-    $sortOrder = (int) ($_POST['sort_order'] ?? 0);
+    $id          = (int) ($_POST['id'] ?? 0);
+    $name        = trim($_POST['name'] ?? '');
+    $category    = trim($_POST['category'] ?? 'member');
+    $parentId    = ($_POST['parent_id'] ?? '') !== '' ? (int) $_POST['parent_id'] : null;
+    $sortOrder   = (int) ($_POST['sort_order'] ?? 0);
+    $displayHint = trim($_POST['display_hint'] ?? '');
 
     if ($name === '') {
         jsonResponse(['error' => 'Name is required'], 400);
@@ -623,15 +765,28 @@ function handleIdolEntitySave(PDO $pdo): void
     }
 
     if ($id > 0) {
-        $stmt = $pdo->prepare("UPDATE idol_entities SET name = :name, category = :category, parent_id = :parent_id, sort_order = :sort WHERE id = :id");
-        $stmt->execute([':name' => $name, ':category' => $category, ':parent_id' => $parentId, ':sort' => $sortOrder, ':id' => $id]);
+        $stmt = $pdo->prepare("UPDATE idol_entities SET name = :name, category = :category, parent_id = :parent_id, sort_order = :sort, display_hint = :hint WHERE id = :id");
+        $stmt->execute([':name' => $name, ':category' => $category, ':parent_id' => $parentId, ':sort' => $sortOrder, ':hint' => $displayHint, ':id' => $id]);
     } else {
-        $stmt = $pdo->prepare("INSERT INTO idol_entities (name, category, parent_id, sort_order) VALUES (:name, :category, :parent_id, :sort)");
-        $stmt->execute([':name' => $name, ':category' => $category, ':parent_id' => $parentId, ':sort' => $sortOrder]);
+        $stmt = $pdo->prepare("INSERT INTO idol_entities (name, category, parent_id, sort_order, display_hint) VALUES (:name, :category, :parent_id, :sort, :hint)");
+        $stmt->execute([':name' => $name, ':category' => $category, ':parent_id' => $parentId, ':sort' => $sortOrder, ':hint' => $displayHint]);
         $id = (int) $pdo->lastInsertId();
     }
 
-    jsonResponse(['success' => true, 'id' => $id]);
+    // For members with a parent group: ensure a default primary membership exists.
+    if ($category === 'member' && $parentId !== null) {
+        $check = $pdo->prepare("SELECT id FROM idol_memberships WHERE member_id = :m AND is_primary = 1 AND end_date IS NULL");
+        $check->execute([':m' => $id]);
+        if ($check->fetchColumn() === false) {
+            $pdo->prepare("INSERT INTO idol_memberships (member_id, group_id, is_primary, note) VALUES (:m, :g, 1, 'auto-created with entity')")
+                ->execute([':m' => $id, ':g' => $parentId]);
+        }
+    }
+
+    // Auto-backfill items.idol_id for previously-unmapped items matching this name.
+    $backfilled = ($category === 'member') ? autoBackfillIdolId($pdo, $id) : 0;
+
+    jsonResponse(['success' => true, 'id' => $id, 'backfilled_items' => $backfilled]);
 }
 
 function handleIdolEntityDelete(PDO $pdo): void
@@ -677,49 +832,46 @@ function handleTypeList(PDO $pdo): void
 
 function handleTypeByMembers(PDO $pdo): void
 {
+    // Resolve group/company per item via memberships at order_date.
     $rows = $pdo->query("
         SELECT
-            i.type,
-            i.idol AS member_name,
-            m.category AS member_cat,
-            p.name AS parent_name,
-            p.category AS parent_cat,
-            gp.name AS gparent_name,
-            gp.category AS gparent_cat,
-            COUNT(*) AS items_count,
-            SUM(i.qty) AS total_qty,
-            SUM(i.price_per_qty * i.qty) AS total_price
+            i.type                                      AS type,
+            COALESCE(m.name, i.idol)                    AS member_name,
+            i.idol_id                                   AS idol_id,
+            COALESCE(m.display_hint, '')                AS display_hint,
+            g.name                                      AS group_name,
+            g.category                                  AS group_category,
+            c.name                                      AS company_name,
+            COUNT(*)                                    AS items_count,
+            SUM(i.qty)                                  AS total_qty,
+            SUM(i.price_per_qty * i.qty)                AS total_price
         FROM items i
-        LEFT JOIN idol_entities m ON m.name = i.idol
-        LEFT JOIN idol_entities p ON m.parent_id = p.id
-        LEFT JOIN idol_entities gp ON p.parent_id = gp.id
+        LEFT JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        LEFT JOIN idol_memberships ms
+            ON ms.member_id = m.id AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        LEFT JOIN idol_entities g
+            ON g.id = ms.group_id
+        LEFT JOIN idol_entities c
+            ON c.id = g.parent_id AND c.category = 'company'
         WHERE i.type != '' AND i.idol != '' AND i.idol != '-'
-        GROUP BY i.type, i.idol
+        GROUP BY i.type, COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY i.type, total_price DESC
     ")->fetchAll();
 
     $byType = [];
     foreach ($rows as $r) {
         $type = $r['type'];
-        if (!isset($byType[$type])) {
-            $byType[$type] = [];
-        }
-
-        $group = null;
-        $company = null;
-        if ($r['gparent_cat'] === 'company') {
-            $company = $r['gparent_name'];
-            $group = $r['parent_name'];
-        } elseif ($r['parent_cat'] === 'company') {
-            $company = $r['parent_name'];
-        } elseif ($r['parent_cat'] === 'group' || $r['parent_cat'] === 'unit') {
-            $group = $r['parent_name'];
-        }
+        if (!isset($byType[$type])) $byType[$type] = [];
 
         $byType[$type][] = [
             'member'      => $r['member_name'],
-            'group'       => $group,
-            'company'     => $company,
+            'idol_id'     => $r['idol_id'] !== null ? (int) $r['idol_id'] : null,
+            'display'     => formatIdolDisplay(['name' => $r['member_name'], 'display_hint' => $r['display_hint']]),
+            'group'       => $r['group_name'],
+            'company'     => $r['company_name'],
             'items_count' => (int) $r['items_count'],
             'total_qty'   => (int) $r['total_qty'],
             'total_price' => (float) $r['total_price'],
@@ -736,50 +888,42 @@ function handleReportTypeDetail(PDO $pdo): void
         jsonResponse(['error' => 'type is required'], 400);
     }
 
-    $rows = $pdo->prepare("
+    $stmt = $pdo->prepare("
         SELECT
-            i.idol AS member_name,
-            m.category AS member_cat,
-            p.name AS parent_name,
-            p.category AS parent_cat,
-            gp.name AS gparent_name,
-            gp.category AS gparent_cat,
-            COUNT(*) AS items_count,
-            SUM(i.qty) AS total_qty,
-            SUM(i.price_per_qty * i.qty) AS total_price
+            COALESCE(m.name, i.idol)                    AS member_name,
+            i.idol_id                                   AS idol_id,
+            COALESCE(m.display_hint, '')                AS display_hint,
+            g.name                                      AS group_name,
+            c.name                                      AS company_name,
+            COUNT(*)                                    AS items_count,
+            SUM(i.qty)                                  AS total_qty,
+            SUM(i.price_per_qty * i.qty)                AS total_price
         FROM items i
-        LEFT JOIN idol_entities m ON m.name = i.idol
-        LEFT JOIN idol_entities p ON m.parent_id = p.id
-        LEFT JOIN idol_entities gp ON p.parent_id = gp.id
+        LEFT JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        LEFT JOIN idol_memberships ms
+            ON ms.member_id = m.id AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        LEFT JOIN idol_entities g ON g.id = ms.group_id
+        LEFT JOIN idol_entities c ON c.id = g.parent_id AND c.category = 'company'
         WHERE i.type = :type AND i.idol != '' AND i.idol != '-'
-        GROUP BY i.idol
+        GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
     ");
-    $rows->execute([':type' => $type]);
-    $rows = $rows->fetchAll();
+    $stmt->execute([':type' => $type]);
+    $rows = $stmt->fetchAll();
 
-    $members = [];
-    foreach ($rows as $r) {
-        $group = null;
-        $company = null;
-        if ($r['gparent_cat'] === 'company') {
-            $company = $r['gparent_name'];
-            $group = $r['parent_name'];
-        } elseif ($r['parent_cat'] === 'company') {
-            $company = $r['parent_name'];
-        } elseif ($r['parent_cat'] === 'group' || $r['parent_cat'] === 'unit') {
-            $group = $r['parent_name'];
-        }
-
-        $members[] = [
-            'member'      => $r['member_name'],
-            'group'       => $group,
-            'company'     => $company,
-            'items_count' => (int) $r['items_count'],
-            'total_qty'   => (int) $r['total_qty'],
-            'total_price' => (float) $r['total_price'],
-        ];
-    }
+    $members = array_map(fn($r) => [
+        'member'      => $r['member_name'],
+        'idol_id'     => $r['idol_id'] !== null ? (int) $r['idol_id'] : null,
+        'display'     => formatIdolDisplay(['name' => $r['member_name'], 'display_hint' => $r['display_hint']]),
+        'group'       => $r['group_name'],
+        'company'     => $r['company_name'],
+        'items_count' => (int) $r['items_count'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $rows);
 
     // Monthly breakdown for this type
     $stmtMonth = $pdo->prepare("
@@ -922,4 +1066,311 @@ function getInputData(): array
         ':price_per_qty' => (float) ($_POST['price_per_qty'] ?? 0),
         ':qty' => (int) ($_POST['qty'] ?? 1),
     ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// v5 endpoints: idol search, item remap, ambiguous list, memberships
+// ─────────────────────────────────────────────────────────────────────────────
+
+function handleIdolSearch(PDO $pdo): void
+{
+    $q        = trim($_GET['q'] ?? '');
+    $category = trim($_GET['category'] ?? 'member');
+    if (!in_array($category, ['company', 'group', 'unit', 'member', 'any'], true)) {
+        $category = 'member';
+    }
+
+    $where  = [];
+    $params = [];
+    if ($q !== '') {
+        $where[] = 'name LIKE :q';
+        $params[':q'] = '%' . $q . '%';
+    }
+    if ($category !== 'any') {
+        $where[] = 'category = :cat';
+        $params[':cat'] = $category;
+    }
+    $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $stmt = $pdo->prepare("
+        SELECT id, name, category, display_hint, parent_id
+        FROM idol_entities
+        {$whereSql}
+        ORDER BY name
+        LIMIT 50
+    ");
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
+
+    foreach ($rows as &$r) {
+        $r['id']           = (int) $r['id'];
+        $r['parent_id']    = $r['parent_id'] !== null ? (int) $r['parent_id'] : null;
+        $r['display_hint'] = $r['display_hint'] ?? '';
+        $r['display']      = formatIdolDisplay($r);
+    }
+    unset($r);
+
+    jsonResponse(['data' => $rows]);
+}
+
+function handleIdolResolveName(PDO $pdo): void
+{
+    $name = trim($_GET['name'] ?? '');
+    if ($name === '') {
+        jsonResponse(['error' => 'name is required'], 400);
+    }
+    jsonResponse(resolveIdolByName($pdo, $name));
+}
+
+function handleItemRemap(PDO $pdo): void
+{
+    $itemId = (int) ($_POST['item_id'] ?? 0);
+    $idolId = isset($_POST['idol_id']) && $_POST['idol_id'] !== '' ? (int) $_POST['idol_id'] : null;
+    if ($itemId === 0) {
+        jsonResponse(['error' => 'item_id is required'], 400);
+    }
+    if ($idolId !== null) {
+        $check = $pdo->prepare("SELECT name FROM idol_entities WHERE id = :id AND category = 'member'");
+        $check->execute([':id' => $idolId]);
+        $row = $check->fetch();
+        if (!$row) {
+            jsonResponse(['error' => 'idol_id does not reference a member entity'], 400);
+        }
+        $stmt = $pdo->prepare("UPDATE items SET idol_id = :iid, idol = :iname, updated_at = datetime('now','localtime') WHERE id = :id");
+        $stmt->execute([':iid' => $idolId, ':iname' => $row['name'], ':id' => $itemId]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE items SET idol_id = NULL, updated_at = datetime('now','localtime') WHERE id = :id");
+        $stmt->execute([':id' => $itemId]);
+    }
+    jsonResponse(['success' => true]);
+}
+
+function handleItemBulkRemap(PDO $pdo): void
+{
+    $name     = trim($_POST['idol_name'] ?? '');
+    $idolId   = (int) ($_POST['idol_id'] ?? 0);
+    $dateFrom = trim($_POST['date_from'] ?? '');
+    $dateTo   = trim($_POST['date_to'] ?? '');
+
+    if ($name === '' || $idolId === 0) {
+        jsonResponse(['error' => 'idol_name and idol_id are required'], 400);
+    }
+    if ($dateFrom !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+        jsonResponse(['error' => 'Invalid date_from format'], 400);
+    }
+    if ($dateTo !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+        jsonResponse(['error' => 'Invalid date_to format'], 400);
+    }
+
+    $check = $pdo->prepare("SELECT name FROM idol_entities WHERE id = :id AND category = 'member'");
+    $check->execute([':id' => $idolId]);
+    $row = $check->fetch();
+    if (!$row) {
+        jsonResponse(['error' => 'idol_id does not reference a member entity'], 400);
+    }
+
+    $where  = ['idol = :name', 'idol_id IS NULL'];
+    $params = [':iid' => $idolId, ':iname' => $row['name'], ':name' => $name];
+    if ($dateFrom !== '') { $where[] = 'order_date >= :dfrom'; $params[':dfrom'] = $dateFrom; }
+    if ($dateTo   !== '') { $where[] = 'order_date <= :dto';   $params[':dto']   = $dateTo;   }
+    $whereSql = implode(' AND ', $where);
+
+    $stmt = $pdo->prepare("UPDATE items SET idol_id = :iid, idol = :iname, updated_at = datetime('now','localtime') WHERE {$whereSql}");
+    $stmt->execute($params);
+    jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
+}
+
+function handleAmbiguousList(PDO $pdo): void
+{
+    // For each distinct unmapped idol name, list candidate entities + item count.
+    $rows = $pdo->query("
+        SELECT i.idol AS name, COUNT(*) AS items_count
+        FROM items i
+        WHERE i.idol_id IS NULL AND i.idol != '' AND i.idol != '-'
+          AND (SELECT COUNT(*) FROM idol_entities e WHERE e.name = i.idol AND e.category = 'member') > 1
+        GROUP BY i.idol
+        ORDER BY items_count DESC
+    ")->fetchAll();
+
+    $candStmt = $pdo->prepare("SELECT id, name, display_hint FROM idol_entities WHERE name = :n AND category = 'member' ORDER BY id");
+
+    $result = [];
+    foreach ($rows as $r) {
+        $candStmt->execute([':n' => $r['name']]);
+        $candidates = array_map(fn($c) => [
+            'id'           => (int) $c['id'],
+            'name'         => $c['name'],
+            'display_hint' => $c['display_hint'] ?? '',
+            'display'      => formatIdolDisplay($c),
+        ], $candStmt->fetchAll());
+
+        $result[] = [
+            'name'        => $r['name'],
+            'items_count' => (int) $r['items_count'],
+            'candidates'  => $candidates,
+        ];
+    }
+
+    jsonResponse(['data' => $result]);
+}
+
+// ─── Memberships ─────────────────────────────────────────────────────────────
+
+function handleMembershipList(PDO $pdo): void
+{
+    $memberId = (int) ($_GET['member_id'] ?? 0);
+    if ($memberId === 0) {
+        jsonResponse(['error' => 'member_id is required'], 400);
+    }
+    $stmt = $pdo->prepare("
+        SELECT ms.id, ms.member_id, ms.group_id, ms.start_date, ms.end_date,
+               ms.is_primary, ms.note,
+               g.name AS group_name, g.category AS group_category, g.display_hint AS group_display_hint
+        FROM idol_memberships ms
+        JOIN idol_entities g ON g.id = ms.group_id
+        WHERE ms.member_id = :mid
+        ORDER BY COALESCE(ms.start_date, '0000-00-00') ASC, ms.id ASC
+    ");
+    $stmt->execute([':mid' => $memberId]);
+    $rows = $stmt->fetchAll();
+    foreach ($rows as &$r) {
+        $r['id']            = (int) $r['id'];
+        $r['member_id']     = (int) $r['member_id'];
+        $r['group_id']      = (int) $r['group_id'];
+        $r['is_primary']    = (int) $r['is_primary'];
+        $r['group_display'] = formatIdolDisplay(['name' => $r['group_name'], 'display_hint' => $r['group_display_hint'] ?? '']);
+    }
+    unset($r);
+    jsonResponse(['data' => $rows]);
+}
+
+function handleMembershipSave(PDO $pdo): void
+{
+    $id        = (int) ($_POST['id'] ?? 0);
+    $memberId  = (int) ($_POST['member_id'] ?? 0);
+    $groupId   = (int) ($_POST['group_id'] ?? 0);
+    $start     = trim($_POST['start_date'] ?? '');
+    $end       = trim($_POST['end_date'] ?? '');
+    $isPrimary = isset($_POST['is_primary']) ? (int) (bool) $_POST['is_primary'] : 1;
+    $note      = trim($_POST['note'] ?? '');
+
+    if ($memberId === 0 || $groupId === 0) {
+        jsonResponse(['error' => 'member_id and group_id are required'], 400);
+    }
+    foreach (['start' => $start, 'end' => $end] as $k => $v) {
+        if ($v !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) {
+            jsonResponse(['error' => "Invalid {$k}_date format"], 400);
+        }
+    }
+    if ($start !== '' && $end !== '' && $start > $end) {
+        jsonResponse(['error' => 'start_date must be <= end_date'], 400);
+    }
+
+    // Validate that member_id is a member and group_id is a group/unit/company
+    $mRow = $pdo->prepare("SELECT category FROM idol_entities WHERE id = :id");
+    $mRow->execute([':id' => $memberId]);
+    if (($mRow->fetchColumn() ?: '') !== 'member') {
+        jsonResponse(['error' => 'member_id must reference a member entity'], 400);
+    }
+    $gRow = $pdo->prepare("SELECT category FROM idol_entities WHERE id = :id");
+    $gRow->execute([':id' => $groupId]);
+    if (!in_array(($gRow->fetchColumn() ?: ''), ['group', 'unit', 'company'], true)) {
+        jsonResponse(['error' => 'group_id must reference a group/unit/company entity'], 400);
+    }
+
+    $params = [
+        ':mid'     => $memberId,
+        ':gid'     => $groupId,
+        ':sd'      => $start !== '' ? $start : null,
+        ':ed'      => $end   !== '' ? $end   : null,
+        ':primary' => $isPrimary,
+        ':note'    => $note,
+    ];
+
+    if ($id > 0) {
+        $params[':id'] = $id;
+        $pdo->prepare("
+            UPDATE idol_memberships
+            SET member_id = :mid, group_id = :gid, start_date = :sd, end_date = :ed,
+                is_primary = :primary, note = :note
+            WHERE id = :id
+        ")->execute($params);
+    } else {
+        $pdo->prepare("
+            INSERT INTO idol_memberships (member_id, group_id, start_date, end_date, is_primary, note)
+            VALUES (:mid, :gid, :sd, :ed, :primary, :note)
+        ")->execute($params);
+        $id = (int) $pdo->lastInsertId();
+    }
+
+    // Detect overlapping primary memberships and surface as a warning (loose policy).
+    $warnings = [];
+    if ($isPrimary) {
+        $overlap = $pdo->prepare("
+            SELECT id FROM idol_memberships
+            WHERE member_id = :mid AND is_primary = 1 AND id != :id
+              AND (
+                  (start_date IS NULL OR :ed IS NULL OR start_date <= :ed)
+                  AND
+                  (end_date IS NULL OR :sd IS NULL OR end_date >= :sd)
+              )
+            LIMIT 1
+        ");
+        $overlap->execute([':mid' => $memberId, ':id' => $id, ':sd' => $params[':sd'], ':ed' => $params[':ed']]);
+        if ($overlap->fetchColumn() !== false) {
+            $warnings[] = 'Primary membership overlaps with an existing primary period for this member.';
+        }
+    }
+
+    jsonResponse(['success' => true, 'id' => $id, 'warnings' => $warnings]);
+}
+
+function handleMembershipDelete(PDO $pdo): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    if ($id === 0) {
+        jsonResponse(['error' => 'id is required'], 400);
+    }
+    $pdo->prepare("DELETE FROM idol_memberships WHERE id = :id")->execute([':id' => $id]);
+    jsonResponse(['success' => true]);
+}
+
+function handleMembershipMove(PDO $pdo): void
+{
+    $memberId  = (int) ($_POST['member_id'] ?? 0);
+    $newGroup  = (int) ($_POST['new_group_id'] ?? 0);
+    $moveDate  = trim($_POST['move_date'] ?? '');
+
+    if ($memberId === 0 || $newGroup === 0 || $moveDate === '') {
+        jsonResponse(['error' => 'member_id, new_group_id, and move_date are required'], 400);
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $moveDate)) {
+        jsonResponse(['error' => 'Invalid move_date format'], 400);
+    }
+
+    $endDate = date('Y-m-d', strtotime($moveDate . ' -1 day'));
+
+    $pdo->beginTransaction();
+    try {
+        // Close current open primary membership (end_date IS NULL)
+        $pdo->prepare("
+            UPDATE idol_memberships
+            SET end_date = :ed
+            WHERE member_id = :m AND is_primary = 1 AND end_date IS NULL
+        ")->execute([':ed' => $endDate, ':m' => $memberId]);
+
+        // Insert new membership
+        $pdo->prepare("
+            INSERT INTO idol_memberships (member_id, group_id, start_date, end_date, is_primary, note)
+            VALUES (:m, :g, :sd, NULL, 1, 'moved via UI')
+        ")->execute([':m' => $memberId, ':g' => $newGroup, ':sd' => $moveDate]);
+
+        $newId = (int) $pdo->lastInsertId();
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    jsonResponse(['success' => true, 'new_membership_id' => $newId]);
 }

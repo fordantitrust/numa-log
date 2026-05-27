@@ -1281,7 +1281,7 @@ async function loadGroup() {
 
 async function showGroupMembers(idx) {
     const group = groupData[idx];
-    if (!group || !group.members || group.members.length === 0) {
+    if (!group) {
         $('groupDetailCard').style.display = 'none';
         return;
     }
@@ -1289,10 +1289,20 @@ async function showGroupMembers(idx) {
     $('groupDetailName').textContent = group.name;
     $('groupDetailCard').style.display = 'block';
 
-    // Fetch individual member stats
-    const res = await fetch('api.php?action=report_idol').then(r => r.json());
-    const memberSet = new Set(group.members);
-    const members = res.data.filter(r => memberSet.has(r.idol));
+    // Prefer the v5 endpoint: returns primary members + sub-unit memberships + monthly.
+    let detail = null;
+    if (group.group_id) {
+        const res = await fetch(`api.php?action=report_group_detail&group_id=${group.group_id}`).then(r => r.json());
+        if (!res.error) detail = res;
+    }
+
+    let members = detail ? detail.members : null;
+    if (!members) {
+        // Legacy fallback — derive members by name (for solo / unmapped buckets)
+        const res = await fetch('api.php?action=report_idol').then(r => r.json());
+        const memberSet = new Set(group.members || []);
+        members = (res.data || []).filter(r => memberSet.has(r.idol));
+    }
     members.sort((a, b) => Number(b.total_price) - Number(a.total_price));
 
     const groupTotal = Number(group.total_price);
@@ -1301,9 +1311,10 @@ async function showGroupMembers(idx) {
     $('tableGroupDetail').innerHTML = members.map((r, i) => {
         const pct = groupTotal > 0 ? ((Number(r.total_price) / groupTotal) * 100) : 0;
         const barW = maxP > 0 ? ((Number(r.total_price) / maxP) * 100) : 0;
+        const displayName = r.display || r.idol || '';
         return `<tr>
             <td>${i + 1}</td>
-            <td><a href="#" class="text-decoration-none fw-semibold" onclick="event.stopPropagation();document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol)}'),200);return false">${escHtml(r.idol)}</a></td>
+            <td><a href="#" class="text-decoration-none fw-semibold" onclick="event.stopPropagation();document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol || displayName)}'),200);return false">${escHtml(displayName)}</a></td>
             <td class="text-end">${fmtInt(r.items)}</td>
             <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
@@ -1313,6 +1324,39 @@ async function showGroupMembers(idx) {
             </div></td>
         </tr>`;
     }).join('');
+
+    // Sub-units (non-primary memberships) — v5 feature
+    if (detail && Array.isArray(detail.sub_units) && detail.sub_units.length > 0) {
+        renderGroupSubUnits(detail.sub_units);
+    } else {
+        const su = $('groupSubUnits');
+        if (su) su.style.display = 'none';
+    }
+}
+
+function renderGroupSubUnits(units) {
+    let card = $('groupSubUnits');
+    if (!card) {
+        const detailCard = $('groupDetailCard');
+        if (!detailCard) return;
+        const div = document.createElement('div');
+        div.id = 'groupSubUnits';
+        div.className = 'mt-2 small';
+        detailCard.appendChild(div);
+        card = div;
+    }
+    card.style.display = '';
+    card.innerHTML = `
+        <div class="text-muted mb-1"><i class="bi bi-people"></i> Sub-unit / project members in this group:</div>
+        ${units.map(u => {
+            const display = u.display_hint ? `${u.idol} [${u.display_hint}]` : u.idol;
+            const range = `${u.start_date || '—'} → ${u.end_date || 'current'}`;
+            return `<div class="d-flex justify-content-between border-bottom py-1">
+                <span>${escHtml(display)}</span>
+                <span class="text-muted">${range}</span>
+            </div>`;
+        }).join('')}
+    `;
 }
 
 // --- Company Report ---
