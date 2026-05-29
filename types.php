@@ -36,7 +36,8 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-tags"></i> Type Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i><span class="d-none d-sm-inline"> Items</span></a>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>

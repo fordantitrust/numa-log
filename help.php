@@ -87,7 +87,10 @@
         <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
             <a href="index.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-arrow-left"></i> Items
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2">
+                <i class="bi bi-list-ul"></i> Items
             </a>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-bar-chart-line"></i> Report

@@ -4,6 +4,18 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.6.0 (2026-05-29)
+
+### Dashboard landing page
+- **New `index.php` Dashboard** — the page you land on after login is now an at-a-glance summary instead of the item list. It shows KPI cards (total spent, items/qty, average per month, latest month with month-over-month delta), a monthly spending trend (bar chart), Top members and Top groups lists, and Type / Company breakdowns (doughnut charts).
+- **Period selector** — filter the whole dashboard by *All time*, *Last 12 months*, or a specific year. Years are populated from the data.
+- The item list (CRUD) moved to **`items.php`** with no functional change. A **Dashboard** button was added to every page's navbar, and the "Items" links / report deep-links now point to `items.php`.
+
+### Backend (`api.php`)
+- **New endpoint `report_dashboard`** — returns KPIs, monthly trend, top members/groups, and type/company breakdowns in one request, with optional `date_from`/`date_to` filtering. Group/company aggregates reuse the membership-aware joins from `report_by_group` / `report_by_company`, so numbers match the Report page.
+
+---
+
 ## v1.5.0 (2026-05-27)
 
 Major refactor of idol references to fix two long-standing limitations:

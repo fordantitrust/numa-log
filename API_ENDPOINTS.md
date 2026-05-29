@@ -189,6 +189,46 @@ Daily breakdown for a specific month, including type and idol breakdowns.
 
 ---
 
+### `report_dashboard` — GET
+
+Consolidated payload for the Dashboard landing page (`index.php`). Returns KPIs, monthly trend,
+top members/groups, and type/company breakdowns in a single round-trip. The group/company aggregates
+use the same membership-aware joins as `report_by_group` / `report_by_company`, so numbers match the
+Report page.
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `date_from` | YYYY-MM-DD | — | Lower bound on `order_date` (empty = no bound) |
+| `date_to` | YYYY-MM-DD | — | Upper bound on `order_date` (empty = no bound) |
+
+`top_members` / `top_groups` are capped at 5 rows. `years` is the distinct list of years that have
+data (unfiltered) — used to populate the period selector.
+
+**Response:**
+```json
+{
+  "kpis": {
+    "total_items": 120, "total_qty": 210, "total_spent": 65000.0,
+    "active_months": 14, "avg_per_month": 4642.8,
+    "latest_month": "2026-05", "latest_month_spent": 5200.0,
+    "prev_month_spent": 4800.0, "mom_change_pct": 8.3,
+    "top_member": "Yuna [ITZY]", "top_group": "ITZY", "top_type": "Photo"
+  },
+  "monthly": [ { "month": "2026-05", "items": 5, "total_qty": 8, "total_price": 5200.0 } ],
+  "top_members": [ { "idol_id": 42, "idol": "Yuna", "display": "Yuna [ITZY]", "items": 10, "total_qty": 15, "total_price": 4500.0 } ],
+  "top_groups": [ { "group_id": 10, "name": "ITZY", "category": "group", "parent": "JYP", "items": 30, "total_qty": 50, "total_price": 15000.0 } ],
+  "by_type": [ { "type": "Photo", "items": 20, "total_qty": 35, "total_price": 10500.0 } ],
+  "by_company": [ { "name": "JYP", "items": 60, "total_qty": 100, "total_price": 30000.0 } ],
+  "years": ["2026", "2025", "2024"]
+}
+```
+
+`kpis.mom_change_pct` is `null` when there is no prior month or the prior month had zero spending.
+
+---
+
 ### `report_idol` — GET
 
 Spending ranking by individual member (only `member` category entities, or all idols as fallback).

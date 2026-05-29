@@ -25,7 +25,16 @@ docker compose up -d
 
 ## Features
 
-### Item Management (`index.php`)
+### Dashboard (`index.php`)
+
+- **Landing page after login** — an at-a-glance summary instead of the item list
+- KPI cards: total spent, items/quantity, average per month, and latest month with month-over-month delta
+- Monthly spending trend (bar chart), Top members and Top groups lists
+- Type and Company breakdowns (doughnut charts)
+- **Period selector** — filter the whole dashboard by *All time*, *Last 12 months*, or a specific year (years populated from the data)
+- Powered by a single `report_dashboard` API call; group/company aggregates reuse the membership-aware joins so numbers match the Report page
+
+### Item Management (`items.php`)
 
 - Full CRUD for purchase items (Add, Edit, Clone, Delete)
 - **Multi-select filters** for Idol and Type — select multiple values with badge display and inline search
@@ -157,7 +166,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.5.0 — Membership history + ID-based idol reference. Track members across group moves, allow same-name members from different groups, and aggregate reports by the group in effect at the time of purchase.
+**Latest:** v1.6.0 — Dashboard landing page. After login you land on an at-a-glance summary (KPI cards, monthly trend, top members/groups, type & company breakdowns) with an All time / Last 12 months / year period selector, powered by the new `report_dashboard` endpoint. The item list (CRUD) moved to `items.php`.
 
 ## License
 

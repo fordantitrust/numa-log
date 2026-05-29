@@ -46,7 +46,8 @@
     <div class="container-fluid">
         <span class="navbar-brand mb-0 h1"><i class="bi bi-bar-chart-line"></i> Report <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-arrow-left"></i><span class="d-none d-sm-inline"> Items</span></a>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
             <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
@@ -827,7 +828,7 @@ async function loadDaily(month) {
     // Table
     $('tableDaily').innerHTML = data.map(r => `
         <tr>
-            <td><a href="index.php?date_from=${r.day}&date_to=${r.day}" class="text-decoration-none">${formatDay(r.day)}</a></td>
+            <td><a href="items.php?date_from=${r.day}&date_to=${r.day}" class="text-decoration-none">${formatDay(r.day)}</a></td>
             <td class="text-end">${fmtInt(r.items)}</td>
             <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
@@ -1184,7 +1185,7 @@ async function showIdolDetail(idol) {
     $('tableIdolDetailMonth').innerHTML = byMonth.map(r => {
         const dateFrom = r.month + '-01';
         const dateTo   = monthLastDay(r.month);
-        const url = 'index.php?idol=' + encodeURIComponent(idol) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
+        const url = 'items.php?idol=' + encodeURIComponent(idol) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
         return `<tr>
             <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
             <td class="text-end">${fmtInt(r.items)}</td>
@@ -1545,7 +1546,7 @@ async function showTypeDetail(type) {
     $('tableTypeDetailMonth').innerHTML = byMonth.map(r => {
         const dateFrom = r.month + '-01';
         const dateTo = monthLastDay(r.month);
-        const url = 'index.php?type=' + encodeURIComponent(type) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
+        const url = 'items.php?type=' + encodeURIComponent(type) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
         return `<tr>
             <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
             <td class="text-end">${fmtInt(r.items)}</td>

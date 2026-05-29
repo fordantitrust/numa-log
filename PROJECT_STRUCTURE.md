@@ -6,7 +6,8 @@ numa-log/
 │   └── workflows/
 │       └── docker-build.yml  # GitHub Actions: build Docker image
 ├── config.php                # Database connection, schema, auth helpers
-├── index.php                 # Main item list (CRUD)
+├── index.php                 # Dashboard landing page (KPIs, trends, top lists, breakdowns)
+├── items.php                 # Item list (CRUD) — was index.php prior to v1.6
 ├── api.php                   # REST API for items, reports, idols, types, backups
 ├── api_users.php             # REST API for user management
 ├── report.php                # Reports page (Monthly, Member, Group, Company, Type)

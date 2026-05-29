@@ -4,123 +4,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Numa Log</title>
+    <title>Dashboard - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
-        :root {
-            --primary: #7c3aed;
-            --primary-hover: #6d28d9;
-        }
+        :root { --primary: #7c3aed; --primary-hover: #6d28d9; }
         body { background: #f3f4f6; font-size: 14px; }
         .btn-primary { background: var(--primary); border-color: var(--primary); }
         .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
-        .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
-        .btn-outline-primary:hover { background: var(--primary); border-color: var(--primary); }
         .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-        .table th { background: #f9fafb; position: sticky; top: 0; white-space: nowrap; cursor: pointer; user-select: none; }
-        .table th:hover { background: #e5e7eb; }
-        .table td { vertical-align: middle; }
-        .sort-icon::after { content: ' \2195'; opacity: .3; }
-        .sort-asc::after { content: ' \2191'; opacity: 1; }
-        .sort-desc::after { content: ' \2193'; opacity: 1; }
         .summary-card { background: linear-gradient(135deg, var(--primary), #a78bfa); color: white; }
-        .summary-card .display-6 { font-weight: 700; }
-        .badge-idol { background: #ddd6fe; color: #5b21b6; }
+        .summary-card .kpi-value { font-weight: 700; font-size: 1.6rem; line-height: 1.2; }
+        .table th { background: #f9fafb; white-space: nowrap; }
+        .table td { vertical-align: middle; }
+        .rank-1 { color: #eab308; font-weight: 700; }
+        .rank-2 { color: #9ca3af; font-weight: 700; }
+        .rank-3 { color: #b45309; font-weight: 700; }
+        .chart-container { position: relative; height: 320px; }
+        .chart-container.sm { height: 280px; }
+        .progress-bar-custom { height: 6px; border-radius: 3px; background: #e5e7eb; }
+        .progress-bar-custom .fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--primary), #a78bfa); }
         .badge-type { background: #fce7f3; color: #9d174d; }
-        .table-responsive { max-height: 65vh; overflow-y: auto; }
-        .page-link { color: var(--primary); }
-        .page-link.active, .active > .page-link { background: var(--primary); border-color: var(--primary); }
-        #loading { display: none; }
-        .spinner-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,.7); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-        }
-        /* Searchable dropdown */
-        .sd-wrap { position: relative; }
-        .sd-wrap input { cursor: text; }
-        .sd-list {
-            position: absolute; top: 100%; left: 0; right: 0; z-index: 1050;
-            max-height: 200px; overflow-y: auto; background: white;
-            border: 1px solid #dee2e6; border-radius: 0 0 .375rem .375rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,.15); display: none;
-        }
-        .sd-list.show { display: block; }
-        .sd-list .sd-item {
-            padding: 5px 10px; cursor: pointer; font-size: 13px;
-        }
-        .sd-list .sd-item:hover, .sd-list .sd-item.active { background: #f3f0ff; color: var(--primary); }
-        .sd-list .sd-empty { padding: 8px 10px; color: #9ca3af; font-size: 12px; font-style: italic; }
-        /* Multi-select filter */
-        .ms-wrap { position: relative; }
-        .ms-box { min-height: 31px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; padding: 2px 8px; }
-        .ms-box .badge { font-size: 11px; font-weight: 500; }
-        .ms-ph { color: #6c757d; font-size: 13px; line-height: 1.5; }
-        .ms-drop { position: absolute; top: 100%; left: 0; right: 0; z-index: 1060; background: white; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 .375rem .375rem; box-shadow: 0 4px 12px rgba(0,0,0,.15); display: none; }
-        .ms-drop.show { display: block; }
-        .ms-search { border: none; border-bottom: 1px solid #dee2e6; border-radius: 0; font-size: 13px; width: 100%; padding: 5px 10px; outline: none; }
-        .ms-list { max-height: 180px; overflow-y: auto; }
-        .ms-item { padding: 5px 10px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-        .ms-item:hover { background: #f3f0ff; }
-        .ms-item.sel { color: var(--primary); }
-        .ms-empty { padding: 8px 10px; color: #9ca3af; font-size: 12px; font-style: italic; }
-        /* Mobile */
-        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .ms-drop, .sd-list { -webkit-overflow-scrolling: touch; }
+        .badge-idol { background: #ddd6fe; color: #5b21b6; }
+        .delta-up { color: #fecaca; }
+        .delta-down { color: #bbf7d0; }
+        @media (max-width: 767.98px) { .chart-container, .chart-container.sm { height: 240px; } }
         @media (max-width: 575.98px) {
-            input[type="text"], input[type="date"], input[type="password"],
-            select, textarea, .ms-search { font-size: 16px !important; }
-            .ms-item, .sd-list .sd-item { font-size: 15px; min-height: 40px; }
+            select { font-size: 16px !important; }
             .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+            .summary-card .kpi-value { font-size: 1.3rem; }
         }
     </style>
-    <meta name="csrf-token" content="<?= htmlspecialchars(csrfToken()) ?>">
 </head>
 <body>
-<script>
-// Auto-append CSRF token to all FormData POST requests + force no-store cache mode.
-// The no-store option bypasses the browser HTTP cache regardless of any stale
-// Cache-Control header from earlier responses — fixes "Add/Edit doesn't refresh".
-const _origAppend = FormData.prototype.append;
-const _origFetch = window.fetch;
-window.fetch = function(url, opts = {}) {
-    if (opts.body instanceof FormData) {
-        const token = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (token && !opts.body.has('csrf_token')) opts.body.append('csrf_token', token);
-    }
-    if (!opts.cache) opts.cache = 'no-store';
-    return _origFetch.call(this, url, opts);
-};
-</script>
-
-<div id="loading" class="spinner-overlay">
-    <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-</div>
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-speedometer2"></i> Dashboard <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
         <div>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span>
-            </a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span>
-            </a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span>
-            </a>
-            <?php if (ALLOW_IMPORT): ?>
-            <button class="btn btn-outline-light btn-sm me-2" onclick="showImportModal()">
-                <i class="bi bi-file-earmark-arrow-up"></i><span class="d-none d-sm-inline"> Import Excel</span>
-            </button>
-            <?php endif; ?>
-            <button class="btn btn-light btn-sm me-2" onclick="showFormModal()">
-                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> Add Item</span>
-            </button>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
+            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -145,223 +71,100 @@ window.fetch = function(url, opts = {}) {
 </nav>
 
 <div class="container-fluid py-3">
-    <!-- Pending resolution banner (v5) -->
-    <div id="pendingBanner" class="alert alert-warning d-none justify-content-between align-items-center py-2 mb-3">
-        <span><i class="bi bi-exclamation-triangle"></i>
-            <strong id="pendingBannerCount">0</strong> idol name(s) have ambiguous mappings — items are not counted in group reports until resolved.
-        </span>
-        <a href="idols.php" class="btn btn-sm btn-outline-warning">
-            <i class="bi bi-tools"></i> Resolve
-        </a>
+    <!-- Period selector -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> ภาพรวมการใช้จ่าย</h5>
+        <div class="d-flex align-items-center gap-2">
+            <label class="small text-muted mb-0">ช่วงเวลา:</label>
+            <select class="form-select form-select-sm" id="periodSelect" style="width:auto">
+                <option value="all">ทั้งหมด (All time)</option>
+                <option value="last12">12 เดือนล่าสุด</option>
+            </select>
+        </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- KPI Cards -->
     <div class="row g-3 mb-3">
-        <div class="col-6 col-md-3">
-            <div class="card summary-card p-3">
-                <div class="small opacity-75">Total Items</div>
-                <div class="display-6" id="sumTotal">0</div>
+        <div class="col-6 col-lg-3">
+            <div class="card summary-card p-3 h-100">
+                <div class="small opacity-75"><i class="bi bi-cash-stack"></i> ยอดใช้จ่ายรวม</div>
+                <div class="kpi-value" id="kpiSpent">&#3647;0</div>
+                <div class="small opacity-75" id="kpiSpentSub">&nbsp;</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card summary-card p-3">
-                <div class="small opacity-75">Total Quantity</div>
-                <div class="display-6" id="sumQty">0</div>
+        <div class="col-6 col-lg-3">
+            <div class="card summary-card p-3 h-100">
+                <div class="small opacity-75"><i class="bi bi-box-seam"></i> จำนวนรายการ / ชิ้น</div>
+                <div class="kpi-value" id="kpiItems">0</div>
+                <div class="small opacity-75" id="kpiItemsSub">&nbsp;</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card summary-card p-3">
-                <div class="small opacity-75">Total Spent</div>
-                <div class="display-6" id="sumPrice">&#3647;0</div>
+        <div class="col-6 col-lg-3">
+            <div class="card summary-card p-3 h-100">
+                <div class="small opacity-75"><i class="bi bi-calendar-month"></i> เฉลี่ยต่อเดือน</div>
+                <div class="kpi-value" id="kpiAvg">&#3647;0</div>
+                <div class="small opacity-75" id="kpiAvgSub">&nbsp;</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card summary-card p-3">
-                <div class="small opacity-75">Avg per Item</div>
-                <div class="display-6" id="sumAvg">&#3647;0</div>
+        <div class="col-6 col-lg-3">
+            <div class="card summary-card p-3 h-100">
+                <div class="small opacity-75"><i class="bi bi-graph-up"></i> เดือนล่าสุด</div>
+                <div class="kpi-value" id="kpiLatest">&#3647;0</div>
+                <div class="small opacity-75" id="kpiLatestSub">&nbsp;</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly trend + Type doughnut -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-8">
+            <div class="card p-3 h-100">
+                <h6 class="card-title mb-3">แนวโน้มรายเดือน</h6>
+                <div class="chart-container">
+                    <canvas id="chartMonthly"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="card p-3 h-100">
+                <h6 class="card-title mb-3">สัดส่วนตามประเภท</h6>
+                <div class="chart-container sm">
+                    <canvas id="chartType"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-3">
-        <div class="card-body py-2">
-            <form id="filterForm" class="row g-2 align-items-end">
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">Search</label>
-                    <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="Search title...">
+    <!-- Top members + Top groups + Company doughnut -->
+    <div class="row g-3">
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-header py-2"><strong><i class="bi bi-person-hearts"></i> Top สมาชิก</strong></div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr><th>#</th><th>สมาชิก</th><th class="text-end">ยอด (฿)</th></tr></thead>
+                        <tbody id="topMembers"><tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr></tbody>
+                    </table>
                 </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">Idol</label>
-                    <div class="ms-wrap" id="msIdol">
-                        <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
-                        <div class="ms-drop">
-                            <input type="text" class="ms-search" placeholder="Search...">
-                            <div class="ms-list"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">Type</label>
-                    <div class="ms-wrap" id="msType">
-                        <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
-                        <div class="ms-drop">
-                            <input type="text" class="ms-search" placeholder="Search...">
-                            <div class="ms-list"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">From</label>
-                    <input type="date" class="form-control form-control-sm" id="fDateFrom">
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">To</label>
-                    <input type="date" class="form-control form-control-sm" id="fDateTo">
-                </div>
-                <div class="col-6 col-md-2">
-                    <div class="d-flex gap-1">
-                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetFilters()">
-                            <i class="bi bi-x-lg"></i> Clear
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm flex-fill" onclick="exportExcel()">
-                            <i class="bi bi-file-earmark-arrow-down"></i> Export
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Data Table -->
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0">
-                <thead>
-                    <tr>
-                        <th style="width:40px">#</th>
-                        <th data-sort="order_date" class="sort-icon">Order Date</th>
-                        <th data-sort="event_date" class="sort-icon">Event Date</th>
-                        <th data-sort="title" class="sort-icon">Title</th>
-                        <th data-sort="idol" class="sort-icon">Idol</th>
-                        <th data-sort="type" class="sort-icon">Type</th>
-                        <th data-sort="price_per_qty" class="sort-icon text-end">Price/Qty</th>
-                        <th data-sort="qty" class="sort-icon text-end">Qty</th>
-                        <th class="text-end">Total</th>
-                        <th style="width:110px" class="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr><td colspan="10" class="text-center py-4 text-muted">Loading data...</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="card-footer d-flex justify-content-between align-items-center py-2">
-            <div class="small text-muted" id="pageInfo">-</div>
-            <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
-        </div>
-    </div>
-</div>
-
-<!-- Form Modal -->
-<div class="modal fade" id="formModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="formTitle">Add Item</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="itemForm">
-                    <input type="hidden" id="itemId">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label small">Order Date</label>
-                            <input type="date" class="form-control form-control-sm" id="itemOrderDate" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small">Event Date</label>
-                            <input type="date" class="form-control form-control-sm" id="itemEventDate">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small">Title</label>
-                            <input type="text" class="form-control form-control-sm" id="itemTitle" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small">Idol</label>
-                            <div class="sd-wrap">
-                                <input type="text" class="form-control form-control-sm" id="itemIdol" required autocomplete="off" placeholder="Search or type...">
-                                <input type="hidden" id="itemIdolId">
-                                <div class="sd-list" id="idolDropdown"></div>
-                            </div>
-                            <div class="form-text small text-info" id="itemIdolHint" style="display:none"></div>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small">Type</label>
-                            <div class="sd-wrap">
-                                <input type="text" class="form-control form-control-sm" id="itemType" required autocomplete="off" placeholder="Search or type...">
-                                <div class="sd-list" id="typeDropdown"></div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small">Price / Qty</label>
-                            <input type="number" class="form-control form-control-sm" id="itemPrice" min="0" step="0.01" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small">Qty</label>
-                            <input type="number" class="form-control form-control-sm" id="itemQty" min="1" value="1" required>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="saveItem()">
-                    <i class="bi bi-check-lg"></i> Save
-                </button>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal fade" id="importModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Import from Excel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="small text-muted">Import data from <strong>idols.xlsx</strong>. This will <strong class="text-danger">replace all existing data</strong> in the database.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="doImport()">
-                    <i class="bi bi-file-earmark-excel"></i> Import
-                </button>
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-header py-2"><strong><i class="bi bi-diagram-3"></i> Top วง/กลุ่ม</strong></div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr><th>#</th><th>วง/กลุ่ม</th><th class="text-end">ยอด (฿)</th></tr></thead>
+                        <tbody id="topGroups"><tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Delete Confirm Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-0">Are you sure you want to delete <strong id="deleteName"></strong>?</p>
-                <input type="hidden" id="deleteId">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()">
-                    <i class="bi bi-trash"></i> Delete
-                </button>
+        <div class="col-12 col-lg-4">
+            <div class="card p-3 h-100">
+                <h6 class="card-title mb-3">สัดส่วนตามค่าย</h6>
+                <div class="chart-container sm">
+                    <canvas id="chartCompany"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -370,483 +173,163 @@ window.fetch = function(url, opts = {}) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let currentSort = 'order_date';
-let currentDir = 'desc';
-let currentPage = 1;
-let debounceTimer = null;
-let filtersData = { idols: [], types: [] };
-let msIdol, msType;
+let chartMonthly, chartType, chartCompany;
 
-// --- Init ---
-document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const pDateFrom = urlParams.get('date_from');
-    const pDateTo   = urlParams.get('date_to');
-    const pIdol     = urlParams.get('idol');
+const PALETTE = ['#7c3aed','#a78bfa','#ec4899','#f59e0b','#0891b2','#10b981','#ef4444','#6366f1','#14b8a6','#f97316'];
 
-    if (pDateFrom) $('fDateFrom').value = pDateFrom;
-    if (pDateTo)   $('fDateTo').value   = pDateTo;
-
-    await loadFilters();
-
-    if (pIdol) msIdol.setSelected([pIdol]);
-
-    loadData();
-    setupSort();
-    setupFilterEvents();
+document.addEventListener('DOMContentLoaded', () => {
+    $('periodSelect').addEventListener('change', loadDashboard);
+    loadDashboard();
 });
 
-function setupSort() {
-    document.querySelectorAll('th[data-sort]').forEach(th => {
-        th.addEventListener('click', () => {
-            const col = th.dataset.sort;
-            if (currentSort === col) {
-                currentDir = currentDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort = col;
-                currentDir = 'asc';
-            }
-            document.querySelectorAll('th[data-sort]').forEach(h => h.className = 'sort-icon');
-            th.className = currentDir === 'asc' ? 'sort-asc' : 'sort-desc';
-            if (['price_per_qty', 'qty'].includes(col)) th.classList.add('text-end');
-            currentPage = 1;
-            loadData();
-        });
+function currentRange() {
+    const v = $('periodSelect').value;
+    if (v === 'all') return { from: '', to: '' };
+    if (v === 'last12') {
+        const d = new Date();
+        const to = d.toLocaleDateString('en-CA');
+        d.setMonth(d.getMonth() - 11);
+        d.setDate(1);
+        return { from: d.toLocaleDateString('en-CA'), to };
+    }
+    // year value (e.g. "2025")
+    return { from: `${v}-01-01`, to: `${v}-12-31` };
+}
+
+async function loadDashboard() {
+    const { from, to } = currentRange();
+    const params = new URLSearchParams({ action: 'report_dashboard', date_from: from, date_to: to });
+    const res = await fetch('api.php?' + params, { cache: 'no-store' }).then(r => r.json());
+    if (res.error) { alert(res.error); return; }
+
+    populateYears(res.years);
+    renderKpis(res.kpis);
+    renderMonthly(res.monthly);
+    renderType(res.by_type);
+    renderCompany(res.by_company);
+    renderTop('topMembers', res.top_members, r => r.display);
+    renderTop('topGroups', res.top_groups, r => r.name);
+}
+
+function populateYears(years) {
+    const sel = $('periodSelect');
+    if (sel._yearsDone || !Array.isArray(years)) return;
+    years.forEach(y => {
+        const o = document.createElement('option');
+        o.value = y; o.textContent = `ปี ${y}`;
+        sel.appendChild(o);
+    });
+    sel._yearsDone = true;
+}
+
+// --- Formatters ---
+function fmtMoney(n) { return '฿' + new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n || 0); }
+function fmtInt(n)   { return new Intl.NumberFormat('th-TH').format(n || 0); }
+function escHtml(s)  { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function renderKpis(k) {
+    $('kpiSpent').textContent  = fmtMoney(k.total_spent);
+    $('kpiSpentSub').innerHTML = `${k.active_months || 0} เดือนที่มีข้อมูล`;
+
+    $('kpiItems').textContent  = fmtInt(k.total_items);
+    $('kpiItemsSub').innerHTML = `${fmtInt(k.total_qty)} ชิ้น`;
+
+    $('kpiAvg').textContent    = fmtMoney(k.avg_per_month);
+    $('kpiAvgSub').innerHTML   = k.top_type ? `ประเภทเด่น: ${escHtml(k.top_type)}` : '&nbsp;';
+
+    $('kpiLatest').textContent = fmtMoney(k.latest_month_spent);
+    if (k.mom_change_pct === null || k.mom_change_pct === undefined) {
+        $('kpiLatestSub').innerHTML = k.latest_month ? escHtml(k.latest_month) : '&nbsp;';
+    } else {
+        const up = k.mom_change_pct >= 0;
+        const cls = up ? 'delta-up' : 'delta-down';
+        const arrow = up ? '▲' : '▼';
+        $('kpiLatestSub').innerHTML =
+            `<span class="${cls}">${arrow} ${Math.abs(k.mom_change_pct).toFixed(1)}%</span> เทียบเดือนก่อน`;
+    }
+}
+
+function renderMonthly(data) {
+    const labels = data.map(d => d.month);
+    const values = data.map(d => d.total_price);
+    if (chartMonthly) chartMonthly.destroy();
+    chartMonthly = new Chart($('chartMonthly'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'ยอดใช้จ่าย (฿)',
+                data: values,
+                backgroundColor: 'rgba(124,58,237,.7)',
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: c => fmtMoney(c.parsed.y) } },
+            },
+            scales: { y: { beginAtZero: true, ticks: { callback: v => fmtMoney(v) } } },
+        },
     });
 }
 
-function setupFilterEvents() {
-    $('fSearch').addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { currentPage = 1; loadData(); }, 300); });
-    ['fDateFrom', 'fDateTo'].forEach(id => {
-        $(id).addEventListener('change', () => { currentPage = 1; loadData(); });
+// Collapse a sorted-desc list to top N slices + an "อื่นๆ" bucket so the
+// doughnut stays readable when there are many categories.
+function topNWithOthers(data, labelKey, n = 5) {
+    const rows = data.map(d => ({ label: d[labelKey] || '(ไม่ระบุ)', value: d.total_price }));
+    if (rows.length <= n) return rows;
+    const head = rows.slice(0, n);
+    const restTotal = rows.slice(n).reduce((s, r) => s + r.value, 0);
+    if (restTotal > 0) head.push({ label: `อื่นๆ (${rows.length - n})`, value: restTotal });
+    return head;
+}
+
+function renderDoughnut(existing, canvasId, data, labelKey) {
+    const slices = topNWithOthers(data, labelKey);
+    const labels = slices.map(s => s.label);
+    const values = slices.map(s => s.value);
+    if (existing) existing.destroy();
+    return new Chart($(canvasId), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{ data: values, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]) }],
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { callbacks: { label: c => `${c.label}: ${fmtMoney(c.parsed)}` } },
+            },
+        },
     });
 }
 
-// --- API ---
-async function api(url, opts = {}) {
-    const res = await fetch(url, opts);
-    return res.json();
-}
+function renderType(data)    { chartType    = renderDoughnut(chartType,    'chartType',    data, 'type'); }
+function renderCompany(data) { chartCompany = renderDoughnut(chartCompany, 'chartCompany', data, 'name'); }
 
-async function loadFilters() {
-    filtersData = await api('api.php?action=filters');
-    msIdol = initMultiSelect('msIdol', () => filtersData.idols, () => { currentPage = 1; loadData(); });
-    msType = initMultiSelect('msType', () => filtersData.types, () => { currentPage = 1; loadData(); });
-    initSearchableDropdown('itemIdol', 'idolDropdown', () => filtersData.idols);
-    initSearchableDropdown('itemType', 'typeDropdown', () => filtersData.types);
-    refreshPendingBanner();
-}
-
-async function refreshPendingBanner() {
-    try {
-        const res = await api('api.php?action=idol_entities_tree');
-        const count = res.ambiguous_count || 0;
-        const banner = $('pendingBanner');
-        if (count > 0) {
-            $('pendingBannerCount').textContent = count;
-            banner.classList.remove('d-none');
-            banner.classList.add('d-flex');
-        } else {
-            banner.classList.remove('d-flex');
-            banner.classList.add('d-none');
-        }
-    } catch (_) { /* non-blocking */ }
-}
-
-function initSearchableDropdown(inputId, listId, getItems) {
-    const input = $(inputId);
-    const list = $(listId);
-    if (input._sdInit) return;
-    input._sdInit = true;
-    let activeIdx = -1;
-
-    // If this dropdown drives the idol field, clear any cached idol_id when text changes.
-    if (inputId === 'itemIdol') {
-        input.addEventListener('input', () => {
-            const hidden = $('itemIdolId');
-            if (hidden) hidden.value = '';
-            const hint = $('itemIdolHint');
-            if (hint) hint.style.display = 'none';
-        });
-    }
-
-    function render() {
-        const q = input.value.toLowerCase();
-        const items = getItems().filter(i => !q || i.toLowerCase().includes(q));
-        activeIdx = -1;
-        if (items.length === 0) {
-            list.innerHTML = '<div class="sd-empty">No match — type to add new</div>';
-        } else {
-            list.innerHTML = items.map((item, i) =>
-                `<div class="sd-item" data-idx="${i}" data-val="${escHtml(item)}">${highlightMatch(item, q)}</div>`
-            ).join('');
-        }
-        list.classList.add('show');
-    }
-
-    function highlightMatch(text, q) {
-        if (!q) return escHtml(text);
-        const idx = text.toLowerCase().indexOf(q);
-        if (idx === -1) return escHtml(text);
-        return escHtml(text.substring(0, idx)) + '<strong>' + escHtml(text.substring(idx, idx + q.length)) + '</strong>' + escHtml(text.substring(idx + q.length));
-    }
-
-    function pick(val) {
-        input.value = val;
-        list.classList.remove('show');
-        input.focus();
-    }
-
-    input.addEventListener('focus', render);
-    input.addEventListener('input', render);
-    input.addEventListener('keydown', e => {
-        const items = list.querySelectorAll('.sd-item');
-        if (!list.classList.contains('show') || items.length === 0) return;
-        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); items.forEach((el, i) => el.classList.toggle('active', i === activeIdx)); items[activeIdx]?.scrollIntoView({ block: 'nearest' }); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); items.forEach((el, i) => el.classList.toggle('active', i === activeIdx)); items[activeIdx]?.scrollIntoView({ block: 'nearest' }); }
-        else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); pick(items[activeIdx].dataset.val); }
-        else if (e.key === 'Escape') { list.classList.remove('show'); }
-    });
-
-    list.addEventListener('mousedown', e => {
-        const item = e.target.closest('.sd-item');
-        if (item) { e.preventDefault(); pick(item.dataset.val); }
-    });
-
-    document.addEventListener('click', e => {
-        if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('show');
-    });
-}
-
-function initMultiSelect(wrapId, getItems, onChange) {
-    const wrap = document.getElementById(wrapId);
-    if (wrap._msInit) return wrap._msInst;
-    wrap._msInit = true;
-    const box  = wrap.querySelector('.ms-box');
-    const drop = wrap.querySelector('.ms-drop');
-    const srch = wrap.querySelector('.ms-search');
-    const lst  = wrap.querySelector('.ms-list');
-    let selected = [];
-
-    function renderBox() {
-        box.innerHTML = '';
-        if (selected.length === 0) {
-            box.innerHTML = '<span class="ms-ph">All</span>';
-        } else {
-            selected.forEach(val => {
-                const tag = document.createElement('span');
-                tag.className = 'badge badge-idol d-inline-flex align-items-center gap-1';
-                tag.innerHTML = escHtml(val) + '<i class="bi bi-x" style="cursor:pointer;font-size:10px"></i>';
-                tag.querySelector('i').addEventListener('click', e => {
-                    e.stopPropagation();
-                    selected = selected.filter(v => v !== val);
-                    renderBox(); renderList(); onChange(selected);
-                });
-                box.appendChild(tag);
-            });
-        }
-    }
-
-    function renderList() {
-        const q = srch.value.toLowerCase();
-        const items = getItems().filter(i => !q || i.toLowerCase().includes(q));
-        if (items.length === 0) {
-            lst.innerHTML = '<div class="ms-empty">No match</div>';
-        } else {
-            lst.innerHTML = items.map(item => {
-                const sel = selected.includes(item);
-                return `<div class="ms-item${sel ? ' sel' : ''}" data-val="${escHtml(item)}">
-                    <i class="bi ${sel ? 'bi-check-square-fill' : 'bi-square'}" style="color:${sel ? 'var(--primary)' : '#adb5bd'}"></i>
-                    ${escHtml(item)}
-                </div>`;
-            }).join('');
-            lst.querySelectorAll('.ms-item').forEach(el => {
-                el.addEventListener('click', () => {
-                    const val = el.dataset.val;
-                    selected = selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val];
-                    renderBox(); renderList(); onChange(selected);
-                });
-            });
-        }
-    }
-
-    box.addEventListener('click', () => { srch.value = ''; renderList(); drop.classList.toggle('show'); });
-    srch.addEventListener('input', renderList);
-    document.addEventListener('click', e => { if (!wrap.contains(e.target)) drop.classList.remove('show'); });
-
-    renderBox();
-    wrap._msInst = {
-        getSelected: () => [...selected],
-        clear()            { selected = []; renderBox(); },
-        setSelected(arr)   { selected = [...arr]; renderBox(); },
-    };
-    return wrap._msInst;
-}
-
-async function loadData() {
-    const params = new URLSearchParams({
-        action: 'list',
-        page: currentPage,
-        per_page: 20,
-        sort: currentSort,
-        dir: currentDir,
-        search: $('fSearch').value,
-        date_from: $('fDateFrom').value,
-        date_to: $('fDateTo').value,
-    });
-    if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
-    if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
-
-    const res = await api('api.php?' + params);
-    renderTable(res);
-    renderPagination(res);
-    renderSummary(res);
-}
-
-function formatNumber(n) {
-    return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-}
-
-function formatInt(n) {
-    return new Intl.NumberFormat('th-TH').format(n);
-}
-
-function formatDate(d) {
-    if (!d) return '<span class="text-muted">-</span>';
-    const dt = new Date(d + 'T00:00:00');
-    return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function renderTable(res) {
-    const tbody = $('tableBody');
-    if (!res.data || res.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No data found</td></tr>';
+function renderTop(tbodyId, rows, nameFn) {
+    const tbody = $(tbodyId);
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">ไม่มีข้อมูล</td></tr>';
         return;
     }
-    const offset = (res.page - 1) * res.per_page;
-    tbody.innerHTML = res.data.map((r, i) => `
-        <tr>
-            <td class="text-muted">${offset + i + 1}</td>
-            <td>${formatDate(r.order_date)}</td>
-            <td>${formatDate(r.event_date)}</td>
-            <td>${escHtml(r.title)}</td>
-            <td><span class="badge badge-idol">${escHtml(r.idol)}</span></td>
-            <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
-            <td class="text-end">${formatNumber(r.price_per_qty)}</td>
-            <td class="text-end">${r.qty}</td>
-            <td class="text-end fw-semibold">${formatNumber(r.total_price)}</td>
-            <td class="text-center text-nowrap">
-                <button class="btn btn-outline-secondary btn-sm px-1 py-0" onclick="cloneItem(${r.id})" title="Clone">
-                    <i class="bi bi-copy"></i>
-                </button>
-                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editItem(${r.id})" title="Edit">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteItem(${r.id}, '${escJs(r.title)}')" title="Delete">
-                    <i class="bi bi-trash"></i>
-                </button>
+    const max = Math.max(...rows.map(r => r.total_price), 1);
+    tbody.innerHTML = rows.map((r, i) => {
+        const rankCls = i < 3 ? `rank-${i + 1}` : '';
+        const pct = (r.total_price / max) * 100;
+        return `<tr>
+            <td class="${rankCls}">${i + 1}</td>
+            <td>
+                ${escHtml(nameFn(r))}
+                <div class="progress-bar-custom mt-1"><div class="fill" style="width:${pct}%"></div></div>
             </td>
-        </tr>
-    `).join('');
+            <td class="text-end fw-semibold">${fmtMoney(r.total_price)}</td>
+        </tr>`;
+    }).join('');
 }
-
-function renderPagination(res) {
-    const pg = $('pagination');
-    const { page, total_pages } = res;
-    $('pageInfo').textContent = `Showing ${((page-1)*res.per_page)+1}-${Math.min(page*res.per_page, res.total)} of ${formatInt(res.total)} items`;
-
-    if (total_pages <= 1) { pg.innerHTML = ''; return; }
-
-    let html = '';
-    html += `<li class="page-item ${page===1?'disabled':''}"><a class="page-link" href="#" onclick="goPage(${page-1});return false">&laquo;</a></li>`;
-
-    let start = Math.max(1, page - 2);
-    let end = Math.min(total_pages, page + 2);
-    if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="goPage(1);return false">1</a></li><li class="page-item disabled"><span class="page-link">...</span></li>`;
-    for (let i = start; i <= end; i++) {
-        html += `<li class="page-item ${i===page?'active':''}"><a class="page-link" href="#" onclick="goPage(${i});return false">${i}</a></li>`;
-    }
-    if (end < total_pages) html += `<li class="page-item disabled"><span class="page-link">...</span></li><li class="page-item"><a class="page-link" href="#" onclick="goPage(${total_pages});return false">${total_pages}</a></li>`;
-
-    html += `<li class="page-item ${page===total_pages?'disabled':''}"><a class="page-link" href="#" onclick="goPage(${page+1});return false">&raquo;</a></li>`;
-    pg.innerHTML = html;
-}
-
-function renderSummary(res) {
-    $('sumTotal').textContent = formatInt(res.total);
-    $('sumQty').textContent = formatInt(res.summary.total_qty);
-    $('sumPrice').textContent = '฿' + formatNumber(res.summary.total_price);
-    const avg = res.total > 0 ? Math.round(res.summary.total_price / res.total) : 0;
-    $('sumAvg').textContent = '฿' + formatNumber(avg);
-}
-
-function goPage(p) { currentPage = p; loadData(); }
-
-// --- CRUD ---
-function showFormModal(id = null) {
-    $('itemId').value = '';
-    $('itemIdolId').value = '';
-    $('itemIdolHint').style.display = 'none';
-    $('itemIdolHint').innerHTML = '';
-    $('itemForm').reset();
-    $('formTitle').textContent = id ? 'Edit Item' : 'Add Item';
-    new bootstrap.Modal($('formModal')).show();
-}
-
-async function editItem(id) {
-    const res = await api('api.php?action=get&id=' + id);
-    if (res.error) { alert(res.error); return; }
-    const d = res.data;
-    $('itemId').value = d.id;
-    $('itemOrderDate').value = d.order_date || '';
-    $('itemEventDate').value = d.event_date || '';
-    $('itemTitle').value = d.title;
-    $('itemIdol').value = d.idol;
-    $('itemIdolId').value = d.idol_id || '';
-    $('itemIdolHint').style.display = 'none';
-    $('itemType').value = d.type;
-    $('itemPrice').value = d.price_per_qty;
-    $('itemQty').value = d.qty;
-    $('formTitle').textContent = 'Edit Item';
-    new bootstrap.Modal($('formModal')).show();
-}
-
-async function cloneItem(id) {
-    const res = await api('api.php?action=get&id=' + id);
-    if (res.error) { alert(res.error); return; }
-    const d = res.data;
-    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-    $('itemId').value = '';
-    $('itemOrderDate').value = today;
-    $('itemEventDate').value = today;
-    $('itemTitle').value = d.title;
-    $('itemIdol').value = d.idol;
-    $('itemIdolId').value = d.idol_id || '';
-    $('itemIdolHint').style.display = 'none';
-    $('itemType').value = d.type;
-    $('itemPrice').value = d.price_per_qty;
-    $('itemQty').value = d.qty;
-    $('formTitle').textContent = 'Clone Item';
-    new bootstrap.Modal($('formModal')).show();
-}
-
-async function saveItem(explicitIdolId) {
-    const form = $('itemForm');
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-
-    const id = $('itemId').value;
-    const body = new FormData();
-    body.append('action', id ? 'update' : 'create');
-    if (id) body.append('id', id);
-    body.append('order_date', $('itemOrderDate').value);
-    body.append('event_date', $('itemEventDate').value);
-    body.append('title', $('itemTitle').value);
-    body.append('idol', $('itemIdol').value);
-    const idolId = explicitIdolId ?? $('itemIdolId').value;
-    if (idolId) body.append('idol_id', idolId);
-    body.append('type', $('itemType').value);
-    body.append('price_per_qty', $('itemPrice').value);
-    body.append('qty', $('itemQty').value);
-
-    showLoading(true);
-    const res = await fetch('api.php', { method: 'POST', body });
-    const json = await res.json().catch(() => ({}));
-    showLoading(false);
-
-    // 409 = ambiguous idol name — show picker to disambiguate
-    if (res.status === 409 && Array.isArray(json.candidates)) {
-        showIdolPicker(json.name || $('itemIdol').value, json.candidates);
-        return;
-    }
-    if (json.error) { alert(json.error); return; }
-    bootstrap.Modal.getInstance($('formModal')).hide();
-    loadFilters();
-    loadData();
-}
-
-function showIdolPicker(name, candidates) {
-    const html = candidates.map(c => `
-        <button class="btn btn-outline-primary btn-sm me-1 mb-1" onclick="pickIdol(${c.id}, '${escJs(c.display)}')">
-            ${escHtml(c.display)}
-        </button>
-    `).join('');
-    const wrap = $('itemIdolHint');
-    wrap.innerHTML = `<strong>Multiple "${escHtml(name)}" exist — pick one:</strong><br>${html}`;
-    wrap.style.display = '';
-}
-
-function pickIdol(idolId, display) {
-    $('itemIdolId').value = idolId;
-    $('itemIdolHint').innerHTML = `<i class="bi bi-check-circle text-success"></i> Linked to: <strong>${escHtml(display)}</strong>`;
-    saveItem(idolId);
-}
-
-function deleteItem(id, title) {
-    $('deleteId').value = id;
-    $('deleteName').textContent = title;
-    new bootstrap.Modal($('deleteModal')).show();
-}
-
-async function confirmDelete() {
-    const id = $('deleteId').value;
-    const body = new FormData();
-    body.append('action', 'delete');
-    body.append('id', id);
-
-    showLoading(true);
-    await api('api.php', { method: 'POST', body });
-    showLoading(false);
-
-    bootstrap.Modal.getInstance($('deleteModal')).hide();
-    loadFilters();
-    loadData();
-}
-
-// --- Import ---
-function showImportModal() {
-    new bootstrap.Modal($('importModal')).show();
-}
-
-async function doImport() {
-    bootstrap.Modal.getInstance($('importModal')).hide();
-    showLoading(true);
-    const body = new FormData();
-    body.append('action', 'import');
-    const res = await api('import.php', { method: 'POST', body });
-    showLoading(false);
-    alert(res.message || 'Import complete');
-    loadFilters();
-    loadData();
-}
-
-function resetFilters() {
-    $('fSearch').value = '';
-    $('fDateFrom').value = '';
-    $('fDateTo').value = '';
-    if (msIdol) msIdol.clear();
-    if (msType) msType.clear();
-    currentPage = 1;
-    loadData();
-}
-
-// --- Export ---
-function exportExcel() {
-    const params = new URLSearchParams();
-    const search = $('fSearch').value;
-    const from   = $('fDateFrom').value;
-    const to     = $('fDateTo').value;
-    if (search) params.set('search', search);
-    if (from)   params.set('date_from', from);
-    if (to)     params.set('date_to', to);
-    if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
-    if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
-    window.location.href = 'export.php?' + params.toString();
-}
-
-// --- Helpers ---
-function showLoading(show) { $('loading').style.display = show ? 'flex' : 'none'; }
-function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-function escJs(s) { return (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 </script>
 </body>
 </html>

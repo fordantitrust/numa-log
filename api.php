@@ -25,6 +25,7 @@ try {
         'filters' => handleFilters($pdo),
         'report_monthly' => handleReportMonthly($pdo),
         'report_daily' => handleReportDaily($pdo),
+        'report_dashboard' => handleReportDashboard($pdo),
         'report_idol' => handleReportIdol($pdo),
         'report_type' => handleReportType($pdo),
         'report_idol_detail' => handleReportIdolDetail($pdo),
@@ -646,6 +647,201 @@ function handleReportByCompany(PDO $pdo): void
     usort($result, fn($a, $b) => $b['total_price'] <=> $a['total_price']);
 
     jsonResponse(['data' => $result]);
+}
+
+/**
+ * Consolidated payload for the Dashboard landing page (index.php).
+ * Returns KPIs, monthly trend, top members/groups, and type/company breakdowns
+ * in a single round-trip. Accepts optional date_from / date_to (YYYY-MM-DD) that
+ * filter every aggregate by items.order_date. The membership-aware joins mirror
+ * handleReportByGroup / handleReportByCompany so numbers match the Report page.
+ */
+function handleReportDashboard(PDO $pdo): void
+{
+    $from = trim($_GET['date_from'] ?? '');
+    $to   = trim($_GET['date_to'] ?? '');
+    if ($from !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) $from = '';
+    if ($to   !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to))   $to   = '';
+
+    // Date filter fragment applied to items alias `i`. All dashboard queries use the
+    // same alias, so a single clause + params array is reused for every prepare.
+    $dateClause = '';
+    $dateParams = [];
+    if ($from !== '') { $dateClause .= " AND i.order_date >= :df"; $dateParams[':df'] = $from; }
+    if ($to   !== '') { $dateClause .= " AND i.order_date <= :dt"; $dateParams[':dt'] = $to; }
+
+    $run = function (string $sql) use ($pdo, $dateParams) {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($dateParams);
+        return $stmt->fetchAll();
+    };
+
+    // Monthly trend (in range)
+    $monthly = $run("
+        SELECT
+            strftime('%Y-%m', i.order_date) AS month,
+            COUNT(*)                        AS items,
+            SUM(i.qty)                      AS total_qty,
+            SUM(i.price_per_qty * i.qty)    AS total_price
+        FROM items i
+        WHERE i.order_date != '' $dateClause
+        GROUP BY month
+        ORDER BY month
+    ");
+    $monthly = array_map(fn($r) => [
+        'month'       => $r['month'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $monthly);
+
+    // Overall KPI totals (in range)
+    $totals = $run("
+        SELECT
+            COUNT(*)                                    AS total_items,
+            COALESCE(SUM(i.qty), 0)                     AS total_qty,
+            COALESCE(SUM(i.price_per_qty * i.qty), 0)   AS total_spent
+        FROM items i
+        WHERE i.order_date != '' $dateClause
+    ")[0];
+
+    // Top members (mapped + unmapped), top 5
+    $topMembers = array_map(fn($r) => enrichIdolRow($r), $run("
+        SELECT
+            i.idol_id                                   AS idol_id,
+            COALESCE(m.name, i.idol)                    AS idol,
+            COALESCE(m.display_hint, '')                AS display_hint,
+            COUNT(*)                                    AS items,
+            SUM(i.qty)                                  AS total_qty,
+            SUM(i.price_per_qty * i.qty)                AS total_price
+        FROM items i
+        LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
+        WHERE i.idol != '' AND i.idol != '-' $dateClause
+        GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
+        ORDER BY total_price DESC
+        LIMIT 5
+    "));
+
+    // By type
+    $byType = array_map(fn($r) => [
+        'type'        => $r['type'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $run("
+        SELECT i.type AS type, COUNT(*) AS items, SUM(i.qty) AS total_qty, SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        WHERE i.type != '' AND i.type != '-' $dateClause
+        GROUP BY i.type
+        ORDER BY total_price DESC
+    "));
+
+    // Top groups (membership-aware, top 5)
+    $topGroups = array_map(fn($r) => [
+        'group_id'    => (int) $r['group_id'],
+        'name'        => $r['group_name'],
+        'category'    => $r['group_category'],
+        'parent'      => $r['company_name'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $run("
+        SELECT
+            g.id            AS group_id,
+            g.name          AS group_name,
+            g.category      AS group_category,
+            c.name          AS company_name,
+            COUNT(*)        AS items,
+            SUM(i.qty)      AS total_qty,
+            SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        JOIN idol_memberships ms
+            ON ms.member_id = m.id
+            AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g
+            ON g.id = ms.group_id AND g.category IN ('group','unit')
+        LEFT JOIN idol_entities c
+            ON c.id = g.parent_id AND c.category = 'company'
+        WHERE 1=1 $dateClause
+        GROUP BY g.id
+        ORDER BY total_price DESC
+        LIMIT 5
+    "));
+
+    // By company (membership-aware)
+    $byCompany = array_map(fn($r) => [
+        'name'        => $r['company_name'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $run("
+        SELECT
+            c.name          AS company_name,
+            COUNT(*)        AS items,
+            SUM(i.qty)      AS total_qty,
+            SUM(i.price_per_qty * i.qty) AS total_price
+        FROM items i
+        JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        JOIN idol_memberships ms
+            ON ms.member_id = m.id
+            AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g
+            ON g.id = ms.group_id AND g.category IN ('group','unit')
+        JOIN idol_entities c
+            ON c.id = g.parent_id AND c.category = 'company'
+        WHERE 1=1 $dateClause
+        GROUP BY c.id
+        ORDER BY total_price DESC
+    "));
+
+    // Available years for the period selector (unfiltered).
+    $years = $pdo->query("
+        SELECT DISTINCT strftime('%Y', order_date) AS y
+        FROM items WHERE order_date != ''
+        ORDER BY y DESC
+    ")->fetchAll(PDO::FETCH_COLUMN);
+
+    // KPIs derived from totals + monthly series
+    $activeMonths = count($monthly);
+    $totalSpent   = (float) $totals['total_spent'];
+    $latestMonth  = $activeMonths ? $monthly[$activeMonths - 1] : null;
+    $prevMonth    = $activeMonths >= 2 ? $monthly[$activeMonths - 2] : null;
+    $momChange    = null;
+    if ($latestMonth && $prevMonth && $prevMonth['total_price'] > 0) {
+        $momChange = ($latestMonth['total_price'] - $prevMonth['total_price']) / $prevMonth['total_price'] * 100;
+    }
+
+    $kpis = [
+        'total_items'       => (int) $totals['total_items'],
+        'total_qty'         => (int) $totals['total_qty'],
+        'total_spent'       => $totalSpent,
+        'active_months'     => $activeMonths,
+        'avg_per_month'     => $activeMonths ? $totalSpent / $activeMonths : 0.0,
+        'latest_month'      => $latestMonth['month'] ?? null,
+        'latest_month_spent'=> $latestMonth['total_price'] ?? 0.0,
+        'prev_month_spent'  => $prevMonth['total_price'] ?? 0.0,
+        'mom_change_pct'    => $momChange,
+        'top_member'        => $topMembers[0]['display'] ?? null,
+        'top_group'         => $topGroups[0]['name'] ?? null,
+        'top_type'          => $byType[0]['type'] ?? null,
+    ];
+
+    jsonResponse([
+        'kpis'        => $kpis,
+        'monthly'     => $monthly,
+        'top_members' => $topMembers,
+        'top_groups'  => $topGroups,
+        'by_type'     => $byType,
+        'by_company'  => $byCompany,
+        'years'       => $years,
+    ]);
 }
 
 function handleIdolEntitiesTree(PDO $pdo): void
