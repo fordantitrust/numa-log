@@ -31,6 +31,11 @@ try {
         'report_idol_detail' => handleReportIdolDetail($pdo),
         'report_by_group' => handleReportByGroup($pdo),
         'report_by_company' => handleReportByCompany($pdo),
+        'report_by_unit' => handleReportByUnit($pdo),
+        'report_event' => handleReportEvent($pdo),
+        'report_top_items' => handleReportTopItems($pdo),
+        'report_seasonality' => handleReportSeasonality($pdo),
+        'report_inactive' => handleReportInactive($pdo),
         'report_group_detail' => handleReportGroupDetail($pdo),
         'idol_entities_tree' => handleIdolEntitiesTree($pdo),
         'idol_entity_save' => handleIdolEntitySave($pdo),
@@ -842,6 +847,271 @@ function handleReportDashboard(PDO $pdo): void
         'by_company'  => $byCompany,
         'years'       => $years,
     ]);
+}
+
+/**
+ * Spending rolled up by UNIT-category entities (category = 'unit').
+ * Unlike the By Group report (primary memberships only), this includes
+ * BOTH primary and non-primary (sub-unit / project) memberships, so it
+ * surfaces sub-unit activity the group report rolls into the parent group.
+ * Membership window is matched against item.order_date.
+ */
+function handleReportByUnit(PDO $pdo): void
+{
+    $rows = $pdo->query("
+        SELECT
+            u.id                                          AS unit_id,
+            u.name                                        AS unit_name,
+            c.name                                        AS parent_name,
+            COUNT(*)                                      AS items,
+            SUM(i.qty)                                    AS total_qty,
+            SUM(i.price_per_qty * i.qty)                  AS total_price,
+            COUNT(DISTINCT m.id)                          AS members
+        FROM items i
+        JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        JOIN idol_memberships ms
+            ON ms.member_id = m.id
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities u
+            ON u.id = ms.group_id AND u.category = 'unit'
+        LEFT JOIN idol_entities c
+            ON c.id = u.parent_id
+        GROUP BY u.id
+        ORDER BY total_price DESC
+    ")->fetchAll();
+
+    $result = array_map(fn($r) => [
+        'unit_id'     => (int) $r['unit_id'],
+        'name'        => $r['unit_name'],
+        'parent'      => $r['parent_name'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+        'members'     => (int) $r['members'],
+    ], $rows);
+
+    jsonResponse(['data' => $result]);
+}
+
+/**
+ * Spending grouped by event_date (the date of the concert/event the item is
+ * tied to), plus order→event lead-time statistics. event_date is otherwise
+ * unused by the other reports, which all key off order_date.
+ */
+function handleReportEvent(PDO $pdo): void
+{
+    // Per-event aggregate
+    $events = $pdo->query("
+        SELECT
+            event_date                          AS event,
+            COUNT(*)                            AS items,
+            SUM(qty)                            AS total_qty,
+            SUM(price_per_qty * qty)            AS total_price,
+            COUNT(DISTINCT idol)                AS idols,
+            COUNT(DISTINCT type)                AS types
+        FROM items
+        WHERE event_date IS NOT NULL AND event_date != ''
+        GROUP BY event_date
+        ORDER BY event_date DESC
+    ")->fetchAll();
+
+    $events = array_map(fn($r) => [
+        'event'       => $r['event'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+        'idols'       => (int) $r['idols'],
+        'types'       => (int) $r['types'],
+    ], $events);
+
+    // Lead-time stats (days between ordering and the event), only rows with both dates.
+    $lead = $pdo->query("
+        SELECT
+            COUNT(*)                                                       AS n,
+            AVG(julianday(event_date) - julianday(order_date))             AS avg_days,
+            MIN(julianday(event_date) - julianday(order_date))             AS min_days,
+            MAX(julianday(event_date) - julianday(order_date))             AS max_days
+        FROM items
+        WHERE event_date IS NOT NULL AND event_date != ''
+          AND order_date IS NOT NULL AND order_date != ''
+    ")->fetch();
+
+    // How many items have no event_date at all (coverage indicator)
+    $noEvent = (int) $pdo->query("
+        SELECT COUNT(*) FROM items WHERE event_date IS NULL OR event_date = ''
+    ")->fetchColumn();
+
+    jsonResponse([
+        'data'      => $events,
+        'lead_time' => [
+            'n'        => (int) ($lead['n'] ?? 0),
+            'avg_days' => $lead['avg_days'] !== null ? round((float) $lead['avg_days'], 1) : null,
+            'min_days' => $lead['min_days'] !== null ? (int) round((float) $lead['min_days']) : null,
+            'max_days' => $lead['max_days'] !== null ? (int) round((float) $lead['max_days']) : null,
+        ],
+        'no_event'  => $noEvent,
+    ]);
+}
+
+/**
+ * "Top / extremes" report: the most expensive single line items, the most
+ * frequently bought titles, and average unit price per type.
+ */
+function handleReportTopItems(PDO $pdo): void
+{
+    // Most expensive single line items (price_per_qty * qty)
+    $expensive = $pdo->query("
+        SELECT
+            id, title, idol, type, order_date, event_date,
+            price_per_qty, qty,
+            (price_per_qty * qty) AS line_total
+        FROM items
+        ORDER BY line_total DESC
+        LIMIT 20
+    ")->fetchAll();
+    $expensive = array_map(fn($r) => [
+        'id'            => (int) $r['id'],
+        'title'         => $r['title'],
+        'idol'          => $r['idol'],
+        'type'          => $r['type'],
+        'order_date'    => $r['order_date'],
+        'event_date'    => $r['event_date'],
+        'price_per_qty' => (float) $r['price_per_qty'],
+        'qty'           => (int) $r['qty'],
+        'line_total'    => (float) $r['line_total'],
+    ], $expensive);
+
+    // Most frequently purchased titles (by number of line items)
+    $frequent = $pdo->query("
+        SELECT
+            title,
+            COUNT(*)                       AS items,
+            SUM(qty)                       AS total_qty,
+            SUM(price_per_qty * qty)       AS total_price
+        FROM items
+        WHERE title != '' AND title != '-'
+        GROUP BY title
+        ORDER BY items DESC, total_price DESC
+        LIMIT 20
+    ")->fetchAll();
+    $frequent = array_map(fn($r) => [
+        'title'       => $r['title'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $frequent);
+
+    // Average unit price per type
+    $avgPrice = $pdo->query("
+        SELECT
+            type,
+            COUNT(*)                       AS items,
+            SUM(qty)                       AS total_qty,
+            AVG(price_per_qty)             AS avg_price,
+            MIN(price_per_qty)             AS min_price,
+            MAX(price_per_qty)             AS max_price,
+            SUM(price_per_qty * qty)       AS total_price
+        FROM items
+        WHERE type != '' AND type != '-'
+        GROUP BY type
+        ORDER BY avg_price DESC
+    ")->fetchAll();
+    $avgPrice = array_map(fn($r) => [
+        'type'        => $r['type'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'avg_price'   => round((float) $r['avg_price'], 2),
+        'min_price'   => (float) $r['min_price'],
+        'max_price'   => (float) $r['max_price'],
+        'total_price' => (float) $r['total_price'],
+    ], $avgPrice);
+
+    jsonResponse([
+        'expensive' => $expensive,
+        'frequent'  => $frequent,
+        'avg_price' => $avgPrice,
+    ]);
+}
+
+/**
+ * Seasonality: spending by day-of-week (0=Sun..6=Sat) and by month-of-year
+ * (01..12), aggregated across all years. Keyed off order_date.
+ */
+function handleReportSeasonality(PDO $pdo): void
+{
+    $weekday = $pdo->query("
+        SELECT
+            CAST(strftime('%w', order_date) AS INTEGER) AS dow,
+            COUNT(*)                       AS items,
+            SUM(qty)                       AS total_qty,
+            SUM(price_per_qty * qty)       AS total_price
+        FROM items
+        WHERE order_date != ''
+        GROUP BY dow
+        ORDER BY dow
+    ")->fetchAll();
+    $weekday = array_map(fn($r) => [
+        'dow'         => (int) $r['dow'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $weekday);
+
+    $monthOfYear = $pdo->query("
+        SELECT
+            CAST(strftime('%m', order_date) AS INTEGER) AS moy,
+            COUNT(*)                       AS items,
+            SUM(qty)                       AS total_qty,
+            SUM(price_per_qty * qty)       AS total_price
+        FROM items
+        WHERE order_date != ''
+        GROUP BY moy
+        ORDER BY moy
+    ")->fetchAll();
+    $monthOfYear = array_map(fn($r) => [
+        'moy'         => (int) $r['moy'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $monthOfYear);
+
+    jsonResponse(['weekday' => $weekday, 'month_of_year' => $monthOfYear]);
+}
+
+/**
+ * Members and their last purchase date, with days since. The client decides
+ * the "inactive" threshold (e.g. 30 / 90 days). Only members that have at
+ * least one item are returned.
+ */
+function handleReportInactive(PDO $pdo): void
+{
+    $rows = $pdo->query("
+        SELECT
+            i.idol_id                                   AS idol_id,
+            COALESCE(m.name, i.idol)                    AS idol,
+            COALESCE(m.display_hint, '')                AS display_hint,
+            COUNT(*)                                    AS items,
+            SUM(i.qty)                                  AS total_qty,
+            SUM(i.price_per_qty * i.qty)                AS total_price,
+            MAX(i.order_date)                           AS last_order,
+            CAST(julianday('now','localtime') - julianday(MAX(i.order_date)) AS INTEGER) AS days_since
+        FROM items i
+        LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
+        WHERE i.idol != '' AND i.idol != '-' AND i.order_date != ''
+        GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
+        ORDER BY days_since DESC
+    ")->fetchAll();
+
+    $rows = array_map(function ($r) {
+        $row = enrichIdolRow($r);
+        $row['last_order'] = $r['last_order'];
+        $row['days_since'] = $r['days_since'] !== null ? (int) $r['days_since'] : null;
+        return $row;
+    }, $rows);
+
+    jsonResponse(['data' => $rows]);
 }
 
 function handleIdolEntitiesTree(PDO $pdo): void

@@ -75,10 +75,25 @@
 
 <div class="container-fluid py-3">
     <!-- Tab Navigation -->
-    <ul class="nav nav-pills mb-3" role="tablist">
+    <ul class="nav nav-pills mb-3 gap-1" role="tablist">
         <li class="nav-item">
-            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabMonthly">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabOverview">
+                <i class="bi bi-grid-1x2"></i> Overview
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabMonthly">
                 <i class="bi bi-calendar3"></i> Monthly
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTrends">
+                <i class="bi bi-graph-up-arrow"></i> Trends
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabSeasonality">
+                <i class="bi bi-calendar-week"></i> Seasonality
             </button>
         </li>
         <li class="nav-item">
@@ -87,8 +102,18 @@
             </button>
         </li>
         <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabCompare">
+                <i class="bi bi-arrow-left-right"></i> Compare
+            </button>
+        </li>
+        <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabGroup">
                 <i class="bi bi-diagram-3"></i> By Group
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabUnit">
+                <i class="bi bi-diagram-2"></i> By Unit
             </button>
         </li>
         <li class="nav-item">
@@ -101,11 +126,93 @@
                 <i class="bi bi-tags"></i> By Type
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabEvent">
+                <i class="bi bi-calendar-event"></i> By Event
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTopItems">
+                <i class="bi bi-trophy"></i> Top Items
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabInactive">
+                <i class="bi bi-hourglass-split"></i> Inactive
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="tabOverview">
+            <!-- KPI cards -->
+            <div class="row g-3 mb-3" id="ovKpis">
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#f5f3ff">
+                        <div class="small text-muted"><i class="bi bi-cash-stack"></i> Total Spent</div>
+                        <div class="fs-4 fw-bold" style="color:var(--primary)" id="ovSpent">฿0</div>
+                        <div class="small text-muted" id="ovSpentSub">&nbsp;</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#fdf2f8">
+                        <div class="small text-muted"><i class="bi bi-box-seam"></i> Total Items</div>
+                        <div class="fs-4 fw-bold" style="color:#ec4899" id="ovItems">0</div>
+                        <div class="small text-muted" id="ovItemsSub">&nbsp;</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#f0fdf4">
+                        <div class="small text-muted"><i class="bi bi-calendar-month"></i> Avg / Month</div>
+                        <div class="fs-4 fw-bold" style="color:#16a34a" id="ovAvgMonth">฿0</div>
+                        <div class="small text-muted" id="ovAvgMonthSub">&nbsp;</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#fffbeb">
+                        <div class="small text-muted"><i class="bi bi-graph-up"></i> Latest Month (MoM)</div>
+                        <div class="fs-4 fw-bold" style="color:#d97706" id="ovMom">฿0</div>
+                        <div class="small text-muted" id="ovMomSub">&nbsp;</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-12 col-lg-8">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">Monthly Spending Trend</h6>
+                        <div class="chart-container"><canvas id="chartOvMonthly"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header py-2"><strong>Top 5 Members</strong></div>
+                        <ul class="list-group list-group-flush" id="ovTopMembers"></ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header py-2"><strong>Highlights</strong></div>
+                        <ul class="list-group list-group-flush" id="ovHighlights"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">By Type</h6>
+                        <div class="chart-container" style="height:300px"><canvas id="chartOvType"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">By Company</h6>
+                        <div class="chart-container" style="height:300px"><canvas id="chartOvCompany"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Monthly Tab -->
-        <div class="tab-pane fade show active" id="tabMonthly">
+        <div class="tab-pane fade" id="tabMonthly">
             <!-- Monthly overview -->
             <div id="monthlyMainView">
                 <div class="row g-3">
@@ -631,6 +738,295 @@
                 </div>
             </div>
         </div>
+
+        <!-- Trends Tab -->
+        <div class="tab-pane fade" id="tabTrends">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#f5f3ff">
+                        <div class="small text-muted">Cumulative Total</div>
+                        <div class="fs-5 fw-bold" style="color:var(--primary)" id="trCumulative">฿0</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#fdf2f8">
+                        <div class="small text-muted">Best Month</div>
+                        <div class="fs-5 fw-bold" style="color:#ec4899" id="trBest">-</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#f0fdf4">
+                        <div class="small text-muted">Avg MoM Growth</div>
+                        <div class="fs-5 fw-bold" style="color:#16a34a" id="trGrowth">-</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#fffbeb">
+                        <div class="small text-muted">This Month (forecast)</div>
+                        <div class="fs-5 fw-bold" style="color:#d97706" id="trForecast">฿0</div>
+                        <div class="small text-muted" id="trForecastSub">&nbsp;</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-3 mb-3">
+                <h6 class="card-title mb-3">Cumulative Spending</h6>
+                <div class="chart-container"><canvas id="chartTrendCumulative"></canvas></div>
+            </div>
+            <div class="card p-3">
+                <h6 class="card-title mb-3">Month-over-Month Growth (%)</h6>
+                <div class="chart-container" style="height:300px"><canvas id="chartTrendMoM"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Seasonality Tab -->
+        <div class="tab-pane fade" id="tabSeasonality">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">Spending by Day of Week</h6>
+                        <div class="chart-container"><canvas id="chartSeasonWeekday"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">Spending by Month of Year</h6>
+                        <div class="chart-container"><canvas id="chartSeasonMonth"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header py-2"><strong>Weekday Breakdown</strong></div>
+                        <div class="table-scroll" style="max-height:340px">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead><tr><th>Day</th><th class="text-end">Items</th><th class="text-end">Qty</th><th class="text-end">Total (฿)</th><th style="width:100px">Share</th></tr></thead>
+                                <tbody id="tableSeasonWeekday"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header py-2"><strong>Month Breakdown</strong></div>
+                        <div class="table-scroll" style="max-height:340px">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead><tr><th>Month</th><th class="text-end">Items</th><th class="text-end">Qty</th><th class="text-end">Total (฿)</th><th style="width:100px">Share</th></tr></thead>
+                                <tbody id="tableSeasonMonth"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compare Tab -->
+        <div class="tab-pane fade" id="tabCompare">
+            <div class="card p-3 mb-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-sm-5">
+                        <label class="form-label small mb-1">Member A</label>
+                        <select class="form-select form-select-sm" id="cmpSelA"></select>
+                    </div>
+                    <div class="col-sm-2 text-center">
+                        <i class="bi bi-arrow-left-right fs-4 text-muted"></i>
+                    </div>
+                    <div class="col-sm-5">
+                        <label class="form-label small mb-1">Member B</label>
+                        <select class="form-select form-select-sm" id="cmpSelB"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3" id="cmpCards"></div>
+            <div class="card p-3 mt-3">
+                <h6 class="card-title mb-3">Monthly Spending Comparison</h6>
+                <div class="chart-container"><canvas id="chartCompareMonth"></canvas></div>
+            </div>
+            <div class="card p-3 mt-3">
+                <h6 class="card-title mb-3">Spending by Type Comparison</h6>
+                <div class="chart-container" style="height:320px"><canvas id="chartCompareType"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Unit Tab -->
+        <div class="tab-pane fade" id="tabUnit">
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">Spending by Unit</h6>
+                        <div class="chart-container"><canvas id="chartUnitPie"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <strong>Unit Ranking</strong>
+                            <span class="text-muted small">includes sub-unit / project memberships</span>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px">#</th>
+                                        <th>Unit</th>
+                                        <th>Parent</th>
+                                        <th class="text-end">Members</th>
+                                        <th class="text-end">Items</th>
+                                        <th class="text-end">Qty</th>
+                                        <th class="text-end">Total (฿)</th>
+                                        <th style="width:110px">Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableUnit"></tbody>
+                                <tfoot id="footUnit" class="table-light fw-bold"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Tab -->
+        <div class="tab-pane fade" id="tabEvent">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#f5f3ff">
+                        <div class="small text-muted">Events Tracked</div>
+                        <div class="fs-4 fw-bold" style="color:var(--primary)" id="evCount">0</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#f0fdf4">
+                        <div class="small text-muted">Avg Lead Time</div>
+                        <div class="fs-4 fw-bold" style="color:#16a34a" id="evLead">-</div>
+                        <div class="small text-muted" id="evLeadSub">order → event</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#fffbeb">
+                        <div class="small text-muted">Lead Time Range</div>
+                        <div class="fs-6 fw-bold" style="color:#d97706" id="evLeadRange">-</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3" style="background:#fef2f2">
+                        <div class="small text-muted">Items w/o Event Date</div>
+                        <div class="fs-4 fw-bold" style="color:#dc2626" id="evNoEvent">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-12 col-lg-7">
+                    <div class="card p-3">
+                        <h6 class="card-title mb-3">Spending per Event</h6>
+                        <div class="chart-container"><canvas id="chartEvent"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-5">
+                    <div class="card">
+                        <div class="card-header py-2"><strong>Event Breakdown</strong></div>
+                        <div class="table-scroll">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Event Date</th>
+                                        <th class="text-end">Items</th>
+                                        <th class="text-end">Idols</th>
+                                        <th class="text-end">Qty</th>
+                                        <th class="text-end">Total (฿)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableEvent"></tbody>
+                                <tfoot id="footEvent" class="table-light fw-bold"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Items Tab -->
+        <div class="tab-pane fade" id="tabTopItems">
+            <div class="row g-3">
+                <div class="col-12 col-xl-7">
+                    <div class="card">
+                        <div class="card-header py-2"><strong><i class="bi bi-cash-coin"></i> Top 20 Most Expensive Purchases</strong></div>
+                        <div class="table-scroll" style="max-height:520px">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px">#</th>
+                                        <th>Title</th>
+                                        <th>Idol</th>
+                                        <th>Type</th>
+                                        <th class="text-end">Unit ฿</th>
+                                        <th class="text-end">Qty</th>
+                                        <th class="text-end">Total (฿)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableTopExpensive"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-5">
+                    <div class="card mb-3">
+                        <div class="card-header py-2"><strong><i class="bi bi-repeat"></i> Top 20 Most Frequent Titles</strong></div>
+                        <div class="table-scroll" style="max-height:240px">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr><th style="width:40px">#</th><th>Title</th><th class="text-end">Items</th><th class="text-end">Qty</th><th class="text-end">Total (฿)</th></tr>
+                                </thead>
+                                <tbody id="tableTopFrequent"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header py-2"><strong><i class="bi bi-rulers"></i> Avg Unit Price by Type</strong></div>
+                        <div class="table-scroll" style="max-height:240px">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr><th>Type</th><th class="text-end">Avg ฿</th><th class="text-end">Min</th><th class="text-end">Max</th><th class="text-end">Items</th></tr>
+                                </thead>
+                                <tbody id="tableTopAvg"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactive Tab -->
+        <div class="tab-pane fade" id="tabInactive">
+            <div class="card p-3 mb-3 d-flex flex-row align-items-center gap-2 flex-wrap">
+                <span class="fw-semibold">Inactive threshold:</span>
+                <div class="btn-group btn-group-sm" role="group" id="inactiveThresholds">
+                    <button class="btn btn-outline-primary" data-days="30">30 days</button>
+                    <button class="btn btn-outline-primary active" data-days="90">90 days</button>
+                    <button class="btn btn-outline-primary" data-days="180">180 days</button>
+                    <button class="btn btn-outline-primary" data-days="365">1 year</button>
+                </div>
+                <span class="ms-auto text-muted small" id="inactiveSummary"></span>
+            </div>
+            <div class="card">
+                <div class="card-header py-2"><strong>Members With No Recent Purchases</strong> <span class="text-muted small">- click name to view detail</span></div>
+                <div class="table-scroll">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:40px">#</th>
+                                <th>Member</th>
+                                <th>Last Purchase</th>
+                                <th class="text-end">Days Ago</th>
+                                <th class="text-end">Items</th>
+                                <th class="text-end">Total Spent (฿)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableInactive"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -659,13 +1055,40 @@ let chartGroupPie = null;
 let chartCompanyPie = null;
 let groupData = [];
 let companyData = [];
+// New report charts
+let chartOvMonthly = null, chartOvType = null, chartOvCompany = null;
+let chartTrendCumulative = null, chartTrendMoM = null;
+let chartSeasonWeekday = null, chartSeasonMonth = null;
+let chartCompareMonth = null, chartCompareType = null;
+let chartUnitPie = null, chartEvent = null;
+let unitData = [];
+let cmpMembers = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadOverview();   // default active tab
     loadMonthly();
     loadIdol();
     loadType();
     loadGroup();
     loadCompany();
+
+    // Lazy-load the heavier analytics tabs the first time they're shown.
+    const lazy = {
+        '#tabTrends': loadTrends,
+        '#tabSeasonality': loadSeasonality,
+        '#tabCompare': initCompare,
+        '#tabUnit': loadUnit,
+        '#tabEvent': loadEvent,
+        '#tabTopItems': loadTopItems,
+        '#tabInactive': loadInactive,
+    };
+    const loaded = {};
+    document.querySelectorAll('[data-bs-toggle="pill"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', e => {
+            const target = e.target.getAttribute('data-bs-target');
+            if (lazy[target] && !loaded[target]) { loaded[target] = true; lazy[target](); }
+        });
+    });
 });
 
 // --- Monthly ---
@@ -1566,6 +1989,419 @@ async function showTypeDetail(type) {
 function hideTypeDetail() {
     $('typeDetailView').style.display = 'none';
     $('typeMainView').style.display = 'block';
+}
+
+// =====================================================================
+//  Shared helpers for the new report tabs
+// =====================================================================
+function makeDoughnut(prev, id, labels, data) {
+    if (prev) prev.destroy();
+    const total = data.reduce((s, v) => s + Number(v), 0);
+    return new Chart($(id).getContext('2d'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: COLORS.slice(0, labels.length), borderWidth: 2, borderColor: '#fff' }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => {
+                    const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                    return `${ctx.label}: ฿${fmt(ctx.raw)} (${pct}%)`;
+                }}}
+            }
+        }
+    });
+}
+function barOptsBaht() {
+    return {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '฿' + fmt(ctx.raw) } } },
+        scales: { y: { ticks: { callback: v => '฿' + fmt(v) } } }
+    };
+}
+
+// =====================================================================
+//  #1 Overview
+// =====================================================================
+async function loadOverview() {
+    const res = await fetch('api.php?action=report_dashboard').then(r => r.json());
+    const k = res.kpis || {};
+    $('ovSpent').textContent = '฿' + fmt(k.total_spent || 0);
+    $('ovSpentSub').textContent = (k.active_months || 0) + ' active months';
+    $('ovItems').textContent = fmtInt(k.total_items || 0);
+    $('ovItemsSub').textContent = fmtInt(k.total_qty || 0) + ' qty';
+    $('ovAvgMonth').textContent = '฿' + fmt(k.avg_per_month || 0);
+    $('ovAvgMonthSub').textContent = 'top type: ' + (k.top_type || '-');
+    $('ovMom').textContent = '฿' + fmt(k.latest_month_spent || 0);
+    const mom = k.mom_change_pct;
+    if (mom === null || mom === undefined) {
+        $('ovMomSub').innerHTML = '&nbsp;';
+    } else {
+        const up = mom >= 0;
+        $('ovMomSub').innerHTML = `<span class="${up ? 'text-success' : 'text-danger'}"><i class="bi bi-arrow-${up ? 'up' : 'down'}"></i> ${Math.abs(mom).toFixed(1)}% vs prev</span>`;
+    }
+
+    const monthly = res.monthly || [];
+    if (chartOvMonthly) chartOvMonthly.destroy();
+    chartOvMonthly = new Chart($('chartOvMonthly').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: monthly.map(r => formatMonth(r.month)),
+            datasets: [{ label: 'Spending (฿)', data: monthly.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }]
+        },
+        options: barOptsBaht()
+    });
+
+    $('ovTopMembers').innerHTML = (res.top_members || []).map((r, i) =>
+        `<li class="list-group-item d-flex justify-content-between py-1"><span>${i + 1}. ${escHtml(r.display || r.idol)}</span><strong>฿${fmt(r.total_price)}</strong></li>`
+    ).join('') || '<li class="list-group-item text-muted">No data</li>';
+
+    $('ovHighlights').innerHTML = `
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-person-hearts text-primary"></i> Top member</span><strong>${escHtml(k.top_member || '-')}</strong></li>
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-diagram-3 text-primary"></i> Top group</span><strong>${escHtml(k.top_group || '-')}</strong></li>
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-tags text-primary"></i> Top type</span><strong>${escHtml(k.top_type || '-')}</strong></li>
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-calendar3 text-primary"></i> Latest month</span><strong>${k.latest_month ? formatMonth(k.latest_month) : '-'}</strong></li>`;
+
+    const byType = res.by_type || [];
+    chartOvType = makeDoughnut(chartOvType, 'chartOvType', byType.slice(0, 10).map(r => r.type), byType.slice(0, 10).map(r => Number(r.total_price)));
+    const byCompany = res.by_company || [];
+    chartOvCompany = makeDoughnut(chartOvCompany, 'chartOvCompany', byCompany.map(r => r.name), byCompany.map(r => Number(r.total_price)));
+}
+
+// =====================================================================
+//  #5 Trends (cumulative + MoM growth + forecast)
+// =====================================================================
+async function loadTrends() {
+    const res = await fetch('api.php?action=report_monthly').then(r => r.json());
+    const data = res.data || [];
+
+    let cum = 0;
+    const cumData = data.map(r => { cum += Number(r.total_price); return cum; });
+    $('trCumulative').textContent = '฿' + fmt(cum);
+
+    let best = null;
+    data.forEach(r => { if (!best || Number(r.total_price) > Number(best.total_price)) best = r; });
+    $('trBest').textContent = best ? `${formatMonth(best.month)} · ฿${fmt(best.total_price)}` : '-';
+
+    const growth = [];
+    for (let i = 1; i < data.length; i++) {
+        const prev = Number(data[i - 1].total_price);
+        growth.push(prev > 0 ? ((Number(data[i].total_price) - prev) / prev * 100) : null);
+    }
+    const validG = growth.filter(g => g !== null);
+    const avgG = validG.length ? validG.reduce((s, g) => s + g, 0) / validG.length : null;
+    $('trGrowth').textContent = avgG === null ? '-' : (avgG >= 0 ? '+' : '') + avgG.toFixed(1) + '%';
+
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const cur = data.find(r => r.month === ym);
+    if (cur) {
+        const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const day = now.getDate();
+        const proj = Number(cur.total_price) / day * dim;
+        $('trForecast').textContent = '฿' + fmt(proj);
+        $('trForecastSub').textContent = `฿${fmt(cur.total_price)} so far · day ${day}/${dim}`;
+    } else {
+        $('trForecast').textContent = '—';
+        $('trForecastSub').textContent = 'no orders this month';
+    }
+
+    if (chartTrendCumulative) chartTrendCumulative.destroy();
+    chartTrendCumulative = new Chart($('chartTrendCumulative').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: data.map(r => formatMonth(r.month)),
+            datasets: [{ label: 'Cumulative (฿)', data: cumData, borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', fill: true, tension: 0.3, pointRadius: 2 }]
+        },
+        options: barOptsBaht()
+    });
+
+    if (chartTrendMoM) chartTrendMoM.destroy();
+    chartTrendMoM = new Chart($('chartTrendMoM').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: data.slice(1).map(r => formatMonth(r.month)),
+            datasets: [{ label: 'MoM %', data: growth, backgroundColor: growth.map(g => g >= 0 ? 'rgba(16,163,74,0.7)' : 'rgba(220,38,38,0.7)'), borderRadius: 4 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw === null ? 'n/a' : ctx.raw.toFixed(1) + '%' } } },
+            scales: { y: { ticks: { callback: v => v + '%' } } }
+        }
+    });
+}
+
+// =====================================================================
+//  #6 Seasonality (day-of-week + month-of-year)
+// =====================================================================
+function seasonRow(label, r, total) {
+    const pct = total > 0 ? (Number(r.total_price) / total * 100) : 0;
+    return `<tr>
+        <td>${label}</td>
+        <td class="text-end">${fmtInt(r.items)}</td>
+        <td class="text-end">${fmtInt(r.total_qty)}</td>
+        <td class="text-end">${fmt(r.total_price)}</td>
+        <td><div class="d-flex align-items-center gap-1">
+            <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${pct}%"></div></div>
+            <span class="small text-muted" style="min-width:36px">${pct.toFixed(1)}%</span>
+        </div></td>
+    </tr>`;
+}
+async function loadSeasonality() {
+    const res = await fetch('api.php?action=report_seasonality').then(r => r.json());
+
+    const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const wkMap = {}; (res.weekday || []).forEach(r => wkMap[r.dow] = r);
+    const wkFull = dows.map((n, i) => wkMap[i] || { dow: i, items: 0, total_qty: 0, total_price: 0 });
+    const wkTotal = wkFull.reduce((s, r) => s + Number(r.total_price), 0);
+    if (chartSeasonWeekday) chartSeasonWeekday.destroy();
+    chartSeasonWeekday = new Chart($('chartSeasonWeekday').getContext('2d'), {
+        type: 'bar',
+        data: { labels: dows.map(d => d.slice(0, 3)), datasets: [{ data: wkFull.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }] },
+        options: barOptsBaht()
+    });
+    $('tableSeasonWeekday').innerHTML = wkFull.map((r, i) => seasonRow(dows[i], r, wkTotal)).join('');
+
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const moyMap = {}; (res.month_of_year || []).forEach(r => moyMap[r.moy] = r);
+    const moyFull = months.map((n, i) => moyMap[i + 1] || { moy: i + 1, items: 0, total_qty: 0, total_price: 0 });
+    const moyTotal = moyFull.reduce((s, r) => s + Number(r.total_price), 0);
+    if (chartSeasonMonth) chartSeasonMonth.destroy();
+    chartSeasonMonth = new Chart($('chartSeasonMonth').getContext('2d'), {
+        type: 'bar',
+        data: { labels: months.map(m => m.slice(0, 3)), datasets: [{ data: moyFull.map(r => Number(r.total_price)), backgroundColor: 'rgba(236,72,153,0.7)', borderRadius: 4 }] },
+        options: barOptsBaht()
+    });
+    $('tableSeasonMonth').innerHTML = moyFull.map((r, i) => seasonRow(months[i], r, moyTotal)).join('');
+}
+
+// =====================================================================
+//  #7 Compare two members
+// =====================================================================
+function summarize(arr) {
+    return (arr || []).reduce((a, r) => { a.items += Number(r.items); a.qty += Number(r.total_qty); a.price += Number(r.total_price); return a; }, { items: 0, qty: 0, price: 0 });
+}
+function cmpCard(name, s, color) {
+    return `<div class="col-md-6"><div class="card p-3">
+        <div class="fw-bold mb-2" style="color:${color}">${escHtml(name)}</div>
+        <div class="row text-center g-0">
+            <div class="col"><div class="small text-muted">Items</div><div class="fw-bold">${fmtInt(s.items)}</div></div>
+            <div class="col"><div class="small text-muted">Qty</div><div class="fw-bold">${fmtInt(s.qty)}</div></div>
+            <div class="col"><div class="small text-muted">Spent</div><div class="fw-bold">฿${fmt(s.price)}</div></div>
+            <div class="col"><div class="small text-muted">Avg/Item</div><div class="fw-bold">฿${fmt(s.items > 0 ? Math.round(s.price / s.items) : 0)}</div></div>
+        </div>
+    </div></div>`;
+}
+async function initCompare() {
+    const res = await fetch('api.php?action=report_idol').then(r => r.json());
+    cmpMembers = (res.data || []).filter(r => r.idol && r.idol !== '-');
+    const opts = cmpMembers.map((r, i) => `<option value="${i}">${escHtml(r.display || r.idol)}</option>`).join('');
+    $('cmpSelA').innerHTML = opts;
+    $('cmpSelB').innerHTML = opts;
+    if (cmpMembers.length > 1) $('cmpSelB').value = '1';
+    $('cmpSelA').addEventListener('change', loadCompare);
+    $('cmpSelB').addEventListener('change', loadCompare);
+    if (cmpMembers.length) loadCompare();
+}
+async function loadCompare() {
+    const a = cmpMembers[+$('cmpSelA').value];
+    const b = cmpMembers[+$('cmpSelB').value];
+    if (!a || !b) return;
+    const [da, db] = await Promise.all([
+        fetch('api.php?action=report_idol_detail&idol=' + encodeURIComponent(a.idol)).then(r => r.json()),
+        fetch('api.php?action=report_idol_detail&idol=' + encodeURIComponent(b.idol)).then(r => r.json())
+    ]);
+
+    $('cmpCards').innerHTML = cmpCard(a.display || a.idol, summarize(da.by_type), 'var(--primary)')
+                            + cmpCard(b.display || b.idol, summarize(db.by_type), '#ec4899');
+
+    // Monthly comparison (union of months)
+    const months = [...new Set([...(da.by_month || []).map(r => r.month), ...(db.by_month || []).map(r => r.month)])].sort();
+    const mapA = {}; (da.by_month || []).forEach(r => mapA[r.month] = Number(r.total_price));
+    const mapB = {}; (db.by_month || []).forEach(r => mapB[r.month] = Number(r.total_price));
+    if (chartCompareMonth) chartCompareMonth.destroy();
+    chartCompareMonth = new Chart($('chartCompareMonth').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: months.map(formatMonth),
+            datasets: [
+                { label: a.display || a.idol, data: months.map(m => mapA[m] || 0), borderColor: '#7c3aed', backgroundColor: '#7c3aed', tension: 0.3, pointRadius: 2 },
+                { label: b.display || b.idol, data: months.map(m => mapB[m] || 0), borderColor: '#ec4899', backgroundColor: '#ec4899', tension: 0.3, pointRadius: 2 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            plugins: { tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ฿' + fmt(ctx.raw) } } },
+            scales: { y: { ticks: { callback: v => '฿' + fmt(v) } } }
+        }
+    });
+
+    // Type comparison (union of types)
+    const types = [...new Set([...(da.by_type || []).map(r => r.type), ...(db.by_type || []).map(r => r.type)])];
+    const tA = {}; (da.by_type || []).forEach(r => tA[r.type] = Number(r.total_price));
+    const tB = {}; (db.by_type || []).forEach(r => tB[r.type] = Number(r.total_price));
+    if (chartCompareType) chartCompareType.destroy();
+    chartCompareType = new Chart($('chartCompareType').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: types,
+            datasets: [
+                { label: a.display || a.idol, data: types.map(t => tA[t] || 0), backgroundColor: '#7c3aed' },
+                { label: b.display || b.idol, data: types.map(t => tB[t] || 0), backgroundColor: '#ec4899' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ฿' + fmt(ctx.raw) } } },
+            scales: { y: { ticks: { callback: v => '฿' + fmt(v) } } }
+        }
+    });
+}
+
+// =====================================================================
+//  #3 By Unit
+// =====================================================================
+async function loadUnit() {
+    const res = await fetch('api.php?action=report_by_unit').then(r => r.json());
+    unitData = res.data || [];
+    if (unitData.length === 0) {
+        $('tableUnit').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No unit data — assign members to a unit-category entity in Idols.</td></tr>';
+        $('footUnit').innerHTML = '';
+        if (chartUnitPie) { chartUnitPie.destroy(); chartUnitPie = null; }
+        return;
+    }
+    const grand = unitData.reduce((s, r) => s + Number(r.total_price), 0);
+    const maxP = Number(unitData[0].total_price) || 1;
+    chartUnitPie = makeDoughnut(chartUnitPie, 'chartUnitPie', unitData.slice(0, 10).map(r => r.name), unitData.slice(0, 10).map(r => Number(r.total_price)));
+
+    $('tableUnit').innerHTML = unitData.map((r, i) => {
+        const rank = i + 1;
+        const pct = grand > 0 ? (Number(r.total_price) / grand * 100) : 0;
+        const barW = maxP > 0 ? (Number(r.total_price) / maxP * 100) : 0;
+        const rankClass = rank <= 3 ? `rank-${rank}` : '';
+        const medal = rank <= 3 ? ` <i class="bi bi-trophy-fill rank-${rank}"></i>` : '';
+        return `<tr>
+            <td class="${rankClass}">${rank}</td>
+            <td><strong>${escHtml(r.name)}</strong>${medal}</td>
+            <td class="text-muted">${r.parent ? escHtml(r.parent) : '-'}</td>
+            <td class="text-end">${fmtInt(r.members)}</td>
+            <td class="text-end">${fmtInt(r.items)}</td>
+            <td class="text-end">${fmtInt(r.total_qty)}</td>
+            <td class="text-end">${fmt(r.total_price)}</td>
+            <td><div class="d-flex align-items-center gap-1">
+                <div class="progress-bar-custom flex-grow-1"><div class="fill" style="width:${barW}%"></div></div>
+                <span class="small text-muted" style="min-width:40px">${pct.toFixed(1)}%</span>
+            </div></td>
+        </tr>`;
+    }).join('');
+
+    const ut = unitData.reduce((a, r) => { a.items += r.items; a.qty += r.total_qty; a.price += Number(r.total_price); return a; }, { items: 0, qty: 0, price: 0 });
+    $('footUnit').innerHTML = `<tr>
+        <td></td><td>Total</td><td></td><td></td>
+        <td class="text-end">${fmtInt(ut.items)}</td>
+        <td class="text-end">${fmtInt(ut.qty)}</td>
+        <td class="text-end">${fmt(ut.price)}</td>
+        <td><span class="small text-muted">100%</span></td>
+    </tr>`;
+}
+
+// =====================================================================
+//  #2 By Event (event_date + lead time)
+// =====================================================================
+async function loadEvent() {
+    const res = await fetch('api.php?action=report_event').then(r => r.json());
+    const data = res.data || [];
+    const lt = res.lead_time || {};
+    $('evCount').textContent = fmtInt(data.length);
+    $('evLead').textContent = (lt.avg_days !== null && lt.avg_days !== undefined) ? lt.avg_days + ' d' : '-';
+    $('evLeadRange').textContent = (lt.min_days !== null && lt.min_days !== undefined) ? `${lt.min_days} – ${lt.max_days} d` : '-';
+    $('evNoEvent').textContent = fmtInt(res.no_event || 0);
+
+    const chron = [...data].reverse();
+    if (chartEvent) chartEvent.destroy();
+    chartEvent = new Chart($('chartEvent').getContext('2d'), {
+        type: 'bar',
+        data: { labels: chron.map(r => r.event), datasets: [{ data: chron.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }] },
+        options: barOptsBaht()
+    });
+
+    const tot = data.reduce((a, r) => { a.items += r.items; a.qty += r.total_qty; a.price += Number(r.total_price); return a; }, { items: 0, qty: 0, price: 0 });
+    $('tableEvent').innerHTML = data.map(r => `<tr>
+        <td><a href="items.php?date_from=${r.event}&date_to=${r.event}" class="text-decoration-none">${r.event}</a></td>
+        <td class="text-end">${fmtInt(r.items)}</td>
+        <td class="text-end">${fmtInt(r.idols)}</td>
+        <td class="text-end">${fmtInt(r.total_qty)}</td>
+        <td class="text-end">${fmt(r.total_price)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="text-center text-muted py-3">No items have an event date yet</td></tr>';
+    $('footEvent').innerHTML = data.length ? `<tr>
+        <td>Total (${data.length})</td>
+        <td class="text-end">${fmtInt(tot.items)}</td>
+        <td></td>
+        <td class="text-end">${fmtInt(tot.qty)}</td>
+        <td class="text-end">${fmt(tot.price)}</td>
+    </tr>` : '';
+}
+
+// =====================================================================
+//  #4 Top Items
+// =====================================================================
+async function loadTopItems() {
+    const res = await fetch('api.php?action=report_top_items').then(r => r.json());
+
+    $('tableTopExpensive').innerHTML = (res.expensive || []).map((r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${escHtml(r.title)}</td>
+        <td>${escHtml(r.idol)}</td>
+        <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
+        <td class="text-end">${fmt(r.price_per_qty)}</td>
+        <td class="text-end">${fmtInt(r.qty)}</td>
+        <td class="text-end fw-semibold">${fmt(r.line_total)}</td>
+    </tr>`).join('') || '<tr><td colspan="7" class="text-center text-muted py-3">No data</td></tr>';
+
+    $('tableTopFrequent').innerHTML = (res.frequent || []).map((r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${escHtml(r.title)}</td>
+        <td class="text-end">${fmtInt(r.items)}</td>
+        <td class="text-end">${fmtInt(r.total_qty)}</td>
+        <td class="text-end">${fmt(r.total_price)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="text-center text-muted py-3">No data</td></tr>';
+
+    $('tableTopAvg').innerHTML = (res.avg_price || []).map(r => `<tr>
+        <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
+        <td class="text-end fw-semibold">${fmt(r.avg_price)}</td>
+        <td class="text-end text-muted">${fmt(r.min_price)}</td>
+        <td class="text-end text-muted">${fmt(r.max_price)}</td>
+        <td class="text-end">${fmtInt(r.items)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="text-center text-muted py-3">No data</td></tr>';
+}
+
+// =====================================================================
+//  #8 Inactive members
+// =====================================================================
+let inactiveData = [];
+async function loadInactive() {
+    const res = await fetch('api.php?action=report_inactive').then(r => r.json());
+    inactiveData = res.data || [];
+    document.querySelectorAll('#inactiveThresholds button').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('#inactiveThresholds button').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            renderInactive(+b.dataset.days);
+        });
+    });
+    renderInactive(90);
+}
+function renderInactive(days) {
+    const rows = inactiveData.filter(r => r.days_since !== null && r.days_since >= days);
+    $('inactiveSummary').textContent = `${rows.length} member(s) inactive ≥ ${days} days`;
+    $('tableInactive').innerHTML = rows.map((r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td><a href="#" class="text-decoration-none fw-semibold" onclick="document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol)}'),200);return false">${escHtml(r.display || r.idol)}</a></td>
+        <td>${r.last_order || '-'}</td>
+        <td class="text-end">${fmtInt(r.days_since)}</td>
+        <td class="text-end">${fmtInt(r.items)}</td>
+        <td class="text-end">${fmt(r.total_price)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted py-3">No inactive members for this threshold 🎉</td></tr>';
 }
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }

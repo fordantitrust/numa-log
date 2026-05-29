@@ -47,13 +47,23 @@ docker compose up -d
 
 ### Reports (`report.php`)
 
+Heavy analytics tabs are lazy-loaded the first time they are opened.
+
 | Tab | Description |
 |-----|-------------|
+| **Overview** | At-a-glance summary: KPI cards (total spent, items/qty, average per month, latest-month MoM%), monthly trend chart, Top 5 members, a highlights panel, and Type / Company doughnuts. |
 | **Monthly** | Bar + line chart of monthly spending & quantity. Click any month to drill down to daily view — includes **Type Breakdown** doughnut chart and **Idol Breakdown** doughnut chart (top 10 + others). Click any day to view filtered items for that day. |
+| **Trends** | Cumulative spending line, month-over-month growth bars, and a current-month forecast projected from spend-to-date. |
+| **Seasonality** | Spending by day of week and by month of year (chart + share table), aggregated across all years. |
 | **By Member** | Ranking of individual idol members by spending. Click a name for detail: type breakdown + monthly spending chart. Click any month row to view filtered items for that member and month. |
+| **Compare** | Pick any two members and compare side by side: summary cards, monthly spending line, and by-type grouped bars. |
 | **By Group** | Aggregated spending per group/unit, rolling up all member spending. Click to see member breakdown. |
+| **By Unit** | Spending rolled up to `unit`-category entities, including sub-unit / project memberships that By Group rolls into the parent. |
 | **By Company** | Aggregated spending per company with group sub-breakdown. Click to see groups under that company. |
 | **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company) and **Monthly Breakdown** chart. Click any month row to view filtered items for that type and month. |
+| **By Event** | Spending per `event_date` plus order→event lead-time stats (avg / min / max) and a count of items with no event date. |
+| **Top Items** | The 20 most expensive single purchases, the 20 most frequently bought titles, and average / min / max unit price per type. |
+| **Inactive** | Members with no recent purchases, with a selectable threshold (30 / 90 / 180 / 365 days) and click-through to member detail. |
 
 ### Idol Management (`idols.php`)
 
@@ -166,7 +176,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.6.0 — Dashboard landing page. After login you land on an at-a-glance summary (KPI cards, monthly trend, top members/groups, type & company breakdowns) with an All time / Last 12 months / year period selector, powered by the new `report_dashboard` endpoint. The item list (CRUD) moved to `items.php`.
+**Latest:** v1.6.1 — Eight new Report tabs: Overview, Trends (cumulative + MoM + forecast), Seasonality (day-of-week & month-of-year), Compare (two members side by side), By Unit, By Event (with order→event lead time), Top Items, and Inactive members. Backed by five new endpoints (`report_by_unit`, `report_event`, `report_top_items`, `report_seasonality`, `report_inactive`).
 
 ## License
 

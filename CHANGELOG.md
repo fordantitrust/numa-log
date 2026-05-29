@@ -4,6 +4,27 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.6.1 (2026-05-29)
+
+### Report page — 8 new report views
+
+The Report page (`report.php`) gains eight new tabs alongside the existing Monthly / By Member / By Group / By Company / By Type. Heavy analytics tabs are **lazy-loaded** the first time they are opened, so the initial page load stays light.
+
+- **Overview** — landing tab with KPI cards (total spent, items/qty, average per month, latest-month MoM%), monthly trend bar chart, Top 5 members list, a highlights panel, and Type / Company doughnuts. Reuses the existing `report_dashboard` endpoint.
+- **Trends** — cumulative spending line, month-over-month growth bars (green/red), and a **current-month forecast** projected from spend-to-date.
+- **Seasonality** — spending by **day of week** and by **month of year** (chart + share table), aggregated across all years.
+- **Compare** — pick any two members and compare them side by side: summary cards, monthly spending line, and by-type grouped bars.
+- **By Unit** — spending rolled up to `unit`-category entities, **including sub-unit / project memberships** that the primary-only By Group report rolls into the parent.
+- **By Event** — first report keyed off `event_date` (previously unused): spending per event plus order→event **lead-time** stats (avg / min / max) and a count of items with no event date.
+- **Top Items** — the 20 most expensive single purchases, the 20 most frequently bought titles, and average / min / max unit price per type.
+- **Inactive** — members with no recent purchases, with a selectable threshold (30 / 90 / 180 / 365 days) and click-through to member detail.
+
+### Backend (`api.php`)
+
+- **New endpoints:** `report_by_unit`, `report_event`, `report_top_items`, `report_seasonality`, `report_inactive`. Unit/event queries are membership- and date-aware, consistent with the other report aggregations.
+
+---
+
 ## v1.6.0 (2026-05-29)
 
 ### Dashboard landing page
