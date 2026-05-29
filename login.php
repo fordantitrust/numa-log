@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($username === '' || $password === '') {
-        $error = 'Please enter username and password.';
+        $error = t('login.err_empty');
     } else {
         $pdo = getDB();
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmtCheck->execute([':ip' => $ip]);
         if ((int) $stmtCheck->fetchColumn() >= 5) {
-            $error = 'Too many failed login attempts. Please try again in 15 minutes.';
+            $error = t('login.err_throttle');
         } else {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :u");
             $stmt->execute([':u' => $username]);
@@ -86,18 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Purge attempts older than 1 hour to keep the table small
                 $pdo->exec("DELETE FROM login_attempts WHERE attempted_at < datetime('now', '-1 hour', 'localtime')");
 
-                $error = 'Invalid username or password.';
+                $error = t('login.err_invalid');
             }
         }
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Numa Log</title>
+    <title><?= t('login.title') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -125,31 +125,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrfToken()) ?>">
                 <div class="mb-3">
-                    <label class="form-label small">Username</label>
+                    <label class="form-label small"><?= t('login.username') ?></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
                         <input type="text" class="form-control" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required autofocus>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small">Password</label>
+                    <label class="form-label small"><?= t('login.password') ?></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control" name="password" required>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-box-arrow-in-right"></i> Login
+                    <i class="bi bi-box-arrow-in-right"></i> <?= t('login.submit') ?>
                 </button>
             </form>
             <?php if ($showDefaultHint): ?>
             <div class="text-center mt-3 small text-muted">
-                Default: admin / admin
+                <?= t('login.default_hint') ?>
             </div>
             <?php endif; ?>
         </div>
-        <div class="card-footer text-center small text-muted py-2">
-            v<?= APP_VERSION ?>
+        <div class="card-footer text-center small text-muted py-2 d-flex justify-content-between align-items-center">
+            <span>v<?= APP_VERSION ?></span>
+            <span class="btn-group" role="group" aria-label="Language">
+                <a href="<?= htmlspecialchars(langUrl('en')) ?>" class="btn btn-outline-secondary btn-sm py-0 px-2<?= currentLang() === 'en' ? ' active' : '' ?>">EN</a>
+                <a href="<?= htmlspecialchars(langUrl('th')) ?>" class="btn btn-outline-secondary btn-sm py-0 px-2<?= currentLang() === 'th' ? ' active' : '' ?>">TH</a>
+            </span>
         </div>
     </div>
 </body>

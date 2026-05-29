@@ -1,10 +1,10 @@
 <?php require __DIR__ . '/config.php'; requireAuth(); ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Items - Numa Log</title>
+    <title><?= t('nav.items') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -96,33 +96,34 @@ window.fetch = function(url, opts = {}) {
 
 <div id="loading" class="spinner-overlay">
     <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
+        <span class="visually-hidden"><?= t('common.loading') ?></span>
     </div>
 </div>
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-list-ul"></i> Items <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-list-ul"></i> <?= t('nav.items') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
             <a href="index.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span>
+                <i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span>
             </a>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span>
+                <i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span>
             </a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span>
+                <i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span>
             </a>
             <a href="types.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span>
+                <i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span>
             </a>
             <?php if (ALLOW_IMPORT): ?>
             <button class="btn btn-outline-light btn-sm me-2" onclick="showImportModal()">
-                <i class="bi bi-file-earmark-arrow-up"></i><span class="d-none d-sm-inline"> Import Excel</span>
+                <i class="bi bi-file-earmark-arrow-up"></i><span class="d-none d-sm-inline"> <?= t('items.import_excel') ?></span>
             </button>
             <?php endif; ?>
             <button class="btn btn-light btn-sm me-2" onclick="showFormModal()">
-                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> Add Item</span>
+                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> <?= t('items.add_item') ?></span>
             </button>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
@@ -133,13 +134,13 @@ window.fetch = function(url, opts = {}) {
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php endif; ?>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -151,10 +152,10 @@ window.fetch = function(url, opts = {}) {
     <!-- Pending resolution banner (v5) -->
     <div id="pendingBanner" class="alert alert-warning d-none justify-content-between align-items-center py-2 mb-3">
         <span><i class="bi bi-exclamation-triangle"></i>
-            <strong id="pendingBannerCount">0</strong> idol name(s) have ambiguous mappings — items are not counted in group reports until resolved.
+            <strong id="pendingBannerCount">0</strong> <?= t('items.pending_banner_text') ?>
         </span>
         <a href="idols.php" class="btn btn-sm btn-outline-warning">
-            <i class="bi bi-tools"></i> Resolve
+            <i class="bi bi-tools"></i> <?= t('items.resolve') ?>
         </a>
     </div>
 
@@ -162,25 +163,25 @@ window.fetch = function(url, opts = {}) {
     <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
-                <div class="small opacity-75">Total Items</div>
+                <div class="small opacity-75"><?= t('items.total_items') ?></div>
                 <div class="display-6" id="sumTotal">0</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
-                <div class="small opacity-75">Total Quantity</div>
+                <div class="small opacity-75"><?= t('items.total_quantity') ?></div>
                 <div class="display-6" id="sumQty">0</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
-                <div class="small opacity-75">Total Spent</div>
+                <div class="small opacity-75"><?= t('items.total_spent') ?></div>
                 <div class="display-6" id="sumPrice">&#3647;0</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="card summary-card p-3">
-                <div class="small opacity-75">Avg per Item</div>
+                <div class="small opacity-75"><?= t('items.avg_per_item') ?></div>
                 <div class="display-6" id="sumAvg">&#3647;0</div>
             </div>
         </div>
@@ -191,44 +192,44 @@ window.fetch = function(url, opts = {}) {
         <div class="card-body py-2">
             <form id="filterForm" class="row g-2 align-items-end">
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">Search</label>
-                    <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="Search title...">
+                    <label class="form-label small mb-0"><?= t('common.search') ?></label>
+                    <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="<?= t('items.search_ph') ?>">
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">Idol</label>
+                    <label class="form-label small mb-0"><?= t('common.idol') ?></label>
                     <div class="ms-wrap" id="msIdol">
-                        <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
+                        <div class="ms-box form-control form-control-sm"><span class="ms-ph"><?= t('common.all') ?></span></div>
                         <div class="ms-drop">
-                            <input type="text" class="ms-search" placeholder="Search...">
+                            <input type="text" class="ms-search" placeholder="<?= t('items.search_dots') ?>">
                             <div class="ms-list"></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">Type</label>
+                    <label class="form-label small mb-0"><?= t('common.type') ?></label>
                     <div class="ms-wrap" id="msType">
-                        <div class="ms-box form-control form-control-sm"><span class="ms-ph">All</span></div>
+                        <div class="ms-box form-control form-control-sm"><span class="ms-ph"><?= t('common.all') ?></span></div>
                         <div class="ms-drop">
-                            <input type="text" class="ms-search" placeholder="Search...">
+                            <input type="text" class="ms-search" placeholder="<?= t('items.search_dots') ?>">
                             <div class="ms-list"></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">From</label>
+                    <label class="form-label small mb-0"><?= t('items.from') ?></label>
                     <input type="date" class="form-control form-control-sm" id="fDateFrom">
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0">To</label>
+                    <label class="form-label small mb-0"><?= t('items.to') ?></label>
                     <input type="date" class="form-control form-control-sm" id="fDateTo">
                 </div>
                 <div class="col-6 col-md-2">
                     <div class="d-flex gap-1">
                         <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetFilters()">
-                            <i class="bi bi-x-lg"></i> Clear
+                            <i class="bi bi-x-lg"></i> <?= t('items.clear') ?>
                         </button>
                         <button type="button" class="btn btn-outline-success btn-sm flex-fill" onclick="exportExcel()">
-                            <i class="bi bi-file-earmark-arrow-down"></i> Export
+                            <i class="bi bi-file-earmark-arrow-down"></i> <?= t('items.export') ?>
                         </button>
                     </div>
                 </div>
@@ -243,19 +244,19 @@ window.fetch = function(url, opts = {}) {
                 <thead>
                     <tr>
                         <th style="width:40px">#</th>
-                        <th data-sort="order_date" class="sort-icon">Order Date</th>
-                        <th data-sort="event_date" class="sort-icon">Event Date</th>
-                        <th data-sort="title" class="sort-icon">Title</th>
-                        <th data-sort="idol" class="sort-icon">Idol</th>
-                        <th data-sort="type" class="sort-icon">Type</th>
-                        <th data-sort="price_per_qty" class="sort-icon text-end">Price/Qty</th>
-                        <th data-sort="qty" class="sort-icon text-end">Qty</th>
-                        <th class="text-end">Total</th>
-                        <th style="width:110px" class="text-center">Actions</th>
+                        <th data-sort="order_date" class="sort-icon"><?= t('items.order_date') ?></th>
+                        <th data-sort="event_date" class="sort-icon"><?= t('items.event_date') ?></th>
+                        <th data-sort="title" class="sort-icon"><?= t('common.title') ?></th>
+                        <th data-sort="idol" class="sort-icon"><?= t('common.idol') ?></th>
+                        <th data-sort="type" class="sort-icon"><?= t('common.type') ?></th>
+                        <th data-sort="price_per_qty" class="sort-icon text-end"><?= t('items.price_qty') ?></th>
+                        <th data-sort="qty" class="sort-icon text-end"><?= t('common.qty') ?></th>
+                        <th class="text-end"><?= t('common.total') ?></th>
+                        <th style="width:110px" class="text-center"><?= t('common.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="10" class="text-center py-4 text-muted">Loading data...</td></tr>
+                    <tr><td colspan="10" class="text-center py-4 text-muted"><?= t('items.loading_data') ?></td></tr>
                 </tbody>
             </table>
         </div>
@@ -271,7 +272,7 @@ window.fetch = function(url, opts = {}) {
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="formTitle">Add Item</h5>
+                <h5 class="modal-title" id="formTitle"><?= t('items.add_item') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -279,48 +280,48 @@ window.fetch = function(url, opts = {}) {
                     <input type="hidden" id="itemId">
                     <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label small">Order Date</label>
+                            <label class="form-label small"><?= t('items.order_date') ?></label>
                             <input type="date" class="form-control form-control-sm" id="itemOrderDate" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small">Event Date</label>
+                            <label class="form-label small"><?= t('items.event_date') ?></label>
                             <input type="date" class="form-control form-control-sm" id="itemEventDate">
                         </div>
                         <div class="col-12">
-                            <label class="form-label small">Title</label>
+                            <label class="form-label small"><?= t('common.title') ?></label>
                             <input type="text" class="form-control form-control-sm" id="itemTitle" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small">Idol</label>
+                            <label class="form-label small"><?= t('common.idol') ?></label>
                             <div class="sd-wrap">
-                                <input type="text" class="form-control form-control-sm" id="itemIdol" required autocomplete="off" placeholder="Search or type...">
+                                <input type="text" class="form-control form-control-sm" id="itemIdol" required autocomplete="off" placeholder="<?= t('items.search_or_type') ?>">
                                 <input type="hidden" id="itemIdolId">
                                 <div class="sd-list" id="idolDropdown"></div>
                             </div>
                             <div class="form-text small text-info" id="itemIdolHint" style="display:none"></div>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small">Type</label>
+                            <label class="form-label small"><?= t('common.type') ?></label>
                             <div class="sd-wrap">
-                                <input type="text" class="form-control form-control-sm" id="itemType" required autocomplete="off" placeholder="Search or type...">
+                                <input type="text" class="form-control form-control-sm" id="itemType" required autocomplete="off" placeholder="<?= t('items.search_or_type') ?>">
                                 <div class="sd-list" id="typeDropdown"></div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small">Price / Qty</label>
+                            <label class="form-label small"><?= t('items.price_per_qty_label') ?></label>
                             <input type="number" class="form-control form-control-sm" id="itemPrice" min="0" step="0.01" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small">Qty</label>
+                            <label class="form-label small"><?= t('common.qty') ?></label>
                             <input type="number" class="form-control form-control-sm" id="itemQty" min="1" value="1" required>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="saveItem()">
-                    <i class="bi bi-check-lg"></i> Save
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
                 </button>
             </div>
         </div>
@@ -332,16 +333,16 @@ window.fetch = function(url, opts = {}) {
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Import from Excel</h5>
+                <h5 class="modal-title"><?= t('items.import_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="small text-muted">Import data from <strong>idols.xlsx</strong>. This will <strong class="text-danger">replace all existing data</strong> in the database.</p>
+                <p class="small text-muted"><?= t('items.import_body') ?></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-danger btn-sm" onclick="doImport()">
-                    <i class="bi bi-file-earmark-excel"></i> Import
+                    <i class="bi bi-file-earmark-excel"></i> <?= t('items.import') ?>
                 </button>
             </div>
         </div>
@@ -353,17 +354,17 @@ window.fetch = function(url, opts = {}) {
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+                <h5 class="modal-title"><?= t('items.confirm_delete_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Are you sure you want to delete <strong id="deleteName"></strong>?</p>
+                <p class="mb-0"><?= t('items.delete_confirm_prefix') ?> <strong id="deleteName"></strong>?</p>
                 <input type="hidden" id="deleteId">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()">
-                    <i class="bi bi-trash"></i> Delete
+                    <i class="bi bi-trash"></i> <?= t('common.delete') ?>
                 </button>
             </div>
         </div>
@@ -371,6 +372,8 @@ window.fetch = function(url, opts = {}) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let currentSort = 'order_date';
@@ -478,7 +481,7 @@ function initSearchableDropdown(inputId, listId, getItems) {
         const items = getItems().filter(i => !q || i.toLowerCase().includes(q));
         activeIdx = -1;
         if (items.length === 0) {
-            list.innerHTML = '<div class="sd-empty">No match — type to add new</div>';
+            list.innerHTML = `<div class="sd-empty">${t('items.no_match_add')}</div>`;
         } else {
             list.innerHTML = items.map((item, i) =>
                 `<div class="sd-item" data-idx="${i}" data-val="${escHtml(item)}">${highlightMatch(item, q)}</div>`
@@ -534,7 +537,7 @@ function initMultiSelect(wrapId, getItems, onChange) {
     function renderBox() {
         box.innerHTML = '';
         if (selected.length === 0) {
-            box.innerHTML = '<span class="ms-ph">All</span>';
+            box.innerHTML = `<span class="ms-ph">${t('common.all')}</span>`;
         } else {
             selected.forEach(val => {
                 const tag = document.createElement('span');
@@ -554,7 +557,7 @@ function initMultiSelect(wrapId, getItems, onChange) {
         const q = srch.value.toLowerCase();
         const items = getItems().filter(i => !q || i.toLowerCase().includes(q));
         if (items.length === 0) {
-            lst.innerHTML = '<div class="ms-empty">No match</div>';
+            lst.innerHTML = `<div class="ms-empty">${t('items.no_match')}</div>`;
         } else {
             lst.innerHTML = items.map(item => {
                 const sel = selected.includes(item);
@@ -623,7 +626,7 @@ function formatDate(d) {
 function renderTable(res) {
     const tbody = $('tableBody');
     if (!res.data || res.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No data found</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">${t('items.no_data_found')}</td></tr>`;
         return;
     }
     const offset = (res.page - 1) * res.per_page;
@@ -639,13 +642,13 @@ function renderTable(res) {
             <td class="text-end">${r.qty}</td>
             <td class="text-end fw-semibold">${formatNumber(r.total_price)}</td>
             <td class="text-center text-nowrap">
-                <button class="btn btn-outline-secondary btn-sm px-1 py-0" onclick="cloneItem(${r.id})" title="Clone">
+                <button class="btn btn-outline-secondary btn-sm px-1 py-0" onclick="cloneItem(${r.id})" title="${t('common.clone')}">
                     <i class="bi bi-copy"></i>
                 </button>
-                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editItem(${r.id})" title="Edit">
+                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editItem(${r.id})" title="${t('common.edit')}">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteItem(${r.id}, '${escJs(r.title)}')" title="Delete">
+                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteItem(${r.id}, '${escJs(r.title)}')" title="${t('common.delete')}">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -656,7 +659,7 @@ function renderTable(res) {
 function renderPagination(res) {
     const pg = $('pagination');
     const { page, total_pages } = res;
-    $('pageInfo').textContent = `Showing ${((page-1)*res.per_page)+1}-${Math.min(page*res.per_page, res.total)} of ${formatInt(res.total)} items`;
+    $('pageInfo').textContent = t('items.showing', { from: ((page-1)*res.per_page)+1, to: Math.min(page*res.per_page, res.total), total: formatInt(res.total) });
 
     if (total_pages <= 1) { pg.innerHTML = ''; return; }
 
@@ -692,7 +695,7 @@ function showFormModal(id = null) {
     $('itemIdolHint').style.display = 'none';
     $('itemIdolHint').innerHTML = '';
     $('itemForm').reset();
-    $('formTitle').textContent = id ? 'Edit Item' : 'Add Item';
+    $('formTitle').textContent = id ? t('items.edit_item') : t('items.add_item');
     new bootstrap.Modal($('formModal')).show();
 }
 
@@ -710,7 +713,7 @@ async function editItem(id) {
     $('itemType').value = d.type;
     $('itemPrice').value = d.price_per_qty;
     $('itemQty').value = d.qty;
-    $('formTitle').textContent = 'Edit Item';
+    $('formTitle').textContent = t('items.edit_item');
     new bootstrap.Modal($('formModal')).show();
 }
 
@@ -729,7 +732,7 @@ async function cloneItem(id) {
     $('itemType').value = d.type;
     $('itemPrice').value = d.price_per_qty;
     $('itemQty').value = d.qty;
-    $('formTitle').textContent = 'Clone Item';
+    $('formTitle').textContent = t('items.clone_item');
     new bootstrap.Modal($('formModal')).show();
 }
 
@@ -774,13 +777,13 @@ function showIdolPicker(name, candidates) {
         </button>
     `).join('');
     const wrap = $('itemIdolHint');
-    wrap.innerHTML = `<strong>Multiple "${escHtml(name)}" exist — pick one:</strong><br>${html}`;
+    wrap.innerHTML = `<strong>${t('items.idol_picker', { name: escHtml(name) })}</strong><br>${html}`;
     wrap.style.display = '';
 }
 
 function pickIdol(idolId, display) {
     $('itemIdolId').value = idolId;
-    $('itemIdolHint').innerHTML = `<i class="bi bi-check-circle text-success"></i> Linked to: <strong>${escHtml(display)}</strong>`;
+    $('itemIdolHint').innerHTML = `<i class="bi bi-check-circle text-success"></i> ${t('items.linked_to')} <strong>${escHtml(display)}</strong>`;
     saveItem(idolId);
 }
 
@@ -817,7 +820,7 @@ async function doImport() {
     body.append('action', 'import');
     const res = await api('import.php', { method: 'POST', body });
     showLoading(false);
-    alert(res.message || 'Import complete');
+    alert(res.message || t('items.import_complete'));
     loadFilters();
     loadData();
 }

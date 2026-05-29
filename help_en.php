@@ -126,8 +126,8 @@
                 <p>User guide for Numa Log &mdash; Idol merchandise purchase tracking and analytics</p>
             </div>
             <div class="lang-switcher">
-                <a href="help.php">TH</a>
-                <a href="help_en.php" class="active">EN</a>
+                <a href="help.php?lang=th">TH</a>
+                <a href="help_en.php?lang=en" class="active">EN</a>
             </div>
         </div>
     </div>

@@ -1,10 +1,10 @@
 <?php require __DIR__ . '/config.php'; requireAuth(); ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Type Management - Numa Log</title>
+    <title><?= t('types.title') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -34,12 +34,13 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-tags"></i> Type Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-tags"></i> <?= t('types.title') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -49,13 +50,13 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php endif; ?>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -69,9 +70,9 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <div class="col-12 col-lg-8">
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-tags"></i> Type Categories</strong>
+                    <strong><i class="bi bi-tags"></i> <?= t('types.categories') ?></strong>
                     <button class="btn btn-primary btn-sm" onclick="showForm()">
-                        <i class="bi bi-plus-lg"></i> Add
+                        <i class="bi bi-plus-lg"></i> <?= t('common.add') ?>
                     </button>
                 </div>
                 <div class="card-body p-0">
@@ -79,17 +80,17 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <thead>
                             <tr>
                                 <th style="width:40px">#</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th class="text-center" style="width:70px">Rows</th>
-                                <th class="text-center" style="width:70px">Qty</th>
-                                <th class="text-end" style="width:120px">Total Spent</th>
-                                <th class="text-center" style="width:60px">Order</th>
+                                <th><?= t('types.name') ?></th>
+                                <th><?= t('types.description') ?></th>
+                                <th class="text-center" style="width:70px"><?= t('types.rows') ?></th>
+                                <th class="text-center" style="width:70px"><?= t('common.qty') ?></th>
+                                <th class="text-end" style="width:120px"><?= t('types.total_spent') ?></th>
+                                <th class="text-center" style="width:60px"><?= t('types.order') ?></th>
                                 <th style="width:80px"></th>
                             </tr>
                         </thead>
                         <tbody id="typeList">
-                            <tr><td colspan="8" class="text-center text-muted py-4">Loading...</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -99,14 +100,14 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <!-- Sidebar -->
         <div class="col-12 col-lg-4">
             <div class="card mb-3">
-                <div class="card-header py-2"><strong>Summary</strong></div>
+                <div class="card-header py-2"><strong><?= t('types.summary') ?></strong></div>
                 <div class="card-body py-2" id="statsPanel">-</div>
             </div>
 
             <div class="card">
-                <div class="card-header py-2"><strong>Unmapped Type Names</strong></div>
+                <div class="card-header py-2"><strong><?= t('types.unmapped_title') ?></strong></div>
                 <div class="card-body py-2" id="unmappedPanel">
-                    <div class="text-muted">Loading...</div>
+                    <div class="text-muted"><?= t('common.loading') ?></div>
                 </div>
             </div>
         </div>
@@ -117,11 +118,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <div class="col-12">
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-people"></i> Members by Type</strong>
-                    <span class="badge bg-secondary" id="reportBadge">Loading...</span>
+                    <strong><i class="bi bi-people"></i> <?= t('types.members_by_type') ?></strong>
+                    <span class="badge bg-secondary" id="reportBadge"><?= t('common.loading') ?></span>
                 </div>
                 <div class="card-body p-2" id="membersReport">
-                    <div class="text-center text-muted py-3">Loading...</div>
+                    <div class="text-center text-muted py-3"><?= t('common.loading') ?></div>
                 </div>
             </div>
         </div>
@@ -133,30 +134,30 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="formTitle">Add Type</h5>
+                <h5 class="modal-title" id="formTitle"><?= t('types.add') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="typeForm">
                     <input type="hidden" id="tId">
                     <div class="mb-2">
-                        <label class="form-label small">Name</label>
+                        <label class="form-label small"><?= t('types.name') ?></label>
                         <input type="text" class="form-control form-control-sm" id="tName" required>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Description</label>
+                        <label class="form-label small"><?= t('types.description') ?></label>
                         <input type="text" class="form-control form-control-sm" id="tDesc">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Sort Order</label>
+                        <label class="form-label small"><?= t('types.sort_order') ?></label>
                         <input type="number" class="form-control form-control-sm" id="tSort" value="0">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="saveType()">
-                    <i class="bi bi-check-lg"></i> Save
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
                 </button>
             </div>
         </div>
@@ -168,22 +169,24 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+                <h5 class="modal-title"><?= t('types.confirm_delete') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Delete type <strong id="delName"></strong>?</p>
+                <p><?= t('types.delete_q') ?> <strong id="delName"></strong>?</p>
                 <input type="hidden" id="delId">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()"><i class="bi bi-trash"></i> <?= t('common.delete') ?></button>
             </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -209,10 +212,10 @@ async function loadMembersReport() {
 
 function renderMembersReport(byType) {
     const types = Object.keys(byType);
-    $('reportBadge').textContent = types.length + ' types';
+    $('reportBadge').textContent = t('types.types_count', { n: types.length });
 
     if (types.length === 0) {
-        $('membersReport').innerHTML = '<div class="text-muted text-center py-3">No data</div>';
+        $('membersReport').innerHTML = `<div class="text-muted text-center py-3">${t('common.no_data')}</div>`;
         return;
     }
 
@@ -235,7 +238,7 @@ function renderMembersReport(byType) {
                     <button class="accordion-button collapsed py-2 px-3" type="button"
                         data-bs-toggle="collapse" data-bs-target="#typeCollapse${i}" style="font-size:14px">
                         <strong>${escHtml(type)}</strong>
-                        <span class="badge bg-secondary ms-2" style="font-weight:normal;font-size:11px">${members.length} members</span>
+                        <span class="badge bg-secondary ms-2" style="font-weight:normal;font-size:11px">${t('types.members_count', { n: members.length })}</span>
                     </button>
                 </h2>
                 <div id="typeCollapse${i}" class="accordion-collapse collapse">
@@ -243,12 +246,12 @@ function renderMembersReport(byType) {
                         <table class="table table-sm table-hover mb-0" style="font-size:13px">
                             <thead>
                                 <tr>
-                                    <th>Member</th>
-                                    <th>Group / Unit</th>
-                                    <th>Company</th>
-                                    <th class="text-center" style="width:60px">Rows</th>
-                                    <th class="text-center" style="width:60px">Qty</th>
-                                    <th class="text-end" style="width:110px">Total</th>
+                                    <th>${t('common.member')}</th>
+                                    <th>${t('report.group_unit')}</th>
+                                    <th>${t('common.company')}</th>
+                                    <th class="text-center" style="width:60px">${t('types.rows')}</th>
+                                    <th class="text-center" style="width:60px">${t('common.qty')}</th>
+                                    <th class="text-end" style="width:110px">${t('common.total')}</th>
                                 </tr>
                             </thead>
                             <tbody>${rows}</tbody>
@@ -263,22 +266,22 @@ function renderMembersReport(byType) {
 
 function renderTable() {
     if (allTypes.length === 0) {
-        $('typeList').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No types yet. Click "Add" to create one.</td></tr>';
+        $('typeList').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${t('types.none')}</td></tr>`;
         return;
     }
 
-    $('typeList').innerHTML = allTypes.map((t, i) => `
+    $('typeList').innerHTML = allTypes.map((ty, i) => `
         <tr>
             <td class="text-muted">${i + 1}</td>
-            <td><strong>${escHtml(t.name)}</strong></td>
-            <td class="stat-muted">${escHtml(t.description || '')}</td>
-            <td class="text-center">${t.items_count}</td>
-            <td class="text-center">${t.total_qty}</td>
-            <td class="text-end">${t.total_price > 0 ? '฿' + fmt(t.total_price) : '-'}</td>
-            <td class="text-center">${t.sort_order}</td>
+            <td><strong>${escHtml(ty.name)}</strong></td>
+            <td class="stat-muted">${escHtml(ty.description || '')}</td>
+            <td class="text-center">${ty.items_count}</td>
+            <td class="text-center">${ty.total_qty}</td>
+            <td class="text-end">${ty.total_price > 0 ? '฿' + fmt(ty.total_price) : '-'}</td>
+            <td class="text-center">${ty.sort_order}</td>
             <td>
-                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editType(${t.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteType(${t.id}, '${escJs(t.name)}')" title="Delete"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editType(${ty.id})" title="${t('common.edit')}"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteType(${ty.id}, '${escJs(ty.name)}')" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>
             </td>
         </tr>
     `).join('');
@@ -290,21 +293,21 @@ function renderStats() {
     const totalQty = allTypes.reduce((s, t) => s + (t.total_qty || 0), 0);
     const totalSpend = allTypes.reduce((s, t) => s + (t.total_price || 0), 0);
     $('statsPanel').innerHTML = `
-        <div>Total types: <strong>${total}</strong></div>
-        <div>With items: <strong>${withItems}</strong></div>
-        <div>Total qty: <strong>${fmt(totalQty)}</strong></div>
-        <div class="mt-2 pt-2 border-top">Total tracked spend: <strong>฿${fmt(totalSpend)}</strong></div>
+        <div>${t('types.stat_total')} <strong>${total}</strong></div>
+        <div>${t('types.stat_with')} <strong>${withItems}</strong></div>
+        <div>${t('types.stat_qty')} <strong>${fmt(totalQty)}</strong></div>
+        <div class="mt-2 pt-2 border-top">${t('types.stat_spend')} <strong>฿${fmt(totalSpend)}</strong></div>
     `;
 }
 
 function renderUnmapped(unmapped) {
     if (unmapped.length === 0) {
-        $('unmappedPanel').innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> All type names are mapped!</div>';
+        $('unmappedPanel').innerHTML = `<div class="text-success"><i class="bi bi-check-circle"></i> ${t('types.all_mapped')}</div>`;
     } else {
         $('unmappedPanel').innerHTML = unmapped.map(n =>
             `<div class="d-flex align-items-center justify-content-between py-1 border-bottom">
                 <span>${escHtml(n)}</span>
-                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="quickAdd('${escJs(n)}')" title="Add"><i class="bi bi-plus"></i></button>
+                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="quickAdd('${escJs(n)}')" title="${t('common.add')}"><i class="bi bi-plus"></i></button>
             </div>`
         ).join('');
     }
@@ -314,18 +317,18 @@ function renderUnmapped(unmapped) {
 function showForm() {
     $('tId').value = '';
     $('typeForm').reset();
-    $('formTitle').textContent = 'Add Type';
+    $('formTitle').textContent = t('types.add');
     new bootstrap.Modal($('formModal')).show();
 }
 
 function editType(id) {
-    const t = allTypes.find(x => x.id == id);
-    if (!t) return;
-    $('tId').value = t.id;
-    $('tName').value = t.name;
-    $('tDesc').value = t.description || '';
-    $('tSort').value = t.sort_order;
-    $('formTitle').textContent = 'Edit: ' + t.name;
+    const ty = allTypes.find(x => x.id == id);
+    if (!ty) return;
+    $('tId').value = ty.id;
+    $('tName').value = ty.name;
+    $('tDesc').value = ty.description || '';
+    $('tSort').value = ty.sort_order;
+    $('formTitle').textContent = t('types.edit_prefix', { name: ty.name });
     new bootstrap.Modal($('formModal')).show();
 }
 

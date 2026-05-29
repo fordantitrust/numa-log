@@ -125,8 +125,16 @@ Heavy analytics tabs are lazy-loaded the first time they are opened.
 ### Help & Guide (`help.php` / `help_en.php`)
 
 - In-app usage guide available in **Thai** and **English**
-- TH/EN language switcher on the help page
+- TH/EN language switcher on the help page (synced with the app-wide switcher)
 - Covers all features with step-by-step instructions, tips, and FAQ
+
+### Language (i18n)
+
+- **App-wide English / Thai** with an EN/TH toggle in every page's navbar
+- Default language is **English**; the choice is remembered across pages and sessions (session + 1-year cookie)
+- Translation tables in `lang/en.php` / `lang/th.php` (served to the browser as `window.I18N`, consumed by a shared `t()` helper in `assets/i18n.js`); missing keys fall back to English
+- Covers Dashboard, Items, Report (all tabs, charts, month/weekday names), Idols, Types, Users, Backup, Login, and the password-change screen
+- Currency stays as `฿` with `th-TH` grouping in both languages
 
 ## Configuration
 
@@ -176,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.6.1 — Eight new Report tabs: Overview, Trends (cumulative + MoM + forecast), Seasonality (day-of-week & month-of-year), Compare (two members side by side), By Unit, By Event (with order→event lead time), Top Items, and Inactive members. Backed by five new endpoints (`report_by_unit`, `report_event`, `report_top_items`, `report_seasonality`, `report_inactive`).
+**Latest:** v1.7.0 — App-wide bilingual UI (English / Thai). Every page now has an EN/TH switcher in the navbar; the choice is remembered across pages and sessions, with English as the default. Powered by a lightweight translation layer (`lang/en.php` + `lang/th.php`, `t()` helper, `assets/i18n.js`) with automatic English fallback for missing keys.
 
 ## License
 

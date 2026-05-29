@@ -1,10 +1,10 @@
 <?php require __DIR__ . '/config.php'; requireAuth(); ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Idol Management - Numa Log</title>
+    <title><?= t('idols.title') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -43,12 +43,13 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-people"></i> Idol Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span></a>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-people"></i> <?= t('idols.title') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
+            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -58,13 +59,13 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php endif; ?>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -78,20 +79,20 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <div class="col-12 col-lg-8">
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-diagram-3"></i> Idol Hierarchy</strong>
+                    <strong><i class="bi bi-diagram-3"></i> <?= t('idols.hierarchy') ?></strong>
                     <div>
                         <?php if (ALLOW_RESEED): ?>
                         <button class="btn btn-outline-secondary btn-sm me-1" onclick="seedData()">
-                            <i class="bi bi-arrow-clockwise"></i> Re-seed
+                            <i class="bi bi-arrow-clockwise"></i> <?= t('idols.reseed') ?>
                         </button>
                         <?php endif; ?>
                         <button class="btn btn-primary btn-sm" onclick="showForm()">
-                            <i class="bi bi-plus-lg"></i> Add
+                            <i class="bi bi-plus-lg"></i> <?= t('common.add') ?>
                         </button>
                     </div>
                 </div>
                 <div class="card-body" id="treeContainer">
-                    <div class="text-center text-muted py-4">Loading...</div>
+                    <div class="text-center text-muted py-4"><?= t('common.loading') ?></div>
                 </div>
             </div>
         </div>
@@ -99,37 +100,37 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <!-- Legend + Stats -->
         <div class="col-12 col-lg-4">
             <div class="card mb-3">
-                <div class="card-header py-2"><strong>Legend</strong></div>
+                <div class="card-header py-2"><strong><?= t('idols.legend') ?></strong></div>
                 <div class="card-body py-2">
-                    <div class="mb-1"><span class="badge badge-company">Company</span> - ค่าย / บริษัท</div>
-                    <div class="mb-1"><span class="badge badge-group">Group</span> - วง / กลุ่ม</div>
-                    <div class="mb-1"><span class="badge badge-unit">Unit</span> - ยูนิตย่อย</div>
-                    <div><span class="badge badge-member">Member</span> - สมาชิก / ไอดอล</div>
+                    <div class="mb-1"><span class="badge badge-company"><?= t('idols.legend_company') ?></span> - <?= t('idols.desc_company') ?></div>
+                    <div class="mb-1"><span class="badge badge-group"><?= t('idols.legend_group') ?></span> - <?= t('idols.desc_group') ?></div>
+                    <div class="mb-1"><span class="badge badge-unit"><?= t('idols.legend_unit') ?></span> - <?= t('idols.desc_unit') ?></div>
+                    <div><span class="badge badge-member"><?= t('idols.legend_member') ?></span> - <?= t('idols.desc_member') ?></div>
                 </div>
             </div>
 
             <div class="card mb-3">
-                <div class="card-header py-2"><strong>Summary</strong></div>
+                <div class="card-header py-2"><strong><?= t('idols.summary') ?></strong></div>
                 <div class="card-body py-2" id="statsPanel">-</div>
             </div>
 
             <div class="card mb-3" id="ambiguousCard" style="display:none">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <strong class="text-warning"><i class="bi bi-exclamation-triangle"></i> Ambiguous Mappings</strong>
+                    <strong class="text-warning"><i class="bi bi-exclamation-triangle"></i> <?= t('idols.ambiguous_title') ?></strong>
                     <span class="badge bg-warning text-dark" id="ambiguousBadge">0</span>
                 </div>
                 <div class="card-body py-2" id="ambiguousPanel">
-                    <div class="text-muted small">Items whose idol name matches multiple member entities. Click to resolve.</div>
+                    <div class="text-muted small"><?= t('idols.ambiguous_desc') ?></div>
                     <button class="btn btn-outline-warning btn-sm w-100 mt-2" onclick="showAmbiguousModal()">
-                        <i class="bi bi-tools"></i> Resolve Conflicts
+                        <i class="bi bi-tools"></i> <?= t('idols.resolve_conflicts') ?>
                     </button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header py-2"><strong>Unmapped Idol Names</strong></div>
+                <div class="card-header py-2"><strong><?= t('idols.unmapped_title') ?></strong></div>
                 <div class="card-body py-2" id="unmappedPanel">
-                    <div class="text-muted">Loading...</div>
+                    <div class="text-muted"><?= t('common.loading') ?></div>
                 </div>
             </div>
         </div>
@@ -141,40 +142,40 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="formTitle">Add Entity</h5>
+                <h5 class="modal-title" id="formTitle"><?= t('idols.add_entity') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="entityForm">
                     <input type="hidden" id="eId">
                     <div class="mb-2">
-                        <label class="form-label small">Name</label>
+                        <label class="form-label small"><?= t('idols.name') ?></label>
                         <input type="text" class="form-control form-control-sm" id="eName" required onblur="suggestDisplayHint()">
                         <div class="form-text small text-warning" id="dupHintNotice" style="display:none">
-                            <i class="bi bi-exclamation-circle"></i> A member with this name already exists — consider adding a display hint to distinguish them.
+                            <i class="bi bi-exclamation-circle"></i> <?= t('idols.dup_notice') ?>
                         </div>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Category</label>
+                        <label class="form-label small"><?= t('idols.category') ?></label>
                         <select class="form-select form-select-sm" id="eCategory">
-                            <option value="company">Company</option>
-                            <option value="group">Group</option>
-                            <option value="unit">Unit</option>
-                            <option value="member" selected>Member</option>
+                            <option value="company"><?= t('idols.legend_company') ?></option>
+                            <option value="group"><?= t('idols.legend_group') ?></option>
+                            <option value="unit"><?= t('idols.legend_unit') ?></option>
+                            <option value="member" selected><?= t('idols.legend_member') ?></option>
                         </select>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Parent</label>
+                        <label class="form-label small"><?= t('idols.parent') ?></label>
                         <select class="form-select form-select-sm" id="eParent">
-                            <option value="">- None (Top level) -</option>
+                            <option value=""><?= t('idols.none_top') ?></option>
                         </select>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Display Hint <span class="text-muted">(shown next to name when duplicates exist, e.g. "ITZY")</span></label>
-                        <input type="text" class="form-control form-control-sm" id="eDisplayHint" placeholder="e.g. ITZY, AKB48 Team A">
+                        <label class="form-label small"><?= t('idols.display_hint') ?> <span class="text-muted"><?= t('idols.display_hint_help') ?></span></label>
+                        <input type="text" class="form-control form-control-sm" id="eDisplayHint" placeholder="<?= t('idols.display_hint_ph') ?>">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Sort Order</label>
+                        <label class="form-label small"><?= t('idols.sort_order') ?></label>
                         <input type="number" class="form-control form-control-sm" id="eSort" value="0">
                     </div>
                 </form>
@@ -182,22 +183,22 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 <!-- Membership panel — visible only for existing member entities -->
                 <div id="membershipSection" style="display:none">
                     <hr class="my-3">
-                    <h6 class="small text-muted mb-2"><i class="bi bi-people"></i> Memberships</h6>
+                    <h6 class="small text-muted mb-2"><i class="bi bi-people"></i> <?= t('idols.memberships') ?></h6>
                     <div id="membershipList" class="small mb-2"></div>
                     <div class="d-flex gap-1">
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="showAddMembershipForm()">
-                            <i class="bi bi-plus-lg"></i> Add membership
+                            <i class="bi bi-plus-lg"></i> <?= t('idols.add_membership') ?>
                         </button>
                         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showMoveForm()">
-                            <i class="bi bi-arrow-right-circle"></i> Move to new group
+                            <i class="bi bi-arrow-right-circle"></i> <?= t('idols.move_group') ?>
                         </button>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="saveEntity()">
-                    <i class="bi bi-check-lg"></i> Save
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
                 </button>
             </div>
         </div>
@@ -209,7 +210,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="mbTitle">Add Membership</h5>
+                <h5 class="modal-title" id="mbTitle"><?= t('idols.add_membership_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -218,36 +219,36 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     <input type="hidden" id="mbMemberId">
                     <input type="hidden" id="mbMode" value="add">
                     <div class="mb-2">
-                        <label class="form-label small">Group</label>
+                        <label class="form-label small"><?= t('common.group') ?></label>
                         <select class="form-select form-select-sm" id="mbGroup" required>
-                            <option value="">- Select group -</option>
+                            <option value=""><?= t('idols.select_group') ?></option>
                         </select>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label small">Start date <span class="text-muted">(blank = since beginning)</span></label>
+                            <label class="form-label small"><?= t('idols.start_date') ?> <span class="text-muted"><?= t('idols.start_hint') ?></span></label>
                             <input type="date" class="form-control form-control-sm" id="mbStart">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small">End date <span class="text-muted">(blank = current)</span></label>
+                            <label class="form-label small"><?= t('idols.end_date') ?> <span class="text-muted"><?= t('idols.end_hint') ?></span></label>
                             <input type="date" class="form-control form-control-sm" id="mbEnd">
                         </div>
                     </div>
                     <div class="form-check mb-2">
                         <input type="checkbox" class="form-check-input" id="mbPrimary" checked>
-                        <label class="form-check-label small" for="mbPrimary">Primary membership (counts in By Group report)</label>
+                        <label class="form-check-label small" for="mbPrimary"><?= t('idols.primary_label') ?></label>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Note</label>
-                        <input type="text" class="form-control form-control-sm" id="mbNote" placeholder="e.g. Transferred from sister group">
+                        <label class="form-label small"><?= t('idols.note') ?></label>
+                        <input type="text" class="form-control form-control-sm" id="mbNote" placeholder="<?= t('idols.note_ph') ?>">
                     </div>
                     <div id="mbWarnings" class="alert alert-warning small py-1 px-2" style="display:none"></div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="saveMembership()">
-                    <i class="bi bi-check-lg"></i> Save
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
                 </button>
             </div>
         </div>
@@ -259,19 +260,19 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Resolve Ambiguous Mappings</h5>
+                <h5 class="modal-title"><?= t('idols.resolve_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="text-muted small mb-3">
-                    Items whose idol name matches multiple member entities. Pick which entity each name should map to.
+                    <?= t('idols.resolve_desc') ?>
                 </div>
                 <div id="ambiguousContent">
-                    <div class="text-muted">Loading...</div>
+                    <div class="text-muted"><?= t('common.loading') ?></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.close') ?></button>
             </div>
         </div>
     </div>
@@ -282,22 +283,24 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+                <h5 class="modal-title"><?= t('idols.confirm_delete') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Delete <strong id="delName"></strong>? Children will become unparented.</p>
+                <p><?= t('idols.delete_prefix') ?> <strong id="delName"></strong>? <?= t('idols.delete_children') ?></p>
                 <input type="hidden" id="delId">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()"><i class="bi bi-trash"></i> <?= t('common.delete') ?></button>
             </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -341,7 +344,7 @@ function renderTree() {
         const children = byParent[entity.id] || [];
         const badge = `<span class="badge badge-${entity.category}">${entity.category}</span>`;
         const stats = entity.total_price > 0
-            ? `<span class="stat-muted ms-2">${entity.items_count} items / ฿${fmt(entity.total_price)}</span>`
+            ? `<span class="stat-muted ms-2">${entity.items_count} ${t('idols.items_label')} / ฿${fmt(entity.total_price)}</span>`
             : '';
         const mbIcon = (entity.category === 'member' && (entity.membership_count || 0) > 1)
             ? `<span class="ms-1 text-info" title="${entity.membership_count} memberships"><i class="bi bi-arrow-left-right"></i></span>`
@@ -350,8 +353,8 @@ function renderTree() {
             ? ` <span class="stat-muted">[${escHtml(entity.display_hint)}]</span>`
             : '';
         const btns = `
-            <button class="btn btn-outline-primary btn-sm px-1 py-0 ms-1" onclick="editEntity(${entity.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteEntity(${entity.id}, '${escJs(entity.name)}')" title="Delete"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-outline-primary btn-sm px-1 py-0 ms-1" onclick="editEntity(${entity.id})" title="${t('common.edit')}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteEntity(${entity.id}, '${escJs(entity.name)}')" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>
         `;
 
         let html = `<div class="tree-item depth-${depth}">`;
@@ -373,7 +376,7 @@ function renderTree() {
 
     let html = '';
     roots.forEach(r => { html += buildNode(r, 0); });
-    $('treeContainer').innerHTML = html || '<div class="text-muted text-center py-4">No data. Click "Re-seed" to initialize.</div>';
+    $('treeContainer').innerHTML = html || `<div class="text-muted text-center py-4">${t('idols.tree_empty')}</div>`;
 }
 
 function renderStats() {
@@ -383,11 +386,11 @@ function renderStats() {
     });
     const totalSpend = allEntities.reduce((s, e) => s + (e.total_price || 0), 0);
     $('statsPanel').innerHTML = `
-        <div>Company: <strong>${cats.company || 0}</strong></div>
-        <div>Group: <strong>${cats.group || 0}</strong></div>
-        <div>Unit: <strong>${cats.unit || 0}</strong></div>
-        <div>Member: <strong>${cats.member || 0}</strong></div>
-        <div class="mt-2 pt-2 border-top">Total entities: <strong>${allEntities.length}</strong></div>
+        <div>${t('idols.stat_company')} <strong>${cats.company || 0}</strong></div>
+        <div>${t('idols.stat_group')} <strong>${cats.group || 0}</strong></div>
+        <div>${t('idols.stat_unit')} <strong>${cats.unit || 0}</strong></div>
+        <div>${t('idols.stat_member')} <strong>${cats.member || 0}</strong></div>
+        <div class="mt-2 pt-2 border-top">${t('idols.stat_total')} <strong>${allEntities.length}</strong></div>
     `;
 }
 
@@ -397,12 +400,12 @@ async function loadUnmapped() {
     const unmapped = res.idols.filter(n => n && n !== '-' && !mapped.has(n));
 
     if (unmapped.length === 0) {
-        $('unmappedPanel').innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> All idol names are mapped!</div>';
+        $('unmappedPanel').innerHTML = `<div class="text-success"><i class="bi bi-check-circle"></i> ${t('idols.all_mapped')}</div>`;
     } else {
         $('unmappedPanel').innerHTML = unmapped.map(n =>
             `<div class="d-flex align-items-center justify-content-between py-1 border-bottom">
                 <span>${escHtml(n)}</span>
-                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="quickAdd('${escJs(n)}')" title="Add"><i class="bi bi-plus"></i></button>
+                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="quickAdd('${escJs(n)}')" title="${t('common.add')}"><i class="bi bi-plus"></i></button>
             </div>`
         ).join('');
     }
@@ -411,7 +414,7 @@ async function loadUnmapped() {
 function populateParentSelect() {
     const sel = $('eParent');
     const val = sel.value;
-    sel.innerHTML = '<option value="">- None (Top level) -</option>';
+    sel.innerHTML = `<option value="">${t('idols.none_top')}</option>`;
     allParents.forEach(p => {
         const cat = p.category.charAt(0).toUpperCase() + p.category.slice(1);
         sel.innerHTML += `<option value="${p.id}">[${cat}] ${escHtml(p.name)}</option>`;
@@ -425,7 +428,7 @@ function showForm(id = null) {
     $('entityForm').reset();
     $('eCategory').value = 'member';
     $('eDisplayHint').value = '';
-    $('formTitle').textContent = 'Add Entity';
+    $('formTitle').textContent = t('idols.add_entity');
     $('membershipSection').style.display = 'none';
     $('dupHintNotice').style.display = 'none';
     populateParentSelect();
@@ -440,7 +443,7 @@ function editEntity(id) {
     $('eCategory').value = e.category;
     $('eDisplayHint').value = e.display_hint || '';
     $('eSort').value = e.sort_order;
-    $('formTitle').textContent = 'Edit: ' + e.name;
+    $('formTitle').textContent = t('idols.edit_prefix', { name: e.name });
     populateParentSelect();
     $('eParent').value = e.parent_id || '';
     $('dupHintNotice').style.display = 'none';
@@ -522,7 +525,7 @@ async function confirmDelete() {
 }
 
 async function seedData() {
-    if (!confirm('Re-seed will reset all idol entity data. Continue?')) return;
+    if (!confirm(t('idols.reseed_confirm'))) return;
     const body = new FormData();
     body.append('action', 'seed');
     const res = await fetch('seed_idols.php', { method: 'POST', body }).then(r => r.json());
@@ -545,13 +548,13 @@ async function loadMemberships(memberId) {
 function renderMemberships() {
     const list = $('membershipList');
     if (currentMemberships.length === 0) {
-        list.innerHTML = '<div class="text-muted small">No memberships yet.</div>';
+        list.innerHTML = `<div class="text-muted small">${t('idols.no_memberships')}</div>`;
         return;
     }
     list.innerHTML = currentMemberships.map(m => {
         const start = m.start_date || '<span class="text-muted">—</span>';
-        const end   = m.end_date   || '<span class="text-success">current</span>';
-        const primary = m.is_primary ? '<span class="badge bg-primary">primary</span>' : '<span class="badge bg-secondary">sub</span>';
+        const end   = m.end_date   || `<span class="text-success">${t('idols.current')}</span>`;
+        const primary = m.is_primary ? `<span class="badge bg-primary">${t('idols.primary_badge')}</span>` : `<span class="badge bg-secondary">${t('idols.sub_badge')}</span>`;
         return `
             <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
                 <div>
@@ -560,8 +563,8 @@ function renderMemberships() {
                     <span class="ms-2">${primary}</span>
                 </div>
                 <div>
-                    <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editMembership(${m.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteMembership(${m.id})" title="Delete"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editMembership(${m.id})" title="${t('common.edit')}"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteMembership(${m.id})" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>
                 </div>
             </div>
         `;
@@ -570,7 +573,7 @@ function renderMemberships() {
 
 function populateGroupSelect() {
     const sel = $('mbGroup');
-    sel.innerHTML = '<option value="">- Select group -</option>';
+    sel.innerHTML = `<option value="">${t('idols.select_group')}</option>`;
     allParents.forEach(p => {
         if (p.category === 'group' || p.category === 'unit' || p.category === 'company') {
             const cat = p.category.charAt(0).toUpperCase() + p.category.slice(1);
@@ -583,7 +586,7 @@ function showAddMembershipForm() {
     $('mbId').value = '';
     $('mbMemberId').value = $('eId').value;
     $('mbMode').value = 'add';
-    $('mbTitle').textContent = 'Add Membership';
+    $('mbTitle').textContent = t('idols.add_membership_title');
     $('mbWarnings').style.display = 'none';
     $('membershipForm').reset();
     $('mbPrimary').checked = true;
@@ -595,7 +598,7 @@ function showMoveForm() {
     $('mbId').value = '';
     $('mbMemberId').value = $('eId').value;
     $('mbMode').value = 'move';
-    $('mbTitle').textContent = 'Move to New Group';
+    $('mbTitle').textContent = t('idols.move_title');
     $('mbWarnings').style.display = 'none';
     $('membershipForm').reset();
     $('mbPrimary').checked = true;
@@ -611,7 +614,7 @@ function editMembership(id) {
     $('mbId').value = m.id;
     $('mbMemberId').value = m.member_id;
     $('mbMode').value = 'edit';
-    $('mbTitle').textContent = 'Edit Membership';
+    $('mbTitle').textContent = t('idols.edit_membership_title');
     $('mbWarnings').style.display = 'none';
     populateGroupSelect();
     $('mbGroup').value = m.group_id;
@@ -625,14 +628,14 @@ function editMembership(id) {
 async function saveMembership() {
     const memberId = $('mbMemberId').value;
     const groupId  = $('mbGroup').value;
-    if (!memberId || !groupId) { alert('Group is required'); return; }
+    if (!memberId || !groupId) { alert(t('idols.group_required')); return; }
 
     const mode = $('mbMode').value;
     const body = new FormData();
 
     if (mode === 'move') {
         const moveDate = $('mbStart').value;
-        if (!moveDate) { alert('Move date is required'); return; }
+        if (!moveDate) { alert(t('idols.move_date_required')); return; }
         body.append('action', 'membership_move');
         body.append('member_id',    memberId);
         body.append('new_group_id', groupId);
@@ -660,7 +663,7 @@ async function saveMembership() {
 }
 
 async function deleteMembership(id) {
-    if (!confirm('Delete this membership? This cannot be undone.')) return;
+    if (!confirm(t('idols.del_membership_confirm'))) return;
     const body = new FormData();
     body.append('action', 'membership_delete');
     body.append('id', id);
@@ -674,20 +677,20 @@ async function deleteMembership(id) {
 
 async function showAmbiguousModal() {
     new bootstrap.Modal($('ambiguousModal')).show();
-    $('ambiguousContent').innerHTML = '<div class="text-muted">Loading...</div>';
+    $('ambiguousContent').innerHTML = `<div class="text-muted">${t('common.loading')}</div>`;
     const res = await fetch('api.php?action=ambiguous_list').then(r => r.json());
     const items = res.data || [];
     if (items.length === 0) {
-        $('ambiguousContent').innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> No ambiguous mappings.</div>';
+        $('ambiguousContent').innerHTML = `<div class="text-success"><i class="bi bi-check-circle"></i> ${t('idols.no_ambiguous')}</div>`;
         return;
     }
     $('ambiguousContent').innerHTML = items.map(it => `
         <div class="border rounded p-2 mb-2">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <strong>${escHtml(it.name)}</strong>
-                <span class="badge bg-warning text-dark">${it.items_count} items</span>
+                <span class="badge bg-warning text-dark">${it.items_count} ${t('idols.items_label')}</span>
             </div>
-            <div class="small text-muted mb-1">Pick which entity these items should map to:</div>
+            <div class="small text-muted mb-1">${t('idols.pick_entity')}</div>
             <div class="d-flex flex-wrap gap-1">
                 ${it.candidates.map(c => `
                     <button class="btn btn-outline-primary btn-sm"
@@ -701,14 +704,14 @@ async function showAmbiguousModal() {
 }
 
 async function bulkRemap(name, idolId) {
-    if (!confirm(`Map all items named "${name}" to entity #${idolId}?`)) return;
+    if (!confirm(t('idols.bulk_confirm', { name, id: idolId }))) return;
     const body = new FormData();
     body.append('action', 'item_bulk_remap');
     body.append('idol_name', name);
     body.append('idol_id',   idolId);
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
-    alert(`${res.updated} item(s) remapped.`);
+    alert(t('idols.remapped', { n: res.updated }));
     showAmbiguousModal();
     loadTree();
 }

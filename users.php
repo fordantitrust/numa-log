@@ -4,11 +4,11 @@ requireAuth();
 $me = currentUser();
 ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management - Numa Log</title>
+    <title><?= t('users.title') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -39,11 +39,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-people-fill"></i> User Management <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-people-fill"></i> <?= t('users.title') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
             <?php if (AUTH_ENABLED && $me): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -53,12 +54,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($me['username']) ?> (<?= $me['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php if ($me['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php endif; ?>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -71,10 +72,10 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <div class="col-12 col-lg-8">
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-people-fill"></i> Users</strong>
+                    <strong><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></strong>
                     <?php if ($me['role'] === 'admin'): ?>
                     <button class="btn btn-primary btn-sm" onclick="showForm()">
-                        <i class="bi bi-plus-lg"></i> Add User
+                        <i class="bi bi-plus-lg"></i> <?= t('users.add') ?>
                     </button>
                     <?php endif; ?>
                 </div>
@@ -83,15 +84,15 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <thead>
                             <tr>
                                 <th style="width:40px">#</th>
-                                <th>Username</th>
-                                <th>Display Name</th>
-                                <th>Role</th>
-                                <th>Last Login</th>
+                                <th><?= t('users.username') ?></th>
+                                <th><?= t('users.display_name') ?></th>
+                                <th><?= t('users.role') ?></th>
+                                <th><?= t('users.last_login') ?></th>
                                 <th style="width:120px"></th>
                             </tr>
                         </thead>
                         <tbody id="userList">
-                            <tr><td colspan="6" class="text-center text-muted py-4">Loading...</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -100,7 +101,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
         <div class="col-12 col-lg-4">
             <div class="card mb-3">
-                <div class="card-header py-2"><strong>Current User</strong></div>
+                <div class="card-header py-2"><strong><?= t('users.current_user') ?></strong></div>
                 <div class="card-body py-2">
                     <div><strong><?= htmlspecialchars($me['display_name']) ?></strong></div>
                     <div class="small text-muted"><?= htmlspecialchars($me['username']) ?></div>
@@ -108,20 +109,20 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 </div>
             </div>
             <div class="card">
-                <div class="card-header py-2"><strong>Change My Password</strong></div>
+                <div class="card-header py-2"><strong><?= t('users.change_my_pw') ?></strong></div>
                 <div class="card-body py-2">
                     <form id="pwForm">
                         <div class="mb-2">
-                            <input type="password" class="form-control form-control-sm" id="pwCurrent" placeholder="Current password" required>
+                            <input type="password" class="form-control form-control-sm" id="pwCurrent" placeholder="<?= t('users.pw_current') ?>" required>
                         </div>
                         <div class="mb-2">
-                            <input type="password" class="form-control form-control-sm" id="pwNew" placeholder="New password" required>
+                            <input type="password" class="form-control form-control-sm" id="pwNew" placeholder="<?= t('users.pw_new') ?>" required>
                         </div>
                         <div class="mb-2">
-                            <input type="password" class="form-control form-control-sm" id="pwConfirm" placeholder="Confirm new password" required>
+                            <input type="password" class="form-control form-control-sm" id="pwConfirm" placeholder="<?= t('users.pw_confirm') ?>" required>
                         </div>
                         <button type="button" class="btn btn-primary btn-sm w-100" onclick="changeMyPassword()">
-                            <i class="bi bi-key"></i> Change Password
+                            <i class="bi bi-key"></i> <?= t('users.change_pw') ?>
                         </button>
                     </form>
                 </div>
@@ -135,37 +136,37 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="formTitle">Add User</h5>
+                <h5 class="modal-title" id="formTitle"><?= t('users.add') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="userForm">
                     <input type="hidden" id="uId">
                     <div class="mb-2">
-                        <label class="form-label small">Username</label>
+                        <label class="form-label small"><?= t('users.username') ?></label>
                         <input type="text" class="form-control form-control-sm" id="uUsername" required>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Display Name</label>
+                        <label class="form-label small"><?= t('users.display_name') ?></label>
                         <input type="text" class="form-control form-control-sm" id="uDisplayName" required>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Password <span class="text-muted" id="pwHint">(required)</span></label>
+                        <label class="form-label small"><?= t('users.password') ?> <span class="text-muted" id="pwHint"><?= t('users.pw_required') ?></span></label>
                         <input type="password" class="form-control form-control-sm" id="uPassword">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">Role</label>
+                        <label class="form-label small"><?= t('users.role') ?></label>
                         <select class="form-select form-select-sm" id="uRole">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <option value="user"><?= t('users.role_user') ?></option>
+                            <option value="admin"><?= t('users.role_admin') ?></option>
                         </select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="saveUser()">
-                    <i class="bi bi-check-lg"></i> Save
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
                 </button>
             </div>
         </div>
@@ -177,22 +178,24 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+                <h5 class="modal-title"><?= t('users.confirm_delete') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Delete user <strong id="delName"></strong>?</p>
+                <p><?= t('users.delete_q') ?> <strong id="delName"></strong>?</p>
                 <input type="hidden" id="delId">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()"><i class="bi bi-trash"></i> <?= t('common.delete') ?></button>
             </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const ME = <?= json_encode($me) ?>;
@@ -208,19 +211,19 @@ async function loadUsers() {
 
 function renderTable() {
     if (allUsers.length === 0) {
-        $('userList').innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No users.</td></tr>';
+        $('userList').innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">${t('users.none')}</td></tr>`;
         return;
     }
     $('userList').innerHTML = allUsers.map((u, i) => {
         const isMe = u.id == ME.id;
         const badge = u.role === 'admin' ? '<span class="badge badge-admin">admin</span>' : '<span class="badge badge-user">user</span>';
         const btns = ME.role === 'admin' ? `
-            <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editUser(${u.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-            ${!isMe ? `<button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteUser(${u.id}, '${escJs(u.username)}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
+            <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editUser(${u.id})" title="${t('common.edit')}"><i class="bi bi-pencil"></i></button>
+            ${!isMe ? `<button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteUser(${u.id}, '${escJs(u.username)}')" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>` : ''}
         ` : '';
         return `<tr${isMe ? ' class="table-active"' : ''}>
             <td class="text-muted">${i + 1}</td>
-            <td><strong>${esc(u.username)}</strong>${isMe ? ' <span class="badge bg-secondary">you</span>' : ''}</td>
+            <td><strong>${esc(u.username)}</strong>${isMe ? ` <span class="badge bg-secondary">${t('users.you')}</span>` : ''}</td>
             <td>${esc(u.display_name)}</td>
             <td>${badge}</td>
             <td class="small text-muted">${u.last_login || '-'}</td>
@@ -233,10 +236,10 @@ function showForm() {
     $('uId').value = '';
     $('userForm').reset();
     $('uRole').value = 'user';
-    $('formTitle').textContent = 'Add User';
+    $('formTitle').textContent = t('users.add');
     $('uUsername').readOnly = false;
     $('uPassword').required = true;
-    $('pwHint').textContent = '(required)';
+    $('pwHint').textContent = t('users.pw_required');
     new bootstrap.Modal($('formModal')).show();
 }
 
@@ -249,9 +252,9 @@ function editUser(id) {
     $('uDisplayName').value = u.display_name;
     $('uPassword').value = '';
     $('uPassword').required = false;
-    $('pwHint').textContent = '(leave blank to keep)';
+    $('pwHint').textContent = t('users.pw_keep');
     $('uRole').value = u.role;
-    $('formTitle').textContent = 'Edit: ' + u.username;
+    $('formTitle').textContent = t('users.edit_prefix', { name: u.username });
     new bootstrap.Modal($('formModal')).show();
 }
 
@@ -261,7 +264,7 @@ async function saveUser() {
 
     const id = $('uId').value;
     if (!id && !$('uPassword').value) {
-        alert('Password is required for new users.');
+        alert(t('users.pw_req_new'));
         return;
     }
 
@@ -299,9 +302,9 @@ async function changeMyPassword() {
     const current = $('pwCurrent').value;
     const pw = $('pwNew').value;
     const confirm = $('pwConfirm').value;
-    if (!current || !pw || !confirm) { alert('Please fill all fields.'); return; }
-    if (pw !== confirm) { alert('New passwords do not match.'); return; }
-    if (pw.length < 4) { alert('Password must be at least 4 characters.'); return; }
+    if (!current || !pw || !confirm) { alert(t('users.fill_all')); return; }
+    if (pw !== confirm) { alert(t('users.pw_mismatch')); return; }
+    if (pw.length < 4) { alert(t('users.pw_min')); return; }
 
     const body = new FormData();
     body.append('action', 'change_password');
@@ -310,7 +313,7 @@ async function changeMyPassword() {
 
     const res = await fetch('api_users.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
-    alert('Password changed successfully.');
+    alert(t('users.pw_changed'));
     $('pwForm').reset();
 }
 

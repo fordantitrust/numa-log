@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.6.1');
+define('APP_VERSION', '1.7.0');
 const DB_SCHEMA_VERSION = 5;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
@@ -251,4 +251,113 @@ function verifyCsrf(): void
         echo json_encode(['error' => 'Invalid CSRF token']);
         exit;
     }
+}
+
+// ── Internationalization (i18n) ───────────────────────────────────────────────
+// Two-language support (English default, Thai). Translation strings live in
+// lang/en.php and lang/th.php as flat keyed arrays. The same dictionary is
+// exposed to client-side JS as window.I18N (see assets/i18n.js).
+const SUPPORTED_LANGS = ['en', 'th'];
+const DEFAULT_LANG    = 'en';
+
+/**
+ * Resolve the active UI language. Order of precedence:
+ *   ?lang= (validated, then persisted to session + cookie) → session → cookie → default.
+ * Result is cached per request. Must run before any output when ?lang= is present
+ * (it sets a cookie); config.php triggers it at load time for non-CLI requests.
+ */
+function currentLang(): string
+{
+    static $lang = null;
+    if ($lang !== null) return $lang;
+
+    startAppSession();
+
+    if (isset($_GET['lang']) && in_array($_GET['lang'], SUPPORTED_LANGS, true)) {
+        $lang = $_GET['lang'];
+        $_SESSION['lang'] = $lang;
+        setcookie('lang', $lang, [
+            'expires'  => time() + 31536000, // 1 year
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Strict',
+            'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        ]);
+        return $lang;
+    }
+    if (isset($_SESSION['lang']) && in_array($_SESSION['lang'], SUPPORTED_LANGS, true)) {
+        return $lang = $_SESSION['lang'];
+    }
+    if (isset($_COOKIE['lang']) && in_array($_COOKIE['lang'], SUPPORTED_LANGS, true)) {
+        return $lang = $_COOKIE['lang'];
+    }
+    return $lang = DEFAULT_LANG;
+}
+
+/** Load the merged translation dictionary (English base + active-language overlay). */
+function loadLang(): array
+{
+    static $dict = null;
+    if ($dict !== null) return $dict;
+
+    $dict = require __DIR__ . '/lang/en.php';
+    $cur  = currentLang();
+    if ($cur !== 'en' && is_file(__DIR__ . "/lang/{$cur}.php")) {
+        $dict = array_merge($dict, require __DIR__ . "/lang/{$cur}.php");
+    }
+    return $dict;
+}
+
+/**
+ * Translate a key. Missing keys fall back to the key itself (so nothing renders
+ * blank). {placeholders} in the string are replaced from $params.
+ */
+function t(string $key, array $params = []): string
+{
+    $s = loadLang()[$key] ?? $key;
+    if (!is_string($s)) return $key; // non-string entries (e.g. date.months) are read directly
+    foreach ($params as $k => $v) {
+        $s = str_replace('{' . $k . '}', (string) $v, $s);
+    }
+    return $s;
+}
+
+/** Build a URL to the current page with the lang query param set to $code. */
+function langUrl(string $code): string
+{
+    $params = $_GET;
+    $params['lang'] = $code;
+    $script = basename($_SERVER['SCRIPT_NAME'] ?? 'index.php');
+    return $script . '?' . http_build_query($params);
+}
+
+/** Render the EN/TH toggle for the navbar. Single source of truth for the markup. */
+function langSwitcher(): string
+{
+    $cur    = currentLang();
+    $script = basename($_SERVER['SCRIPT_NAME'] ?? 'index.php');
+
+    // Help is two separate per-language files — point each toggle at the right file.
+    if ($script === 'help.php' || $script === 'help_en.php') {
+        $enUrl = 'help_en.php?lang=en';
+        $thUrl = 'help.php?lang=th';
+    } else {
+        $enUrl = langUrl('en');
+        $thUrl = langUrl('th');
+    }
+
+    $btn = function (string $code, string $label, string $url) use ($cur) {
+        $active = $cur === $code ? ' active fw-bold' : '';
+        return '<a href="' . htmlspecialchars($url) . '" class="btn btn-outline-light btn-sm py-0 px-2' . $active . '">' . $label . '</a>';
+    };
+    return '<div class="btn-group me-2" role="group" aria-label="Language">'
+        . $btn('en', 'EN', $enUrl)
+        . $btn('th', 'TH', $thUrl)
+        . '</div>';
+}
+
+// Resolve language early (before page output) so the ?lang= cookie can be set
+// cleanly. Skipped on CLI (migrations / tests) where there is no session/cookie.
+if (PHP_SAPI !== 'cli') {
+    currentLang();
 }

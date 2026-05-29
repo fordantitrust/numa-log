@@ -1,10 +1,10 @@
 <?php require __DIR__ . '/config.php'; requireAuth(); ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Numa Log</title>
+    <title><?= t('nav.dashboard') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -41,12 +41,13 @@
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-speedometer2"></i> Dashboard <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span></a>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-speedometer2"></i> <?= t('nav.dashboard') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
+            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -56,13 +57,13 @@
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php endif; ?>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -73,12 +74,12 @@
 <div class="container-fluid py-3">
     <!-- Period selector -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h5 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> ภาพรวมการใช้จ่าย</h5>
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> <?= t('dashboard.overview_title') ?></h5>
         <div class="d-flex align-items-center gap-2">
-            <label class="small text-muted mb-0">ช่วงเวลา:</label>
+            <label class="small text-muted mb-0"><?= t('dashboard.period') ?></label>
             <select class="form-select form-select-sm" id="periodSelect" style="width:auto">
-                <option value="all">ทั้งหมด (All time)</option>
-                <option value="last12">12 เดือนล่าสุด</option>
+                <option value="all"><?= t('dashboard.period_all') ?></option>
+                <option value="last12"><?= t('dashboard.period_last12') ?></option>
             </select>
         </div>
     </div>
@@ -87,28 +88,28 @@
     <div class="row g-3 mb-3">
         <div class="col-6 col-lg-3">
             <div class="card summary-card p-3 h-100">
-                <div class="small opacity-75"><i class="bi bi-cash-stack"></i> ยอดใช้จ่ายรวม</div>
+                <div class="small opacity-75"><i class="bi bi-cash-stack"></i> <?= t('dashboard.kpi_total_spent') ?></div>
                 <div class="kpi-value" id="kpiSpent">&#3647;0</div>
                 <div class="small opacity-75" id="kpiSpentSub">&nbsp;</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card summary-card p-3 h-100">
-                <div class="small opacity-75"><i class="bi bi-box-seam"></i> จำนวนรายการ / ชิ้น</div>
+                <div class="small opacity-75"><i class="bi bi-box-seam"></i> <?= t('dashboard.kpi_items') ?></div>
                 <div class="kpi-value" id="kpiItems">0</div>
                 <div class="small opacity-75" id="kpiItemsSub">&nbsp;</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card summary-card p-3 h-100">
-                <div class="small opacity-75"><i class="bi bi-calendar-month"></i> เฉลี่ยต่อเดือน</div>
+                <div class="small opacity-75"><i class="bi bi-calendar-month"></i> <?= t('dashboard.kpi_avg') ?></div>
                 <div class="kpi-value" id="kpiAvg">&#3647;0</div>
                 <div class="small opacity-75" id="kpiAvgSub">&nbsp;</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card summary-card p-3 h-100">
-                <div class="small opacity-75"><i class="bi bi-graph-up"></i> เดือนล่าสุด</div>
+                <div class="small opacity-75"><i class="bi bi-graph-up"></i> <?= t('dashboard.kpi_latest') ?></div>
                 <div class="kpi-value" id="kpiLatest">&#3647;0</div>
                 <div class="small opacity-75" id="kpiLatestSub">&nbsp;</div>
             </div>
@@ -119,7 +120,7 @@
     <div class="row g-3 mb-3">
         <div class="col-12 col-lg-8">
             <div class="card p-3 h-100">
-                <h6 class="card-title mb-3">แนวโน้มรายเดือน</h6>
+                <h6 class="card-title mb-3"><?= t('dashboard.monthly_trend') ?></h6>
                 <div class="chart-container">
                     <canvas id="chartMonthly"></canvas>
                 </div>
@@ -127,7 +128,7 @@
         </div>
         <div class="col-12 col-lg-4">
             <div class="card p-3 h-100">
-                <h6 class="card-title mb-3">สัดส่วนตามประเภท</h6>
+                <h6 class="card-title mb-3"><?= t('dashboard.by_type_share') ?></h6>
                 <div class="chart-container sm">
                     <canvas id="chartType"></canvas>
                 </div>
@@ -139,29 +140,29 @@
     <div class="row g-3">
         <div class="col-12 col-lg-4">
             <div class="card h-100">
-                <div class="card-header py-2"><strong><i class="bi bi-person-hearts"></i> Top สมาชิก</strong></div>
+                <div class="card-header py-2"><strong><i class="bi bi-person-hearts"></i> <?= t('dashboard.top_members') ?></strong></div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover mb-0">
-                        <thead><tr><th>#</th><th>สมาชิก</th><th class="text-end">ยอด (฿)</th></tr></thead>
-                        <tbody id="topMembers"><tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr></tbody>
+                        <thead><tr><th>#</th><th><?= t('common.member') ?></th><th class="text-end"><?= t('dashboard.amount_baht') ?></th></tr></thead>
+                        <tbody id="topMembers"><tr><td colspan="3" class="text-center text-muted py-3"><?= t('common.loading') ?></td></tr></tbody>
                     </table>
                 </div>
             </div>
         </div>
         <div class="col-12 col-lg-4">
             <div class="card h-100">
-                <div class="card-header py-2"><strong><i class="bi bi-diagram-3"></i> Top วง/กลุ่ม</strong></div>
+                <div class="card-header py-2"><strong><i class="bi bi-diagram-3"></i> <?= t('dashboard.top_groups') ?></strong></div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover mb-0">
-                        <thead><tr><th>#</th><th>วง/กลุ่ม</th><th class="text-end">ยอด (฿)</th></tr></thead>
-                        <tbody id="topGroups"><tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr></tbody>
+                        <thead><tr><th>#</th><th><?= t('dashboard.group_label') ?></th><th class="text-end"><?= t('dashboard.amount_baht') ?></th></tr></thead>
+                        <tbody id="topGroups"><tr><td colspan="3" class="text-center text-muted py-3"><?= t('common.loading') ?></td></tr></tbody>
                     </table>
                 </div>
             </div>
         </div>
         <div class="col-12 col-lg-4">
             <div class="card p-3 h-100">
-                <h6 class="card-title mb-3">สัดส่วนตามค่าย</h6>
+                <h6 class="card-title mb-3"><?= t('dashboard.by_company_share') ?></h6>
                 <div class="chart-container sm">
                     <canvas id="chartCompany"></canvas>
                 </div>
@@ -171,6 +172,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let chartMonthly, chartType, chartCompany;
@@ -216,7 +219,7 @@ function populateYears(years) {
     if (sel._yearsDone || !Array.isArray(years)) return;
     years.forEach(y => {
         const o = document.createElement('option');
-        o.value = y; o.textContent = `ปี ${y}`;
+        o.value = y; o.textContent = t('dashboard.year', { y });
         sel.appendChild(o);
     });
     sel._yearsDone = true;
@@ -229,13 +232,13 @@ function escHtml(s)  { const d = document.createElement('div'); d.textContent = 
 
 function renderKpis(k) {
     $('kpiSpent').textContent  = fmtMoney(k.total_spent);
-    $('kpiSpentSub').innerHTML = `${k.active_months || 0} เดือนที่มีข้อมูล`;
+    $('kpiSpentSub').innerHTML = t('dashboard.kpi_spent_sub', { n: k.active_months || 0 });
 
     $('kpiItems').textContent  = fmtInt(k.total_items);
-    $('kpiItemsSub').innerHTML = `${fmtInt(k.total_qty)} ชิ้น`;
+    $('kpiItemsSub').innerHTML = t('dashboard.kpi_items_sub', { n: fmtInt(k.total_qty) });
 
     $('kpiAvg').textContent    = fmtMoney(k.avg_per_month);
-    $('kpiAvgSub').innerHTML   = k.top_type ? `ประเภทเด่น: ${escHtml(k.top_type)}` : '&nbsp;';
+    $('kpiAvgSub').innerHTML   = k.top_type ? t('dashboard.kpi_top_type', { type: escHtml(k.top_type) }) : '&nbsp;';
 
     $('kpiLatest').textContent = fmtMoney(k.latest_month_spent);
     if (k.mom_change_pct === null || k.mom_change_pct === undefined) {
@@ -245,7 +248,7 @@ function renderKpis(k) {
         const cls = up ? 'delta-up' : 'delta-down';
         const arrow = up ? '▲' : '▼';
         $('kpiLatestSub').innerHTML =
-            `<span class="${cls}">${arrow} ${Math.abs(k.mom_change_pct).toFixed(1)}%</span> เทียบเดือนก่อน`;
+            `<span class="${cls}">${arrow} ${Math.abs(k.mom_change_pct).toFixed(1)}%</span> ${t('dashboard.vs_prev_month')}`;
     }
 }
 
@@ -258,7 +261,7 @@ function renderMonthly(data) {
         data: {
             labels,
             datasets: [{
-                label: 'ยอดใช้จ่าย (฿)',
+                label: t('common.spending_baht'),
                 data: values,
                 backgroundColor: 'rgba(124,58,237,.7)',
                 borderRadius: 4,
@@ -278,11 +281,11 @@ function renderMonthly(data) {
 // Collapse a sorted-desc list to top N slices + an "อื่นๆ" bucket so the
 // doughnut stays readable when there are many categories.
 function topNWithOthers(data, labelKey, n = 5) {
-    const rows = data.map(d => ({ label: d[labelKey] || '(ไม่ระบุ)', value: d.total_price }));
+    const rows = data.map(d => ({ label: d[labelKey] || t('common.unspecified'), value: d.total_price }));
     if (rows.length <= n) return rows;
     const head = rows.slice(0, n);
     const restTotal = rows.slice(n).reduce((s, r) => s + r.value, 0);
-    if (restTotal > 0) head.push({ label: `อื่นๆ (${rows.length - n})`, value: restTotal });
+    if (restTotal > 0) head.push({ label: t('dashboard.others', { n: rows.length - n }), value: restTotal });
     return head;
 }
 
@@ -313,7 +316,7 @@ function renderCompany(data) { chartCompany = renderDoughnut(chartCompany, 'char
 function renderTop(tbodyId, rows, nameFn) {
     const tbody = $(tbodyId);
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">ไม่มีข้อมูล</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">${t('common.no_data')}</td></tr>`;
         return;
     }
     const max = Math.max(...rows.map(r => r.total_price), 1);

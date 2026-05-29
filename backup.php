@@ -4,11 +4,11 @@ requireAuth();
 requireAdmin();
 ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backup & Restore - Numa Log</title>
+    <title><?= t('backup.title') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -37,11 +37,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-database"></i> Backup & Restore <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> Report</span></a>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-database"></i> <?= t('backup.title') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -50,11 +51,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -67,9 +68,9 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <div class="col-12 col-lg-8">
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-clock-history"></i> Backup Snapshots</strong>
+                    <strong><i class="bi bi-clock-history"></i> <?= t('backup.snapshots') ?></strong>
                     <button class="btn btn-primary btn-sm" onclick="showCreateModal()">
-                        <i class="bi bi-plus-lg"></i> Create Backup
+                        <i class="bi bi-plus-lg"></i> <?= t('backup.create') ?>
                     </button>
                 </div>
                 <div class="card-body p-0">
@@ -77,14 +78,14 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <thead>
                             <tr>
                                 <th style="width:40px">#</th>
-                                <th>Filename</th>
-                                <th class="text-end" style="width:100px">Size</th>
-                                <th style="width:160px">Created</th>
+                                <th><?= t('backup.filename') ?></th>
+                                <th class="text-end" style="width:100px"><?= t('backup.size') ?></th>
+                                <th style="width:160px"><?= t('backup.created') ?></th>
                                 <th style="width:160px"></th>
                             </tr>
                         </thead>
                         <tbody id="backupList">
-                            <tr><td colspan="5" class="text-center text-muted py-4">Loading...</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -93,22 +94,22 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
         <div class="col-12 col-lg-4">
             <div class="card mb-3">
-                <div class="card-header py-2"><strong>Info</strong></div>
+                <div class="card-header py-2"><strong><?= t('backup.info') ?></strong></div>
                 <div class="card-body py-2 small">
-                    <div class="mb-2"><i class="bi bi-info-circle text-primary"></i> Backups are full copies of the SQLite database file.</div>
-                    <div class="mb-2"><i class="bi bi-shield-check text-success"></i> Before restore, an auto-backup is created automatically.</div>
-                    <div><i class="bi bi-exclamation-triangle text-warning"></i> Restore will replace ALL current data.</div>
+                    <div class="mb-2"><i class="bi bi-info-circle text-primary"></i> <?= t('backup.info1') ?></div>
+                    <div class="mb-2"><i class="bi bi-shield-check text-success"></i> <?= t('backup.info2') ?></div>
+                    <div><i class="bi bi-exclamation-triangle text-warning"></i> <?= t('backup.info3') ?></div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header py-2"><strong>Upload Backup</strong></div>
+                <div class="card-header py-2"><strong><?= t('backup.upload_title') ?></strong></div>
                 <div class="card-body py-2">
                     <form id="uploadForm">
                         <div class="mb-2">
                             <input type="file" class="form-control form-control-sm" id="uploadFile" accept=".sqlite">
                         </div>
                         <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="uploadBackup()">
-                            <i class="bi bi-upload"></i> Upload
+                            <i class="bi bi-upload"></i> <?= t('backup.upload') ?>
                         </button>
                     </form>
                 </div>
@@ -122,19 +123,19 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create Backup</h5>
+                <h5 class="modal-title"><?= t('backup.create') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-2">
-                    <label class="form-label small">Label (optional)</label>
-                    <input type="text" class="form-control form-control-sm" id="backupLabel" placeholder="e.g. before_update">
+                    <label class="form-label small"><?= t('backup.label') ?></label>
+                    <input type="text" class="form-control form-control-sm" id="backupLabel" placeholder="<?= t('backup.label_ph') ?>">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="createBackup()">
-                    <i class="bi bi-database-add"></i> Create
+                    <i class="bi bi-database-add"></i> <?= t('backup.create_btn') ?>
                 </button>
             </div>
         </div>
@@ -146,18 +147,18 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-warning"><i class="bi bi-exclamation-triangle"></i> Confirm Restore</h5>
+                <h5 class="modal-title text-warning"><i class="bi bi-exclamation-triangle"></i> <?= t('backup.confirm_restore') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Restore from <strong id="restoreName"></strong>?</p>
-                <p class="small text-muted mb-0">This will replace ALL current data. An auto-backup will be created first.</p>
+                <p><?= t('backup.restore_from') ?> <strong id="restoreName"></strong>?</p>
+                <p class="small text-muted mb-0"><?= t('backup.restore_warn') ?></p>
                 <input type="hidden" id="restoreFile">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-warning btn-sm" onclick="confirmRestore()">
-                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                    <i class="bi bi-arrow-counterclockwise"></i> <?= t('backup.restore') ?>
                 </button>
             </div>
         </div>
@@ -169,17 +170,17 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+                <h5 class="modal-title"><?= t('backup.confirm_delete') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Delete backup <strong id="deleteName"></strong>?</p>
+                <p><?= t('backup.delete_q') ?> <strong id="deleteName"></strong>?</p>
                 <input type="hidden" id="deleteFile">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
                 <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()">
-                    <i class="bi bi-trash"></i> Delete
+                    <i class="bi bi-trash"></i> <?= t('common.delete') ?>
                 </button>
             </div>
         </div>
@@ -187,6 +188,8 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
@@ -197,7 +200,7 @@ async function loadBackups() {
     const backups = res.backups;
 
     if (backups.length === 0) {
-        $('backupList').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No backups yet.</td></tr>';
+        $('backupList').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${t('backup.none')}</td></tr>`;
         return;
     }
 
@@ -208,9 +211,9 @@ async function loadBackups() {
             <td class="text-end">${formatSize(b.size)}</td>
             <td>${b.created}</td>
             <td class="text-end">
-                <a href="api.php?action=backup_download&filename=${encodeURIComponent(b.filename)}" class="btn btn-outline-primary btn-sm px-1 py-0" title="Download"><i class="bi bi-download"></i></a>
-                <button class="btn btn-outline-warning btn-sm px-1 py-0" onclick="showRestore('${escJs(b.filename)}')" title="Restore"><i class="bi bi-arrow-counterclockwise"></i></button>
-                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="showDelete('${escJs(b.filename)}')" title="Delete"><i class="bi bi-trash"></i></button>
+                <a href="api.php?action=backup_download&filename=${encodeURIComponent(b.filename)}" class="btn btn-outline-primary btn-sm px-1 py-0" title="${t('backup.download')}"><i class="bi bi-download"></i></a>
+                <button class="btn btn-outline-warning btn-sm px-1 py-0" onclick="showRestore('${escJs(b.filename)}')" title="${t('backup.restore')}"><i class="bi bi-arrow-counterclockwise"></i></button>
+                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="showDelete('${escJs(b.filename)}')" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>
             </td>
         </tr>
     `).join('');
@@ -228,7 +231,7 @@ async function createBackup() {
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
     bootstrap.Modal.getInstance($('createModal')).hide();
-    alert('Backup created: ' + res.filename);
+    alert(t('backup.created_alert', { name: res.filename }));
     loadBackups();
 }
 
@@ -266,15 +269,15 @@ async function confirmDelete() {
 
 async function uploadBackup() {
     const file = $('uploadFile').files[0];
-    if (!file) { alert('Please select a .sqlite file'); return; }
-    if (!file.name.endsWith('.sqlite')) { alert('Only .sqlite files are allowed'); return; }
+    if (!file) { alert(t('backup.select_file')); return; }
+    if (!file.name.endsWith('.sqlite')) { alert(t('backup.only_sqlite')); return; }
 
     const body = new FormData();
     body.append('action', 'backup_upload');
     body.append('file', file);
     const res = await fetch('backup_upload.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
-    alert('Uploaded: ' + res.filename);
+    alert(t('backup.uploaded_alert', { name: res.filename }));
     $('uploadFile').value = '';
     loadBackups();
 }

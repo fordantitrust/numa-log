@@ -4,6 +4,24 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.7.0 (2026-05-29)
+
+### Bilingual UI — English & Thai (app-wide i18n)
+
+The entire app can now be switched between **English** (default) and **Thai** from an EN/TH toggle in every page's navbar. Previously only the Help page existed in both languages; the rest of the UI was a fixed mix of English labels and Thai strings.
+
+- **Language switcher** on every page (and on the login / change-password screens). The choice is remembered across pages and sessions via the session plus a 1-year cookie. New visitors default to English.
+- **Translation layer** — string tables in `lang/en.php` and `lang/th.php` (384 keys, full parity), served to the browser as `window.I18N` and consumed by a shared `t()` helper (`assets/i18n.js`). Missing keys fall back to English so nothing ever renders blank.
+- **Coverage** — Dashboard (`index.php`), Items, Report (all 13 tabs incl. charts, tables, month/weekday names), Idols, Types, Users, Backup, Login, and the forced password-change screen. The `<html lang>` attribute now reflects the active language.
+- **Help pages** — the existing `help.php` (Thai) / `help_en.php` (English) are kept as-is and wired into the new switcher so the choice stays in sync.
+- Currency stays formatted as `฿` with `th-TH` number grouping in both languages (single currency, not language-bound).
+
+### Backend (`config.php`)
+
+- **New helpers:** `currentLang()` (query `?lang=` → session → cookie → default `en`, validated), `loadLang()` (English base + active-language overlay), `t($key, $params)` with `{placeholder}` substitution, and `langSwitcher()` / `langUrl()` for the navbar toggle. Language is resolved at config load (before output) so the preference cookie is set cleanly; skipped on CLI.
+
+---
+
 ## v1.6.1 (2026-05-29)
 
 ### Report page — 8 new report views

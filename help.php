@@ -126,8 +126,8 @@
                 <p>คู่มือการใช้งาน Numa Log &mdash; ระบบบันทึกและวิเคราะห์ข้อมูลการซื้อสินค้าไอดอล</p>
             </div>
             <div class="lang-switcher">
-                <a href="help.php" class="active">TH</a>
-                <a href="help_en.php">EN</a>
+                <a href="help.php?lang=th" class="active">TH</a>
+                <a href="help_en.php?lang=en">EN</a>
             </div>
         </div>
     </div>

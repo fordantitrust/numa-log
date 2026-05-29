@@ -1,10 +1,10 @@
 <?php require __DIR__ . '/config.php'; requireAuth(); ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= currentLang() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report - Numa Log</title>
+    <title><?= t('nav.report') ?> - Numa Log</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -44,12 +44,13 @@
 
 <nav class="navbar navbar-dark" style="background:var(--primary)">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-bar-chart-line"></i> Report <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> Dashboard</span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> Items</span></a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> Idols</span></a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> Types</span></a>
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-bar-chart-line"></i> <?= t('nav.report') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
+        <div class="d-flex align-items-center">
+            <?= langSwitcher() ?>
+            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
+            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
+            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -59,13 +60,13 @@
                     <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
+                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
+                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
                     <?php endif; ?>
-                    <li><a class="dropdown-item" href="help.php"><i class="bi bi-question-circle"></i> Help</a></li>
+                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
                 </ul>
             </div>
             <?php endif; ?>
@@ -78,67 +79,67 @@
     <ul class="nav nav-pills mb-3 gap-1" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabOverview">
-                <i class="bi bi-grid-1x2"></i> Overview
+                <i class="bi bi-grid-1x2"></i> <?= t('report.tab_overview') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabMonthly">
-                <i class="bi bi-calendar3"></i> Monthly
+                <i class="bi bi-calendar3"></i> <?= t('report.tab_monthly') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTrends">
-                <i class="bi bi-graph-up-arrow"></i> Trends
+                <i class="bi bi-graph-up-arrow"></i> <?= t('report.tab_trends') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabSeasonality">
-                <i class="bi bi-calendar-week"></i> Seasonality
+                <i class="bi bi-calendar-week"></i> <?= t('report.tab_seasonality') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabIdol">
-                <i class="bi bi-person-hearts"></i> By Member
+                <i class="bi bi-person-hearts"></i> <?= t('report.tab_member') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabCompare">
-                <i class="bi bi-arrow-left-right"></i> Compare
+                <i class="bi bi-arrow-left-right"></i> <?= t('report.tab_compare') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabGroup">
-                <i class="bi bi-diagram-3"></i> By Group
+                <i class="bi bi-diagram-3"></i> <?= t('report.tab_group') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabUnit">
-                <i class="bi bi-diagram-2"></i> By Unit
+                <i class="bi bi-diagram-2"></i> <?= t('report.tab_unit') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabCompany">
-                <i class="bi bi-building"></i> By Company
+                <i class="bi bi-building"></i> <?= t('report.tab_company') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabType">
-                <i class="bi bi-tags"></i> By Type
+                <i class="bi bi-tags"></i> <?= t('report.tab_type') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabEvent">
-                <i class="bi bi-calendar-event"></i> By Event
+                <i class="bi bi-calendar-event"></i> <?= t('report.tab_event') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTopItems">
-                <i class="bi bi-trophy"></i> Top Items
+                <i class="bi bi-trophy"></i> <?= t('report.tab_top') ?>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabInactive">
-                <i class="bi bi-hourglass-split"></i> Inactive
+                <i class="bi bi-hourglass-split"></i> <?= t('report.tab_inactive') ?>
             </button>
         </li>
     </ul>
@@ -180,17 +181,17 @@
             <div class="row g-3">
                 <div class="col-12 col-lg-8">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Monthly Spending Trend</h6>
+                        <h6 class="card-title mb-3"><?= t('report.ov_monthly_trend') ?></h6>
                         <div class="chart-container"><canvas id="chartOvMonthly"></canvas></div>
                     </div>
                 </div>
                 <div class="col-12 col-lg-4">
                     <div class="card mb-3">
-                        <div class="card-header py-2"><strong>Top 5 Members</strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.ov_top5') ?></strong></div>
                         <ul class="list-group list-group-flush" id="ovTopMembers"></ul>
                     </div>
                     <div class="card">
-                        <div class="card-header py-2"><strong>Highlights</strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.ov_highlights') ?></strong></div>
                         <ul class="list-group list-group-flush" id="ovHighlights"></ul>
                     </div>
                 </div>
@@ -198,13 +199,13 @@
             <div class="row g-3 mt-1">
                 <div class="col-lg-6">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">By Type</h6>
+                        <h6 class="card-title mb-3"><?= t('report.by_type') ?></h6>
                         <div class="chart-container" style="height:300px"><canvas id="chartOvType"></canvas></div>
                     </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">By Company</h6>
+                        <h6 class="card-title mb-3"><?= t('report.by_company') ?></h6>
                         <div class="chart-container" style="height:300px"><canvas id="chartOvCompany"></canvas></div>
                     </div>
                 </div>
@@ -218,7 +219,7 @@
                 <div class="row g-3">
                     <div class="col-12 col-lg-8">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Monthly Spending</h6>
+                            <h6 class="card-title mb-3"><?= t('report.monthly_spending') ?></h6>
                             <div class="chart-container">
                                 <canvas id="chartMonthly"></canvas>
                             </div>
@@ -226,15 +227,15 @@
                     </div>
                     <div class="col-12 col-lg-4">
                         <div class="card">
-                            <div class="card-header py-2"><strong>Monthly Breakdown</strong> <span class="text-muted small">- click to view daily</span></div>
+                            <div class="card-header py-2"><strong><?= t('report.monthly_breakdown') ?></strong> <span class="text-muted small"><?= t('report.click_view_daily') ?></span></div>
                             <div class="table-scroll">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Month</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
+                                            <th><?= t('common.month') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableMonthly"></tbody>
@@ -249,7 +250,7 @@
             <div id="dailyDetailView" style="display:none">
                 <div class="mb-3 d-flex align-items-center gap-2">
                     <button class="btn btn-outline-secondary btn-sm" onclick="hideDailyDetail()">
-                        <i class="bi bi-arrow-left"></i> Back to Monthly
+                        <i class="bi bi-arrow-left"></i> <?= t('report.back_monthly') ?>
                     </button>
                     <select class="form-select form-select-sm" style="width:auto" id="dailyMonthSelect" onchange="loadDaily(this.value)"></select>
                     <span class="fw-bold fs-5" id="dailyMonthLabel"></span>
@@ -258,25 +259,25 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#f5f3ff">
-                            <div class="small text-muted">Active Days</div>
+                            <div class="small text-muted"><?= t('report.active_days') ?></div>
                             <div class="fs-4 fw-bold" style="color:var(--primary)" id="dailyDays">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#fdf2f8">
-                            <div class="small text-muted">Total Items</div>
+                            <div class="small text-muted"><?= t('report.total_items') ?></div>
                             <div class="fs-4 fw-bold" style="color:#ec4899" id="dailyItems">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#f0fdf4">
-                            <div class="small text-muted">Total Qty</div>
+                            <div class="small text-muted"><?= t('report.total_qty') ?></div>
                             <div class="fs-4 fw-bold" style="color:#16a34a" id="dailyQty">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#fffbeb">
-                            <div class="small text-muted">Total Spent</div>
+                            <div class="small text-muted"><?= t('report.total_spent') ?></div>
                             <div class="fs-4 fw-bold" style="color:#d97706" id="dailySpent">฿0</div>
                         </div>
                     </div>
@@ -284,7 +285,7 @@
                 <div class="row g-3">
                     <div class="col-12 col-lg-8">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Daily Spending</h6>
+                            <h6 class="card-title mb-3"><?= t('report.daily_spending') ?></h6>
                             <div class="chart-container">
                                 <canvas id="chartDaily"></canvas>
                             </div>
@@ -292,15 +293,15 @@
                     </div>
                     <div class="col-12 col-lg-4">
                         <div class="card">
-                            <div class="card-header py-2"><strong>Daily Breakdown</strong></div>
+                            <div class="card-header py-2"><strong><?= t('report.daily_breakdown') ?></strong></div>
                             <div class="table-scroll">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Date</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
+                                            <th><?= t('common.date') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableDaily"></tbody>
@@ -314,23 +315,23 @@
                 <div class="row g-3 mt-2">
                     <div class="col-lg-6">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Top 10 by Type</h6>
+                            <h6 class="card-title mb-3"><?= t('report.top10_type') ?></h6>
                             <div class="chart-container" style="height:280px">
                                 <canvas id="chartDailyType"></canvas>
                             </div>
                         </div>
                         <div class="card mt-3">
-                            <div class="card-header py-2"><strong>Type Breakdown</strong></div>
+                            <div class="card-header py-2"><strong><?= t('report.type_breakdown') ?></strong></div>
                             <div class="table-scroll" style="max-height:300px">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
                                             <th style="width:40px">#</th>
-                                            <th>Type</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
-                                            <th style="width:100px">Share</th>
+                                            <th><?= t('common.type') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
+                                            <th style="width:100px"><?= t('common.share') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableDailyType"></tbody>
@@ -341,23 +342,23 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Top 10 by Idol</h6>
+                            <h6 class="card-title mb-3"><?= t('report.top10_idol') ?></h6>
                             <div class="chart-container" style="height:280px">
                                 <canvas id="chartDailyIdol"></canvas>
                             </div>
                         </div>
                         <div class="card mt-3">
-                            <div class="card-header py-2"><strong>Idol Breakdown</strong></div>
+                            <div class="card-header py-2"><strong><?= t('report.idol_breakdown') ?></strong></div>
                             <div class="table-scroll" style="max-height:300px">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
                                             <th style="width:40px">#</th>
-                                            <th>Idol</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
-                                            <th style="width:100px">Share</th>
+                                            <th><?= t('common.idol') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
+                                            <th style="width:100px"><?= t('common.share') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableDailyIdol"></tbody>
@@ -377,7 +378,7 @@
                 <div class="row g-3">
                     <div class="col-lg-5">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Top 10 Members by Spending</h6>
+                            <h6 class="card-title mb-3"><?= t('report.top10_members') ?></h6>
                             <div class="chart-container">
                                 <canvas id="chartIdolPie"></canvas>
                             </div>
@@ -385,17 +386,17 @@
                     </div>
                     <div class="col-lg-7">
                         <div class="card">
-                            <div class="card-header py-2"><strong>All Members Ranking</strong> <span class="text-muted small">- click name to view detail</span></div>
+                            <div class="card-header py-2"><strong><?= t('report.all_members') ?></strong> <span class="text-muted small"><?= t('report.click_view_detail') ?></span></div>
                             <div class="table-scroll">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
                                             <th style="width:40px">#</th>
-                                            <th>Idol</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
-                                            <th style="width:120px">Share</th>
+                                            <th><?= t('common.idol') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
+                                            <th style="width:120px"><?= t('common.share') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableIdol"></tbody>
@@ -410,7 +411,7 @@
             <div id="idolDetailView" style="display:none">
                 <div class="mb-3">
                     <button class="btn btn-outline-secondary btn-sm" onclick="hideIdolDetail()">
-                        <i class="bi bi-arrow-left"></i> Back to All Idols
+                        <i class="bi bi-arrow-left"></i> <?= t('report.back_all_idols') ?>
                     </button>
                     <span class="ms-2 fw-bold fs-5" id="idolDetailName"></span>
                 </div>
@@ -418,25 +419,25 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#f5f3ff">
-                            <div class="small text-muted">Total Items</div>
+                            <div class="small text-muted"><?= t('report.total_items') ?></div>
                             <div class="fs-4 fw-bold" style="color:var(--primary)" id="idolDetItems">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#fdf2f8">
-                            <div class="small text-muted">Total Qty</div>
+                            <div class="small text-muted"><?= t('report.total_qty') ?></div>
                             <div class="fs-4 fw-bold" style="color:#ec4899" id="idolDetQty">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#f0fdf4">
-                            <div class="small text-muted">Total Spent</div>
+                            <div class="small text-muted"><?= t('report.total_spent') ?></div>
                             <div class="fs-4 fw-bold" style="color:#16a34a" id="idolDetSpent">฿0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#fffbeb">
-                            <div class="small text-muted">Avg per Item</div>
+                            <div class="small text-muted"><?= t('report.avg_per_item') ?></div>
                             <div class="fs-4 fw-bold" style="color:#d97706" id="idolDetAvg">฿0</div>
                         </div>
                     </div>
@@ -445,23 +446,23 @@
                     <!-- By Type chart + table -->
                     <div class="col-lg-6">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Spending by Type</h6>
+                            <h6 class="card-title mb-3"><?= t('report.spending_by_type') ?></h6>
                             <div class="chart-container" style="height:300px">
                                 <canvas id="chartIdolDetailType"></canvas>
                             </div>
                         </div>
                         <div class="card mt-3">
-                            <div class="card-header py-2"><strong>Type Breakdown</strong></div>
+                            <div class="card-header py-2"><strong><?= t('report.type_breakdown') ?></strong></div>
                             <div class="table-scroll" style="max-height:300px">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
                                             <th style="width:40px">#</th>
-                                            <th>Type</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
-                                            <th style="width:100px">Share</th>
+                                            <th><?= t('common.type') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
+                                            <th style="width:100px"><?= t('common.share') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableIdolDetailType"></tbody>
@@ -473,21 +474,21 @@
                     <!-- By Month chart + table -->
                     <div class="col-lg-6">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Monthly Spending</h6>
+                            <h6 class="card-title mb-3"><?= t('report.monthly_spending') ?></h6>
                             <div class="chart-container" style="height:300px">
                                 <canvas id="chartIdolDetailMonth"></canvas>
                             </div>
                         </div>
                         <div class="card mt-3">
-                            <div class="card-header py-2"><strong>Monthly Breakdown</strong></div>
+                            <div class="card-header py-2"><strong><?= t('report.monthly_breakdown') ?></strong></div>
                             <div class="table-scroll" style="max-height:300px">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Month</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
+                                            <th><?= t('common.month') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableIdolDetailMonth"></tbody>
@@ -507,7 +508,7 @@
                 <div class="row g-3">
                     <div class="col-lg-5">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Top 10 Types by Spending</h6>
+                            <h6 class="card-title mb-3"><?= t('report.top10_types') ?></h6>
                             <div class="chart-container">
                                 <canvas id="chartTypePie"></canvas>
                             </div>
@@ -515,17 +516,17 @@
                     </div>
                     <div class="col-lg-7">
                         <div class="card">
-                            <div class="card-header py-2"><strong>All Types Ranking</strong> <span class="text-muted small">- click to view members</span></div>
+                            <div class="card-header py-2"><strong><?= t('report.all_types') ?></strong> <span class="text-muted small"><?= t('report.click_view_members') ?></span></div>
                             <div class="table-scroll">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
                                             <th style="width:40px">#</th>
-                                            <th>Type</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
-                                            <th style="width:120px">Share</th>
+                                            <th><?= t('common.type') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
+                                            <th style="width:120px"><?= t('common.share') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableType"></tbody>
@@ -540,50 +541,50 @@
             <div id="typeDetailView" style="display:none">
                 <div class="mb-3">
                     <button class="btn btn-outline-secondary btn-sm" onclick="hideTypeDetail()">
-                        <i class="bi bi-arrow-left"></i> Back to All Types
+                        <i class="bi bi-arrow-left"></i> <?= t('report.back_all_types') ?>
                     </button>
                     <span class="ms-2 fw-bold fs-5" id="typeDetailName"></span>
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#f5f3ff">
-                            <div class="small text-muted">Total Items</div>
+                            <div class="small text-muted"><?= t('report.total_items') ?></div>
                             <div class="fs-4 fw-bold" style="color:var(--primary)" id="typeDetItems">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#fdf2f8">
-                            <div class="small text-muted">Total Qty</div>
+                            <div class="small text-muted"><?= t('report.total_qty') ?></div>
                             <div class="fs-4 fw-bold" style="color:#ec4899" id="typeDetQty">0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#f0fdf4">
-                            <div class="small text-muted">Total Spent</div>
+                            <div class="small text-muted"><?= t('report.total_spent') ?></div>
                             <div class="fs-4 fw-bold" style="color:#16a34a" id="typeDetSpent">฿0</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 text-center" style="background:#fffbeb">
-                            <div class="small text-muted">Members</div>
+                            <div class="small text-muted"><?= t('report.members') ?></div>
                             <div class="fs-4 fw-bold" style="color:#d97706" id="typeDetMembers">0</div>
                         </div>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-header py-2"><strong>Member Breakdown</strong></div>
+                    <div class="card-header py-2"><strong><?= t('report.member_breakdown') ?></strong></div>
                     <div class="table-scroll">
                         <table class="table table-sm table-hover mb-0">
                             <thead>
                                 <tr>
                                     <th style="width:40px">#</th>
-                                    <th>Member</th>
-                                    <th>Group / Unit</th>
-                                    <th>Company</th>
-                                    <th class="text-end">Items</th>
-                                    <th class="text-end">Qty</th>
-                                    <th class="text-end">Total (฿)</th>
-                                    <th style="width:120px">Share</th>
+                                    <th><?= t('common.member') ?></th>
+                                    <th><?= t('report.group_unit') ?></th>
+                                    <th><?= t('common.company') ?></th>
+                                    <th class="text-end"><?= t('common.items') ?></th>
+                                    <th class="text-end"><?= t('common.qty') ?></th>
+                                    <th class="text-end"><?= t('common.total_baht') ?></th>
+                                    <th style="width:120px"><?= t('common.share') ?></th>
                                 </tr>
                             </thead>
                             <tbody id="tableTypeDetail"></tbody>
@@ -595,7 +596,7 @@
                 <div class="row g-3 mt-2">
                     <div class="col-lg-5">
                         <div class="card p-3">
-                            <h6 class="card-title mb-3">Monthly Spending</h6>
+                            <h6 class="card-title mb-3"><?= t('report.monthly_spending') ?></h6>
                             <div class="chart-container" style="height:300px">
                                 <canvas id="chartTypeDetailMonth"></canvas>
                             </div>
@@ -603,15 +604,15 @@
                     </div>
                     <div class="col-lg-7">
                         <div class="card">
-                            <div class="card-header py-2"><strong>Monthly Breakdown</strong></div>
+                            <div class="card-header py-2"><strong><?= t('report.monthly_breakdown') ?></strong></div>
                             <div class="table-scroll">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Month</th>
-                                            <th class="text-end">Items</th>
-                                            <th class="text-end">Qty</th>
-                                            <th class="text-end">Total (฿)</th>
+                                            <th><?= t('common.month') ?></th>
+                                            <th class="text-end"><?= t('common.items') ?></th>
+                                            <th class="text-end"><?= t('common.qty') ?></th>
+                                            <th class="text-end"><?= t('common.total_baht') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="tableTypeDetailMonth"></tbody>
@@ -629,7 +630,7 @@
             <div class="row g-3">
                 <div class="col-lg-5">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Spending by Company</h6>
+                        <h6 class="card-title mb-3"><?= t('report.spending_by_company') ?></h6>
                         <div class="chart-container">
                             <canvas id="chartCompanyPie"></canvas>
                         </div>
@@ -647,10 +648,10 @@
                                     <tr>
                                         <th style="width:40px">#</th>
                                         <th>Company</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
-                                        <th style="width:120px">Share</th>
+                                        <th class="text-end"><?= t('common.items') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
+                                        <th style="width:120px"><?= t('common.share') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableCompany"></tbody>
@@ -660,17 +661,17 @@
                     </div>
                     <!-- Groups detail panel -->
                     <div class="card mt-3" id="companyDetailCard" style="display:none">
-                        <div class="card-header py-2"><strong>Groups under <span id="companyDetailName"></span></strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.groups_under') ?> <span id="companyDetailName"></span></strong></div>
                         <div class="table-scroll" style="max-height:300px">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>#</th>
                                         <th>Group</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
-                                        <th style="width:100px">Share</th>
+                                        <th class="text-end"><?= t('common.items') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
+                                        <th style="width:100px"><?= t('common.share') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableCompanyDetail"></tbody>
@@ -686,7 +687,7 @@
             <div class="row g-3">
                 <div class="col-lg-5">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Spending by Group</h6>
+                        <h6 class="card-title mb-3"><?= t('report.spending_by_group') ?></h6>
                         <div class="chart-container">
                             <canvas id="chartGroupPie"></canvas>
                         </div>
@@ -704,11 +705,11 @@
                                     <tr>
                                         <th style="width:40px">#</th>
                                         <th>Group</th>
-                                        <th>Type</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
-                                        <th style="width:120px">Share</th>
+                                        <th><?= t('common.type') ?></th>
+                                        <th class="text-end"><?= t('common.items') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
+                                        <th style="width:120px"><?= t('common.share') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableGroup"></tbody>
@@ -718,17 +719,17 @@
                     </div>
                     <!-- Members detail panel -->
                     <div class="card mt-3" id="groupDetailCard" style="display:none">
-                        <div class="card-header py-2"><strong>Members of <span id="groupDetailName"></span></strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.members_of') ?> <span id="groupDetailName"></span></strong></div>
                         <div class="table-scroll" style="max-height:300px">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Member</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
-                                        <th style="width:100px">Share</th>
+                                        <th><?= t('common.member') ?></th>
+                                        <th class="text-end"><?= t('common.items') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
+                                        <th style="width:100px"><?= t('common.share') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableGroupDetail"></tbody>
@@ -744,36 +745,36 @@
             <div class="row g-3 mb-3">
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#f5f3ff">
-                        <div class="small text-muted">Cumulative Total</div>
+                        <div class="small text-muted"><?= t('report.tr_cumulative') ?></div>
                         <div class="fs-5 fw-bold" style="color:var(--primary)" id="trCumulative">฿0</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#fdf2f8">
-                        <div class="small text-muted">Best Month</div>
+                        <div class="small text-muted"><?= t('report.tr_best') ?></div>
                         <div class="fs-5 fw-bold" style="color:#ec4899" id="trBest">-</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#f0fdf4">
-                        <div class="small text-muted">Avg MoM Growth</div>
+                        <div class="small text-muted"><?= t('report.tr_growth') ?></div>
                         <div class="fs-5 fw-bold" style="color:#16a34a" id="trGrowth">-</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#fffbeb">
-                        <div class="small text-muted">This Month (forecast)</div>
+                        <div class="small text-muted"><?= t('report.tr_forecast') ?></div>
                         <div class="fs-5 fw-bold" style="color:#d97706" id="trForecast">฿0</div>
                         <div class="small text-muted" id="trForecastSub">&nbsp;</div>
                     </div>
                 </div>
             </div>
             <div class="card p-3 mb-3">
-                <h6 class="card-title mb-3">Cumulative Spending</h6>
+                <h6 class="card-title mb-3"><?= t('report.tr_cumulative_chart') ?></h6>
                 <div class="chart-container"><canvas id="chartTrendCumulative"></canvas></div>
             </div>
             <div class="card p-3">
-                <h6 class="card-title mb-3">Month-over-Month Growth (%)</h6>
+                <h6 class="card-title mb-3"><?= t('report.tr_mom_chart') ?></h6>
                 <div class="chart-container" style="height:300px"><canvas id="chartTrendMoM"></canvas></div>
             </div>
         </div>
@@ -783,13 +784,13 @@
             <div class="row g-3">
                 <div class="col-lg-6">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Spending by Day of Week</h6>
+                        <h6 class="card-title mb-3"><?= t('report.se_by_weekday') ?></h6>
                         <div class="chart-container"><canvas id="chartSeasonWeekday"></canvas></div>
                     </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Spending by Month of Year</h6>
+                        <h6 class="card-title mb-3"><?= t('report.se_by_month') ?></h6>
                         <div class="chart-container"><canvas id="chartSeasonMonth"></canvas></div>
                     </div>
                 </div>
@@ -797,10 +798,10 @@
             <div class="row g-3 mt-1">
                 <div class="col-lg-6">
                     <div class="card">
-                        <div class="card-header py-2"><strong>Weekday Breakdown</strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.se_weekday_breakdown') ?></strong></div>
                         <div class="table-scroll" style="max-height:340px">
                             <table class="table table-sm table-hover mb-0">
-                                <thead><tr><th>Day</th><th class="text-end">Items</th><th class="text-end">Qty</th><th class="text-end">Total (฿)</th><th style="width:100px">Share</th></tr></thead>
+                                <thead><tr><th><?= t('report.se_day') ?></th><th class="text-end"><?= t('common.items') ?></th><th class="text-end"><?= t('common.qty') ?></th><th class="text-end"><?= t('common.total_baht') ?></th><th style="width:100px"><?= t('common.share') ?></th></tr></thead>
                                 <tbody id="tableSeasonWeekday"></tbody>
                             </table>
                         </div>
@@ -808,10 +809,10 @@
                 </div>
                 <div class="col-lg-6">
                     <div class="card">
-                        <div class="card-header py-2"><strong>Month Breakdown</strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.se_month_breakdown') ?></strong></div>
                         <div class="table-scroll" style="max-height:340px">
                             <table class="table table-sm table-hover mb-0">
-                                <thead><tr><th>Month</th><th class="text-end">Items</th><th class="text-end">Qty</th><th class="text-end">Total (฿)</th><th style="width:100px">Share</th></tr></thead>
+                                <thead><tr><th><?= t('common.month') ?></th><th class="text-end"><?= t('common.items') ?></th><th class="text-end"><?= t('common.qty') ?></th><th class="text-end"><?= t('common.total_baht') ?></th><th style="width:100px"><?= t('common.share') ?></th></tr></thead>
                                 <tbody id="tableSeasonMonth"></tbody>
                             </table>
                         </div>
@@ -825,25 +826,25 @@
             <div class="card p-3 mb-3">
                 <div class="row g-2 align-items-end">
                     <div class="col-sm-5">
-                        <label class="form-label small mb-1">Member A</label>
+                        <label class="form-label small mb-1"><?= t('report.cmp_member_a') ?></label>
                         <select class="form-select form-select-sm" id="cmpSelA"></select>
                     </div>
                     <div class="col-sm-2 text-center">
                         <i class="bi bi-arrow-left-right fs-4 text-muted"></i>
                     </div>
                     <div class="col-sm-5">
-                        <label class="form-label small mb-1">Member B</label>
+                        <label class="form-label small mb-1"><?= t('report.cmp_member_b') ?></label>
                         <select class="form-select form-select-sm" id="cmpSelB"></select>
                     </div>
                 </div>
             </div>
             <div class="row g-3" id="cmpCards"></div>
             <div class="card p-3 mt-3">
-                <h6 class="card-title mb-3">Monthly Spending Comparison</h6>
+                <h6 class="card-title mb-3"><?= t('report.cmp_monthly') ?></h6>
                 <div class="chart-container"><canvas id="chartCompareMonth"></canvas></div>
             </div>
             <div class="card p-3 mt-3">
-                <h6 class="card-title mb-3">Spending by Type Comparison</h6>
+                <h6 class="card-title mb-3"><?= t('report.cmp_type') ?></h6>
                 <div class="chart-container" style="height:320px"><canvas id="chartCompareType"></canvas></div>
             </div>
         </div>
@@ -853,7 +854,7 @@
             <div class="row g-3">
                 <div class="col-lg-5">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Spending by Unit</h6>
+                        <h6 class="card-title mb-3"><?= t('report.un_by_unit') ?></h6>
                         <div class="chart-container"><canvas id="chartUnitPie"></canvas></div>
                     </div>
                 </div>
@@ -861,20 +862,20 @@
                     <div class="card">
                         <div class="card-header py-2 d-flex justify-content-between align-items-center">
                             <strong>Unit Ranking</strong>
-                            <span class="text-muted small">includes sub-unit / project memberships</span>
+                            <span class="text-muted small"><?= t('report.un_includes') ?></span>
                         </div>
                         <div class="table-scroll">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th style="width:40px">#</th>
-                                        <th>Unit</th>
-                                        <th>Parent</th>
-                                        <th class="text-end">Members</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
-                                        <th style="width:110px">Share</th>
+                                        <th><?= t('common.unit') ?></th>
+                                        <th><?= t('report.un_parent') ?></th>
+                                        <th class="text-end"><?= t('report.members') ?></th>
+                                        <th class="text-end"><?= t('common.items') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
+                                        <th style="width:110px"><?= t('common.share') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableUnit"></tbody>
@@ -891,26 +892,26 @@
             <div class="row g-3 mb-3">
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#f5f3ff">
-                        <div class="small text-muted">Events Tracked</div>
+                        <div class="small text-muted"><?= t('report.ev_count') ?></div>
                         <div class="fs-4 fw-bold" style="color:var(--primary)" id="evCount">0</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#f0fdf4">
-                        <div class="small text-muted">Avg Lead Time</div>
+                        <div class="small text-muted"><?= t('report.ev_lead') ?></div>
                         <div class="fs-4 fw-bold" style="color:#16a34a" id="evLead">-</div>
-                        <div class="small text-muted" id="evLeadSub">order → event</div>
+                        <div class="small text-muted" id="evLeadSub"><?= t('report.ev_lead_sub') ?></div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#fffbeb">
-                        <div class="small text-muted">Lead Time Range</div>
+                        <div class="small text-muted"><?= t('report.ev_lead_range') ?></div>
                         <div class="fs-6 fw-bold" style="color:#d97706" id="evLeadRange">-</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card p-3" style="background:#fef2f2">
-                        <div class="small text-muted">Items w/o Event Date</div>
+                        <div class="small text-muted"><?= t('report.ev_no_event') ?></div>
                         <div class="fs-4 fw-bold" style="color:#dc2626" id="evNoEvent">0</div>
                     </div>
                 </div>
@@ -918,22 +919,22 @@
             <div class="row g-3">
                 <div class="col-12 col-lg-7">
                     <div class="card p-3">
-                        <h6 class="card-title mb-3">Spending per Event</h6>
+                        <h6 class="card-title mb-3"><?= t('report.ev_per_event') ?></h6>
                         <div class="chart-container"><canvas id="chartEvent"></canvas></div>
                     </div>
                 </div>
                 <div class="col-12 col-lg-5">
                     <div class="card">
-                        <div class="card-header py-2"><strong>Event Breakdown</strong></div>
+                        <div class="card-header py-2"><strong><?= t('report.ev_breakdown') ?></strong></div>
                         <div class="table-scroll">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Event Date</th>
-                                        <th class="text-end">Items</th>
-                                        <th class="text-end">Idols</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
+                                        <th><?= t('report.ev_event_date') ?></th>
+                                        <th class="text-end"><?= t('common.items') ?></th>
+                                        <th class="text-end"><?= t('report.ev_idols') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableEvent"></tbody>
@@ -950,18 +951,18 @@
             <div class="row g-3">
                 <div class="col-12 col-xl-7">
                     <div class="card">
-                        <div class="card-header py-2"><strong><i class="bi bi-cash-coin"></i> Top 20 Most Expensive Purchases</strong></div>
+                        <div class="card-header py-2"><strong><i class="bi bi-cash-coin"></i> <?= t('report.ti_expensive') ?></strong></div>
                         <div class="table-scroll" style="max-height:520px">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th style="width:40px">#</th>
-                                        <th>Title</th>
-                                        <th>Idol</th>
-                                        <th>Type</th>
-                                        <th class="text-end">Unit ฿</th>
-                                        <th class="text-end">Qty</th>
-                                        <th class="text-end">Total (฿)</th>
+                                        <th><?= t('common.title') ?></th>
+                                        <th><?= t('common.idol') ?></th>
+                                        <th><?= t('common.type') ?></th>
+                                        <th class="text-end"><?= t('report.ti_unit_baht') ?></th>
+                                        <th class="text-end"><?= t('common.qty') ?></th>
+                                        <th class="text-end"><?= t('common.total_baht') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableTopExpensive"></tbody>
@@ -971,22 +972,22 @@
                 </div>
                 <div class="col-12 col-xl-5">
                     <div class="card mb-3">
-                        <div class="card-header py-2"><strong><i class="bi bi-repeat"></i> Top 20 Most Frequent Titles</strong></div>
+                        <div class="card-header py-2"><strong><i class="bi bi-repeat"></i> <?= t('report.ti_frequent') ?></strong></div>
                         <div class="table-scroll" style="max-height:240px">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
-                                    <tr><th style="width:40px">#</th><th>Title</th><th class="text-end">Items</th><th class="text-end">Qty</th><th class="text-end">Total (฿)</th></tr>
+                                    <tr><th style="width:40px">#</th><th><?= t('common.title') ?></th><th class="text-end"><?= t('common.items') ?></th><th class="text-end"><?= t('common.qty') ?></th><th class="text-end"><?= t('common.total_baht') ?></th></tr>
                                 </thead>
                                 <tbody id="tableTopFrequent"></tbody>
                             </table>
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-header py-2"><strong><i class="bi bi-rulers"></i> Avg Unit Price by Type</strong></div>
+                        <div class="card-header py-2"><strong><i class="bi bi-rulers"></i> <?= t('report.ti_avg_by_type') ?></strong></div>
                         <div class="table-scroll" style="max-height:240px">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
-                                    <tr><th>Type</th><th class="text-end">Avg ฿</th><th class="text-end">Min</th><th class="text-end">Max</th><th class="text-end">Items</th></tr>
+                                    <tr><th><?= t('common.type') ?></th><th class="text-end">Avg ฿</th><th class="text-end">Min</th><th class="text-end">Max</th><th class="text-end"><?= t('common.items') ?></th></tr>
                                 </thead>
                                 <tbody id="tableTopAvg"></tbody>
                             </table>
@@ -999,27 +1000,27 @@
         <!-- Inactive Tab -->
         <div class="tab-pane fade" id="tabInactive">
             <div class="card p-3 mb-3 d-flex flex-row align-items-center gap-2 flex-wrap">
-                <span class="fw-semibold">Inactive threshold:</span>
+                <span class="fw-semibold"><?= t('report.in_threshold') ?></span>
                 <div class="btn-group btn-group-sm" role="group" id="inactiveThresholds">
-                    <button class="btn btn-outline-primary" data-days="30">30 days</button>
-                    <button class="btn btn-outline-primary active" data-days="90">90 days</button>
-                    <button class="btn btn-outline-primary" data-days="180">180 days</button>
-                    <button class="btn btn-outline-primary" data-days="365">1 year</button>
+                    <button class="btn btn-outline-primary" data-days="30"><?= t('report.in_30') ?></button>
+                    <button class="btn btn-outline-primary active" data-days="90"><?= t('report.in_90') ?></button>
+                    <button class="btn btn-outline-primary" data-days="180"><?= t('report.in_180') ?></button>
+                    <button class="btn btn-outline-primary" data-days="365"><?= t('report.in_1y') ?></button>
                 </div>
                 <span class="ms-auto text-muted small" id="inactiveSummary"></span>
             </div>
             <div class="card">
-                <div class="card-header py-2"><strong>Members With No Recent Purchases</strong> <span class="text-muted small">- click name to view detail</span></div>
+                <div class="card-header py-2"><strong><?= t('report.in_title') ?></strong> <span class="text-muted small"><?= t('report.click_view_detail') ?></span></div>
                 <div class="table-scroll">
                     <table class="table table-sm table-hover mb-0">
                         <thead>
                             <tr>
                                 <th style="width:40px">#</th>
-                                <th>Member</th>
-                                <th>Last Purchase</th>
-                                <th class="text-end">Days Ago</th>
-                                <th class="text-end">Items</th>
-                                <th class="text-end">Total Spent (฿)</th>
+                                <th><?= t('common.member') ?></th>
+                                <th><?= t('report.in_last_purchase') ?></th>
+                                <th class="text-end"><?= t('report.in_days_ago') ?></th>
+                                <th class="text-end"><?= t('common.items') ?></th>
+                                <th class="text-end"><?= t('report.in_total_spent') ?></th>
                             </tr>
                         </thead>
                         <tbody id="tableInactive"></tbody>
@@ -1031,6 +1032,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
+<script src="assets/i18n.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -1105,14 +1108,14 @@ async function loadMonthly() {
             labels: data.map(r => formatMonth(r.month)),
             datasets: [
                 {
-                    label: 'Spending (฿)',
+                    label: t('common.spending_baht'),
                     data: data.map(r => r.total_price),
                     backgroundColor: 'rgba(124,58,237,0.7)',
                     borderRadius: 4,
                     yAxisID: 'y',
                 },
                 {
-                    label: 'Quantity',
+                    label: t('common.quantity'),
                     data: data.map(r => r.total_qty),
                     type: 'line',
                     borderColor: '#ec4899',
@@ -1163,7 +1166,7 @@ async function loadMonthly() {
 
     $('footMonthly').innerHTML = `
         <tr>
-            <td>Total</td>
+            <td>${t('common.total')}</td>
             <td class="text-end">${fmtInt(totals.items)}</td>
             <td class="text-end">${fmtInt(totals.qty)}</td>
             <td class="text-end">${fmt(totals.price)}</td>
@@ -1214,14 +1217,14 @@ async function loadDaily(month) {
             labels: data.map(r => formatDay(r.day)),
             datasets: [
                 {
-                    label: 'Spending (฿)',
+                    label: t('common.spending_baht'),
                     data: data.map(r => Number(r.total_price)),
                     backgroundColor: 'rgba(124,58,237,0.7)',
                     borderRadius: 4,
                     yAxisID: 'y',
                 },
                 {
-                    label: 'Quantity',
+                    label: t('common.quantity'),
                     data: data.map(r => Number(r.total_qty)),
                     type: 'line',
                     borderColor: '#ec4899',
@@ -1260,7 +1263,7 @@ async function loadDaily(month) {
 
     $('footDaily').innerHTML = `
         <tr>
-            <td>Total (${data.length} days)</td>
+            <td>${t('common.total')} (${data.length} ${t('report.days_label')})</td>
             <td class="text-end">${fmtInt(totItems)}</td>
             <td class="text-end">${fmtInt(totQty)}</td>
             <td class="text-end">${fmt(totPrice)}</td>
@@ -1306,11 +1309,11 @@ async function loadDaily(month) {
                 <span class="small text-muted" style="min-width:36px">${pct.toFixed(1)}%</span>
             </div></td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6" class="text-center text-muted py-2">No data</td></tr>';
+    }).join('') || `<tr><td colspan="6" class="text-center text-muted py-2">${t('common.no_data')}</td></tr>`;
     const typeTotItems = byType.reduce((s, r) => s + Number(r.items), 0);
     const typeTotQty = byType.reduce((s, r) => s + Number(r.total_qty), 0);
     const typeTotPrice = byType.reduce((s, r) => s + Number(r.total_price), 0);
-    $('footDailyType').innerHTML = `<tr><td></td><td>Total</td>
+    $('footDailyType').innerHTML = `<tr><td></td><td>${t('common.total')}</td>
         <td class="text-end">${fmtInt(typeTotItems)}</td>
         <td class="text-end">${fmtInt(typeTotQty)}</td>
         <td class="text-end">${fmt(typeTotPrice)}</td>
@@ -1322,7 +1325,7 @@ async function loadDaily(month) {
     const othersIdolPrice = byIdol.slice(10).reduce((s, r) => s + Number(r.total_price), 0);
     const idolPieLabels = top10Idol.map(r => r.idol);
     const idolPieData = top10Idol.map(r => Number(r.total_price));
-    if (othersIdolPrice > 0) { idolPieLabels.push('Others'); idolPieData.push(othersIdolPrice); }
+    if (othersIdolPrice > 0) { idolPieLabels.push(t('report.others')); idolPieData.push(othersIdolPrice); }
     if (chartDailyIdol) chartDailyIdol.destroy();
     chartDailyIdol = new Chart($('chartDailyIdol').getContext('2d'), {
         type: 'doughnut',
@@ -1363,10 +1366,10 @@ async function loadDaily(month) {
                 <span class="small text-muted" style="min-width:36px">${pct.toFixed(1)}%</span>
             </div></td>
         </tr>`;
-    }).join('') || '<tr><td colspan="6" class="text-center text-muted py-2">No data</td></tr>';
+    }).join('') || `<tr><td colspan="6" class="text-center text-muted py-2">${t('common.no_data')}</td></tr>`;
     const idolTotItems = byIdol.reduce((s, r) => s + Number(r.items), 0);
     const idolTotQty = byIdol.reduce((s, r) => s + Number(r.total_qty), 0);
-    $('footDailyIdol').innerHTML = `<tr><td></td><td>Total</td>
+    $('footDailyIdol').innerHTML = `<tr><td></td><td>${t('common.total')}</td>
         <td class="text-end">${fmtInt(idolTotItems)}</td>
         <td class="text-end">${fmtInt(idolTotQty)}</td>
         <td class="text-end">${fmt(idolTotPrice)}</td>
@@ -1376,7 +1379,7 @@ async function loadDaily(month) {
 function formatDay(d) {
     if (!d) return '-';
     const dt = new Date(d + 'T00:00:00');
-    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const days = tArr('date.weekdays');
     return `${d.substring(8)} ${days[dt.getDay()]}`;
 }
 
@@ -1402,7 +1405,7 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
     const pieLabels = top10.map(r => r[key]);
     const pieData = top10.map(r => Number(r.total_price));
     if (othersPrice > 0) {
-        pieLabels.push('Others');
+        pieLabels.push(t('report.others'));
         pieData.push(othersPrice);
     }
 
@@ -1483,7 +1486,7 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
     $(footId).innerHTML = `
         <tr>
             <td></td>
-            <td>Total</td>
+            <td>${t('common.total')}</td>
             <td class="text-end">${fmtInt(totals.items)}</td>
             <td class="text-end">${fmtInt(totals.qty)}</td>
             <td class="text-end">${fmt(totals.price)}</td>
@@ -1494,7 +1497,7 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
 function formatMonth(m) {
     if (!m) return '-';
     const [y, mo] = m.split('-');
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = tArr('date.months');
     return months[parseInt(mo) - 1] + ' ' + y;
 }
 
@@ -1569,7 +1572,7 @@ async function showIdolDetail(idol) {
     }).join('');
 
     $('footIdolDetailType').innerHTML = `<tr>
-        <td></td><td>Total</td>
+        <td></td><td>${t('common.total')}</td>
         <td class="text-end">${fmtInt(totItems)}</td>
         <td class="text-end">${fmtInt(totQty)}</td>
         <td class="text-end">${fmt(totPrice)}</td>
@@ -1583,7 +1586,7 @@ async function showIdolDetail(idol) {
         data: {
             labels: byMonth.map(r => formatMonth(r.month)),
             datasets: [{
-                label: 'Spending (฿)',
+                label: t('common.spending_baht'),
                 data: byMonth.map(r => Number(r.total_price)),
                 backgroundColor: 'rgba(124,58,237,0.7)',
                 borderRadius: 4,
@@ -1618,7 +1621,7 @@ async function showIdolDetail(idol) {
     }).join('');
 
     $('footIdolDetailMonth').innerHTML = `<tr>
-        <td>Total</td>
+        <td>${t('common.total')}</td>
         <td class="text-end">${fmtInt(mTotals.items)}</td>
         <td class="text-end">${fmtInt(mTotals.qty)}</td>
         <td class="text-end">${fmt(mTotals.price)}</td>
@@ -1695,7 +1698,7 @@ async function loadGroup() {
     }).join('');
 
     $('footGroup').innerHTML = `<tr>
-        <td></td><td>Total</td><td></td>
+        <td></td><td>${t('common.total')}</td><td></td>
         <td class="text-end">${fmtInt(totals.items)}</td>
         <td class="text-end">${fmtInt(totals.qty)}</td>
         <td class="text-end">${fmt(totals.price)}</td>
@@ -1840,7 +1843,7 @@ async function loadCompany() {
     }).join('');
 
     $('footCompany').innerHTML = `<tr>
-        <td></td><td>Total</td>
+        <td></td><td>${t('common.total')}</td>
         <td class="text-end">${fmtInt(totals.items)}</td>
         <td class="text-end">${fmtInt(totals.qty)}</td>
         <td class="text-end">${fmt(totals.price)}</td>
@@ -1889,7 +1892,7 @@ async function showTypeDetail(type) {
     $('typeDetailName').textContent = type;
     $('typeMainView').style.display = 'none';
     $('typeDetailView').style.display = 'block';
-    $('tableTypeDetail').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Loading...</td></tr>';
+    $('tableTypeDetail').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${t('common.loading')}</td></tr>`;
 
     const res = await fetch('api.php?action=report_type_detail&type=' + encodeURIComponent(type)).then(r => r.json());
     const members = res.members || [];
@@ -1904,7 +1907,7 @@ async function showTypeDetail(type) {
     $('typeDetMembers').textContent = members.length;
 
     if (members.length === 0) {
-        $('tableTypeDetail').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No member data</td></tr>';
+        $('tableTypeDetail').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${t('common.no_data')}</td></tr>`;
         $('footTypeDetail').innerHTML = '';
         return;
     }
@@ -1930,7 +1933,7 @@ async function showTypeDetail(type) {
     }).join('');
 
     $('footTypeDetail').innerHTML = `<tr>
-        <td></td><td>Total</td><td></td><td></td>
+        <td></td><td>${t('common.total')}</td><td></td><td></td>
         <td class="text-end">${fmtInt(totItems)}</td>
         <td class="text-end">${fmtInt(totQty)}</td>
         <td class="text-end">${fmt(totPrice)}</td>
@@ -1945,7 +1948,7 @@ async function showTypeDetail(type) {
         data: {
             labels: byMonth.map(r => formatMonth(r.month)),
             datasets: [{
-                label: 'Spending (฿)',
+                label: t('common.spending_baht'),
                 data: byMonth.map(r => Number(r.total_price)),
                 backgroundColor: 'rgba(124,58,237,0.7)',
                 borderRadius: 4,
@@ -1976,10 +1979,10 @@ async function showTypeDetail(type) {
             <td class="text-end">${fmtInt(r.total_qty)}</td>
             <td class="text-end">${fmt(r.total_price)}</td>
         </tr>`;
-    }).join('') || '<tr><td colspan="4" class="text-center text-muted py-2">No data</td></tr>';
+    }).join('') || `<tr><td colspan="4" class="text-center text-muted py-2">${t('common.no_data')}</td></tr>`;
 
     $('footTypeDetailMonth').innerHTML = `<tr>
-        <td>Total</td>
+        <td>${t('common.total')}</td>
         <td class="text-end">${fmtInt(mTotals.items)}</td>
         <td class="text-end">${fmtInt(mTotals.qty)}</td>
         <td class="text-end">${fmt(mTotals.price)}</td>
@@ -2027,18 +2030,18 @@ async function loadOverview() {
     const res = await fetch('api.php?action=report_dashboard').then(r => r.json());
     const k = res.kpis || {};
     $('ovSpent').textContent = '฿' + fmt(k.total_spent || 0);
-    $('ovSpentSub').textContent = (k.active_months || 0) + ' active months';
+    $('ovSpentSub').textContent = t('report.ov_active_months', { n: k.active_months || 0 });
     $('ovItems').textContent = fmtInt(k.total_items || 0);
-    $('ovItemsSub').textContent = fmtInt(k.total_qty || 0) + ' qty';
+    $('ovItemsSub').textContent = t('report.ov_qty', { n: fmtInt(k.total_qty || 0) });
     $('ovAvgMonth').textContent = '฿' + fmt(k.avg_per_month || 0);
-    $('ovAvgMonthSub').textContent = 'top type: ' + (k.top_type || '-');
+    $('ovAvgMonthSub').textContent = t('report.ov_top_type', { type: (k.top_type || '-') });
     $('ovMom').textContent = '฿' + fmt(k.latest_month_spent || 0);
     const mom = k.mom_change_pct;
     if (mom === null || mom === undefined) {
         $('ovMomSub').innerHTML = '&nbsp;';
     } else {
         const up = mom >= 0;
-        $('ovMomSub').innerHTML = `<span class="${up ? 'text-success' : 'text-danger'}"><i class="bi bi-arrow-${up ? 'up' : 'down'}"></i> ${Math.abs(mom).toFixed(1)}% vs prev</span>`;
+        $('ovMomSub').innerHTML = `<span class="${up ? 'text-success' : 'text-danger'}"><i class="bi bi-arrow-${up ? 'up' : 'down'}"></i> ${Math.abs(mom).toFixed(1)}% ${t('report.vs_prev')}</span>`;
     }
 
     const monthly = res.monthly || [];
@@ -2047,20 +2050,20 @@ async function loadOverview() {
         type: 'bar',
         data: {
             labels: monthly.map(r => formatMonth(r.month)),
-            datasets: [{ label: 'Spending (฿)', data: monthly.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }]
+            datasets: [{ label: t('common.spending_baht'), data: monthly.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }]
         },
         options: barOptsBaht()
     });
 
     $('ovTopMembers').innerHTML = (res.top_members || []).map((r, i) =>
         `<li class="list-group-item d-flex justify-content-between py-1"><span>${i + 1}. ${escHtml(r.display || r.idol)}</span><strong>฿${fmt(r.total_price)}</strong></li>`
-    ).join('') || '<li class="list-group-item text-muted">No data</li>';
+    ).join('') || `<li class="list-group-item text-muted">${t('common.no_data')}</li>`;
 
     $('ovHighlights').innerHTML = `
-        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-person-hearts text-primary"></i> Top member</span><strong>${escHtml(k.top_member || '-')}</strong></li>
-        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-diagram-3 text-primary"></i> Top group</span><strong>${escHtml(k.top_group || '-')}</strong></li>
-        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-tags text-primary"></i> Top type</span><strong>${escHtml(k.top_type || '-')}</strong></li>
-        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-calendar3 text-primary"></i> Latest month</span><strong>${k.latest_month ? formatMonth(k.latest_month) : '-'}</strong></li>`;
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-person-hearts text-primary"></i> ${t('report.hl_top_member')}</span><strong>${escHtml(k.top_member || '-')}</strong></li>
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-diagram-3 text-primary"></i> ${t('report.hl_top_group')}</span><strong>${escHtml(k.top_group || '-')}</strong></li>
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-tags text-primary"></i> ${t('report.hl_top_type')}</span><strong>${escHtml(k.top_type || '-')}</strong></li>
+        <li class="list-group-item d-flex justify-content-between py-1"><span><i class="bi bi-calendar3 text-primary"></i> ${t('report.hl_latest_month')}</span><strong>${k.latest_month ? formatMonth(k.latest_month) : '-'}</strong></li>`;
 
     const byType = res.by_type || [];
     chartOvType = makeDoughnut(chartOvType, 'chartOvType', byType.slice(0, 10).map(r => r.type), byType.slice(0, 10).map(r => Number(r.total_price)));
@@ -2100,10 +2103,10 @@ async function loadTrends() {
         const day = now.getDate();
         const proj = Number(cur.total_price) / day * dim;
         $('trForecast').textContent = '฿' + fmt(proj);
-        $('trForecastSub').textContent = `฿${fmt(cur.total_price)} so far · day ${day}/${dim}`;
+        $('trForecastSub').textContent = t('report.tr_so_far', { spent: '฿' + fmt(cur.total_price), day, dim });
     } else {
         $('trForecast').textContent = '—';
-        $('trForecastSub').textContent = 'no orders this month';
+        $('trForecastSub').textContent = t('report.tr_no_orders');
     }
 
     if (chartTrendCumulative) chartTrendCumulative.destroy();
@@ -2111,7 +2114,7 @@ async function loadTrends() {
         type: 'line',
         data: {
             labels: data.map(r => formatMonth(r.month)),
-            datasets: [{ label: 'Cumulative (฿)', data: cumData, borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', fill: true, tension: 0.3, pointRadius: 2 }]
+            datasets: [{ label: t('report.tr_cumulative_label'), data: cumData, borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', fill: true, tension: 0.3, pointRadius: 2 }]
         },
         options: barOptsBaht()
     });
@@ -2121,7 +2124,7 @@ async function loadTrends() {
         type: 'bar',
         data: {
             labels: data.slice(1).map(r => formatMonth(r.month)),
-            datasets: [{ label: 'MoM %', data: growth, backgroundColor: growth.map(g => g >= 0 ? 'rgba(16,163,74,0.7)' : 'rgba(220,38,38,0.7)'), borderRadius: 4 }]
+            datasets: [{ label: t('report.tr_mom_chart'), data: growth, backgroundColor: growth.map(g => g >= 0 ? 'rgba(16,163,74,0.7)' : 'rgba(220,38,38,0.7)'), borderRadius: 4 }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
@@ -2150,29 +2153,31 @@ function seasonRow(label, r, total) {
 async function loadSeasonality() {
     const res = await fetch('api.php?action=report_seasonality').then(r => r.json());
 
-    const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const dowsLong = tArr('date.weekdays_long');
+    const dowsShort = tArr('date.weekdays');
     const wkMap = {}; (res.weekday || []).forEach(r => wkMap[r.dow] = r);
-    const wkFull = dows.map((n, i) => wkMap[i] || { dow: i, items: 0, total_qty: 0, total_price: 0 });
+    const wkFull = dowsLong.map((n, i) => wkMap[i] || { dow: i, items: 0, total_qty: 0, total_price: 0 });
     const wkTotal = wkFull.reduce((s, r) => s + Number(r.total_price), 0);
     if (chartSeasonWeekday) chartSeasonWeekday.destroy();
     chartSeasonWeekday = new Chart($('chartSeasonWeekday').getContext('2d'), {
         type: 'bar',
-        data: { labels: dows.map(d => d.slice(0, 3)), datasets: [{ data: wkFull.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }] },
+        data: { labels: dowsShort, datasets: [{ data: wkFull.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }] },
         options: barOptsBaht()
     });
-    $('tableSeasonWeekday').innerHTML = wkFull.map((r, i) => seasonRow(dows[i], r, wkTotal)).join('');
+    $('tableSeasonWeekday').innerHTML = wkFull.map((r, i) => seasonRow(dowsLong[i], r, wkTotal)).join('');
 
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthsLong = tArr('date.months_long');
+    const monthsShort = tArr('date.months');
     const moyMap = {}; (res.month_of_year || []).forEach(r => moyMap[r.moy] = r);
-    const moyFull = months.map((n, i) => moyMap[i + 1] || { moy: i + 1, items: 0, total_qty: 0, total_price: 0 });
+    const moyFull = monthsLong.map((n, i) => moyMap[i + 1] || { moy: i + 1, items: 0, total_qty: 0, total_price: 0 });
     const moyTotal = moyFull.reduce((s, r) => s + Number(r.total_price), 0);
     if (chartSeasonMonth) chartSeasonMonth.destroy();
     chartSeasonMonth = new Chart($('chartSeasonMonth').getContext('2d'), {
         type: 'bar',
-        data: { labels: months.map(m => m.slice(0, 3)), datasets: [{ data: moyFull.map(r => Number(r.total_price)), backgroundColor: 'rgba(236,72,153,0.7)', borderRadius: 4 }] },
+        data: { labels: monthsShort, datasets: [{ data: moyFull.map(r => Number(r.total_price)), backgroundColor: 'rgba(236,72,153,0.7)', borderRadius: 4 }] },
         options: barOptsBaht()
     });
-    $('tableSeasonMonth').innerHTML = moyFull.map((r, i) => seasonRow(months[i], r, moyTotal)).join('');
+    $('tableSeasonMonth').innerHTML = moyFull.map((r, i) => seasonRow(monthsLong[i], r, moyTotal)).join('');
 }
 
 // =====================================================================
@@ -2185,10 +2190,10 @@ function cmpCard(name, s, color) {
     return `<div class="col-md-6"><div class="card p-3">
         <div class="fw-bold mb-2" style="color:${color}">${escHtml(name)}</div>
         <div class="row text-center g-0">
-            <div class="col"><div class="small text-muted">Items</div><div class="fw-bold">${fmtInt(s.items)}</div></div>
-            <div class="col"><div class="small text-muted">Qty</div><div class="fw-bold">${fmtInt(s.qty)}</div></div>
-            <div class="col"><div class="small text-muted">Spent</div><div class="fw-bold">฿${fmt(s.price)}</div></div>
-            <div class="col"><div class="small text-muted">Avg/Item</div><div class="fw-bold">฿${fmt(s.items > 0 ? Math.round(s.price / s.items) : 0)}</div></div>
+            <div class="col"><div class="small text-muted">${t('common.items')}</div><div class="fw-bold">${fmtInt(s.items)}</div></div>
+            <div class="col"><div class="small text-muted">${t('common.qty')}</div><div class="fw-bold">${fmtInt(s.qty)}</div></div>
+            <div class="col"><div class="small text-muted">${t('report.cmp_spent')}</div><div class="fw-bold">฿${fmt(s.price)}</div></div>
+            <div class="col"><div class="small text-muted">${t('report.cmp_avg_item')}</div><div class="fw-bold">฿${fmt(s.items > 0 ? Math.round(s.price / s.items) : 0)}</div></div>
         </div>
     </div></div>`;
 }
@@ -2265,7 +2270,7 @@ async function loadUnit() {
     const res = await fetch('api.php?action=report_by_unit').then(r => r.json());
     unitData = res.data || [];
     if (unitData.length === 0) {
-        $('tableUnit').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No unit data — assign members to a unit-category entity in Idols.</td></tr>';
+        $('tableUnit').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${t('report.un_no_data')}</td></tr>`;
         $('footUnit').innerHTML = '';
         if (chartUnitPie) { chartUnitPie.destroy(); chartUnitPie = null; }
         return;
@@ -2297,7 +2302,7 @@ async function loadUnit() {
 
     const ut = unitData.reduce((a, r) => { a.items += r.items; a.qty += r.total_qty; a.price += Number(r.total_price); return a; }, { items: 0, qty: 0, price: 0 });
     $('footUnit').innerHTML = `<tr>
-        <td></td><td>Total</td><td></td><td></td>
+        <td></td><td>${t('common.total')}</td><td></td><td></td>
         <td class="text-end">${fmtInt(ut.items)}</td>
         <td class="text-end">${fmtInt(ut.qty)}</td>
         <td class="text-end">${fmt(ut.price)}</td>
@@ -2313,8 +2318,8 @@ async function loadEvent() {
     const data = res.data || [];
     const lt = res.lead_time || {};
     $('evCount').textContent = fmtInt(data.length);
-    $('evLead').textContent = (lt.avg_days !== null && lt.avg_days !== undefined) ? lt.avg_days + ' d' : '-';
-    $('evLeadRange').textContent = (lt.min_days !== null && lt.min_days !== undefined) ? `${lt.min_days} – ${lt.max_days} d` : '-';
+    $('evLead').textContent = (lt.avg_days !== null && lt.avg_days !== undefined) ? lt.avg_days + ' ' + t('report.days_suffix') : '-';
+    $('evLeadRange').textContent = (lt.min_days !== null && lt.min_days !== undefined) ? `${lt.min_days} – ${lt.max_days} ${t('report.days_suffix')}` : '-';
     $('evNoEvent').textContent = fmtInt(res.no_event || 0);
 
     const chron = [...data].reverse();
@@ -2332,9 +2337,9 @@ async function loadEvent() {
         <td class="text-end">${fmtInt(r.idols)}</td>
         <td class="text-end">${fmtInt(r.total_qty)}</td>
         <td class="text-end">${fmt(r.total_price)}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-center text-muted py-3">No items have an event date yet</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="5" class="text-center text-muted py-3">${t('report.ev_no_items')}</td></tr>`;
     $('footEvent').innerHTML = data.length ? `<tr>
-        <td>Total (${data.length})</td>
+        <td>${t('common.total')} (${data.length})</td>
         <td class="text-end">${fmtInt(tot.items)}</td>
         <td></td>
         <td class="text-end">${fmtInt(tot.qty)}</td>
@@ -2356,7 +2361,7 @@ async function loadTopItems() {
         <td class="text-end">${fmt(r.price_per_qty)}</td>
         <td class="text-end">${fmtInt(r.qty)}</td>
         <td class="text-end fw-semibold">${fmt(r.line_total)}</td>
-    </tr>`).join('') || '<tr><td colspan="7" class="text-center text-muted py-3">No data</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="7" class="text-center text-muted py-3">${t('common.no_data')}</td></tr>`;
 
     $('tableTopFrequent').innerHTML = (res.frequent || []).map((r, i) => `<tr>
         <td>${i + 1}</td>
@@ -2364,7 +2369,7 @@ async function loadTopItems() {
         <td class="text-end">${fmtInt(r.items)}</td>
         <td class="text-end">${fmtInt(r.total_qty)}</td>
         <td class="text-end">${fmt(r.total_price)}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-center text-muted py-3">No data</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="5" class="text-center text-muted py-3">${t('common.no_data')}</td></tr>`;
 
     $('tableTopAvg').innerHTML = (res.avg_price || []).map(r => `<tr>
         <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
@@ -2372,7 +2377,7 @@ async function loadTopItems() {
         <td class="text-end text-muted">${fmt(r.min_price)}</td>
         <td class="text-end text-muted">${fmt(r.max_price)}</td>
         <td class="text-end">${fmtInt(r.items)}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-center text-muted py-3">No data</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="5" class="text-center text-muted py-3">${t('common.no_data')}</td></tr>`;
 }
 
 // =====================================================================
@@ -2393,7 +2398,7 @@ async function loadInactive() {
 }
 function renderInactive(days) {
     const rows = inactiveData.filter(r => r.days_since !== null && r.days_since >= days);
-    $('inactiveSummary').textContent = `${rows.length} member(s) inactive ≥ ${days} days`;
+    $('inactiveSummary').textContent = t('report.in_summary', { n: rows.length, days });
     $('tableInactive').innerHTML = rows.map((r, i) => `<tr>
         <td>${i + 1}</td>
         <td><a href="#" class="text-decoration-none fw-semibold" onclick="document.querySelector('[data-bs-target=\\'#tabIdol\\']').click();setTimeout(()=>showIdolDetail('${escJs(r.idol)}'),200);return false">${escHtml(r.display || r.idol)}</a></td>
@@ -2401,7 +2406,7 @@ function renderInactive(days) {
         <td class="text-end">${fmtInt(r.days_since)}</td>
         <td class="text-end">${fmtInt(r.items)}</td>
         <td class="text-end">${fmt(r.total_price)}</td>
-    </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted py-3">No inactive members for this threshold 🎉</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="6" class="text-center text-muted py-3">${t('report.in_none')}</td></tr>`;
 }
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
