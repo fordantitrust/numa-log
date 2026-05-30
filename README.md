@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.7.1 — Help pages updated to accurately describe all 13 report tabs (added in v1.6.1) and includes the new Language Switcher tip in the Quick Start section.
+**Latest:** v1.7.2 — Dependency update: phpoffice/phpspreadsheet 5.4.0 → 5.7.0.
 
 ## License
 

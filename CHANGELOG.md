@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.7.2 (2026-05-30)
+
+### Dependency update
+
+- **phpoffice/phpspreadsheet** 5.4.0 → 5.7.0 (bug fixes across 3 minor releases; no breaking changes)
+
+---
+
 ## v1.7.1 (2026-05-30)
 
 ### Help pages — updated to reflect all current features
