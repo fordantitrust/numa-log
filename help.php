@@ -168,7 +168,7 @@
                         <span class="step-number">1</span>
                         <div>
                             <strong>เข้าสู่ระบบ</strong><br>
-                            <span class="text-muted">ใช้ Username: <code>admin</code> / Password: <code>admin</code> แล้วเปลี่ยนรหัสผ่านทันที</span>
+                            <span class="text-muted">ใช้ Username: <code>admin</code> / Password: <code>admin</code> แล้วเปลี่ยนรหัสผ่านทันที &mdash; หลังล็อกอินจะถูกนำไปที่ <strong>Dashboard</strong> โดยอัตโนมัติ <span class="badge bg-info" style="font-size:.65rem">v1.6.0</span></span>
                         </div>
                     </div>
                     <div class="d-flex align-items-start gap-3 mb-3">
@@ -189,15 +189,18 @@
                         <span class="step-number">4</span>
                         <div>
                             <strong>เริ่มบันทึกรายการ</strong><br>
-                            <span class="text-muted">กดปุ่ม <strong>Add Item</strong> ที่หน้าหลักเพื่อเริ่มบันทึกข้อมูลการซื้อ</span>
+                            <span class="text-muted">ไปที่หน้า <strong>Items</strong> แล้วกดปุ่ม <strong>Add Item</strong> เพื่อเริ่มบันทึกข้อมูลการซื้อ</span>
                         </div>
                     </div>
                     <div class="d-flex align-items-start gap-3">
                         <span class="step-number">5</span>
                         <div>
                             <strong>ดูรายงาน</strong><br>
-                            <span class="text-muted">ไปที่หน้า <strong>Report</strong> เพื่อดูสรุปยอดใช้จ่ายในมุมมองต่างๆ</span>
+                            <span class="text-muted">ไปที่หน้า <strong>Report</strong> เพื่อดูสรุปยอดใช้จ่ายใน 13 มุมมอง <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
                         </div>
+                    </div>
+                    <div class="tip-box mt-3">
+                        <i class="bi bi-translate"></i> <strong>v1.7.0 Language Switcher:</strong> สลับภาษา <strong>TH / EN</strong> ได้จากปุ่มที่มุมขวาบนของทุกหน้า ระบบจะจำการตั้งค่าไว้ตลอดการใช้งาน
                     </div>
                 </div>
             </div>
@@ -307,21 +310,39 @@
                         <div class="feature-icon feature-icon-pink"><i class="bi bi-bar-chart-line"></i></div>
                         <h4 class="mb-0">รายงาน</h4>
                     </div>
-                    <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน 5 มุมมอง พร้อมกราฟแบบ interactive</p>
+                    <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน <strong>13 มุมมอง (tab)</strong> พร้อมกราฟแบบ interactive &mdash; tab ที่โหลดข้อมูลมากจะ lazy-load ครั้งแรกที่เปิด</p>
 
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-calendar3 text-primary"></i> Monthly</h6>
+                                <h6><i class="bi bi-grid-1x2 text-primary"></i> Overview (ภาพรวม) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">หน้า landing แสดง KPI cards (ยอดรวม จำนวน เฉลี่ย MoM%), กราฟแนวโน้มรายเดือน, Top 5 สมาชิก และ doughnut chart ตามประเภท/ค่าย</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar3 text-primary"></i> Monthly (รายเดือน)</h6>
                                 <p class="small text-muted mb-2">กราฟแท่ง (ยอดเงิน) + กราฟเส้น (จำนวน) รายเดือน</p>
                                 <div class="tip-box mt-auto">
-                                    <i class="bi bi-hand-index"></i> <strong>คลิกที่แท่งกราฟเดือนใดก็ได้</strong> เพื่อดูรายละเอียดรายวัน
+                                    <i class="bi bi-hand-index"></i> <strong>คลิกที่แท่งกราฟเดือนใดก็ได้</strong> เพื่อดูรายละเอียดรายวัน พร้อม breakdown ตามประเภทและไอดอล
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-person text-primary"></i> By Member</h6>
+                                <h6><i class="bi bi-graph-up-arrow text-primary"></i> Trends (แนวโน้ม) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">กราฟยอดสะสม (cumulative) + กราฟเปลี่ยนแปลงรายเดือน (MoM%) สีเขียว/แดง พร้อม <strong>ประมาณการเดือนปัจจุบัน</strong> จากยอดจ่ายจริง</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar-week text-primary"></i> Seasonality (ฤดูกาล) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">ยอดใช้จ่ายตามวันในสัปดาห์ (จ.–อา.) และตามเดือนในรอบปี &mdash; ช่วยหาช่วงเวลาที่ซื้อบ่อยที่สุด</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-person text-primary"></i> By Member (ตามสมาชิก)</h6>
                                 <p class="small text-muted mb-2">อันดับสมาชิกไอดอลตามยอดใช้จ่าย</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อสมาชิก</strong> เพื่อดูสัดส่วนตามประเภทสินค้า + กราฟรายเดือน
@@ -330,8 +351,14 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-people text-primary"></i> By Group</h6>
-                                <p class="small text-muted mb-2">ยอดใช้จ่ายรวมของแต่ละกลุ่ม/ยูนิต</p>
+                                <h6><i class="bi bi-arrow-left-right text-primary"></i> Compare (เปรียบเทียบ) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">เลือกสมาชิก 2 คนเพื่อเปรียบเทียบ side by side: summary cards, กราฟยอดรายเดือน และ grouped bars ตามประเภท</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-people text-primary"></i> By Group (ตามกลุ่ม)</h6>
+                                <p class="small text-muted mb-2">ยอดใช้จ่ายรวมของแต่ละกลุ่ม/ยูนิต (นับเฉพาะ Primary Membership)</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกเพื่อขยาย</strong> ดูรายละเอียดสมาชิกในกลุ่ม
                                 </div>
@@ -339,7 +366,13 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-building text-primary"></i> By Company</h6>
+                                <h6><i class="bi bi-diagram-2 text-primary"></i> By Unit (ตามยูนิต) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">รายงานระดับ Unit รวมถึง sub-unit / project membership ที่ By Group ไม่แสดง เหมาะสำหรับวงที่มียูนิตย่อย</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-building text-primary"></i> By Company (ตามค่าย)</h6>
                                 <p class="small text-muted mb-2">ยอดใช้จ่ายรวมของแต่ละค่าย</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกเพื่อขยาย</strong> ดูกลุ่ม/ยูนิตภายใต้ค่าย
@@ -348,10 +381,31 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-tags text-primary"></i> By Type</h6>
+                                <h6><i class="bi bi-tags text-primary"></i> By Type (ตามประเภท)</h6>
                                 <p class="small text-muted mb-2">อันดับประเภทสินค้าตามยอดใช้จ่าย พร้อมจำนวนรายการและจำนวนชิ้น</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อประเภท</strong> เพื่อดูรายละเอียดสมาชิก กลุ่ม และค่ายที่ซื้อสินค้าประเภทนั้น
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar-event text-primary"></i> By Event (ตามงาน) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">รายงานตาม Event Date แสดงยอดใช้จ่ายต่ออีเวนต์ + สถิติ lead-time (เวลาระหว่างสั่งซื้อถึงวันงาน: เฉลี่ย/min/max)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-trophy text-primary"></i> Top Items (รายการเด่น) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">20 รายการที่แพงที่สุด, 20 รายการที่ซื้อบ่อยที่สุด และราคาเฉลี่ย/min/max ต่อประเภท</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-hourglass-split text-primary"></i> Inactive (ไม่เคลื่อนไหว) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-2">สมาชิกที่ไม่มีการซื้อในช่วงที่กำหนด (30/90/180/365 วัน)</p>
+                                <div class="tip-box mt-auto">
+                                    <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อสมาชิก</strong> เพื่อดูรายละเอียด
                                 </div>
                             </div>
                         </div>

@@ -168,7 +168,7 @@
                         <span class="step-number">1</span>
                         <div>
                             <strong>Log in</strong><br>
-                            <span class="text-muted">Use Username: <code>admin</code> / Password: <code>admin</code>, then change the password immediately</span>
+                            <span class="text-muted">Use Username: <code>admin</code> / Password: <code>admin</code>, then change the password immediately &mdash; you will be taken to the <strong>Dashboard</strong> automatically after login <span class="badge bg-info" style="font-size:.65rem">v1.6.0</span></span>
                         </div>
                     </div>
                     <div class="d-flex align-items-start gap-3 mb-3">
@@ -189,15 +189,18 @@
                         <span class="step-number">4</span>
                         <div>
                             <strong>Start recording items</strong><br>
-                            <span class="text-muted">Click <strong>Add Item</strong> on the main page to start recording purchases</span>
+                            <span class="text-muted">Go to the <strong>Items</strong> page and click <strong>Add Item</strong> to start recording purchases</span>
                         </div>
                     </div>
                     <div class="d-flex align-items-start gap-3">
                         <span class="step-number">5</span>
                         <div>
                             <strong>View reports</strong><br>
-                            <span class="text-muted">Go to the <strong>Report</strong> page to see spending summaries from various perspectives</span>
+                            <span class="text-muted">Go to the <strong>Report</strong> page to see spending analytics across 13 views <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
                         </div>
+                    </div>
+                    <div class="tip-box mt-3">
+                        <i class="bi bi-translate"></i> <strong>v1.7.0 Language Switcher:</strong> Toggle between <strong>EN / TH</strong> using the button in the top-right corner of every page. Your preference is saved across sessions.
                     </div>
                 </div>
             </div>
@@ -307,16 +310,34 @@
                         <div class="feature-icon feature-icon-pink"><i class="bi bi-bar-chart-line"></i></div>
                         <h4 class="mb-0">Reports</h4>
                     </div>
-                    <p class="text-muted">The <strong>Report</strong> page provides analytics in 5 views with interactive charts.</p>
+                    <p class="text-muted">The <strong>Report</strong> page provides analytics across <strong>13 views (tabs)</strong> with interactive charts &mdash; data-heavy tabs are lazy-loaded the first time they are opened.</p>
 
                     <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-grid-1x2 text-primary"></i> Overview <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Landing tab with KPI cards (total spent, items/qty, avg per month, MoM%), monthly trend chart, Top 5 members, and Type / Company doughnuts</p>
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
                                 <h6><i class="bi bi-calendar3 text-primary"></i> Monthly</h6>
                                 <p class="small text-muted mb-2">Bar chart (spending) + line chart (quantity) by month</p>
                                 <div class="tip-box mt-auto">
-                                    <i class="bi bi-hand-index"></i> <strong>Click on any month bar</strong> to drill down to daily details
+                                    <i class="bi bi-hand-index"></i> <strong>Click on any month bar</strong> to drill down to daily details with type and idol breakdown
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-graph-up-arrow text-primary"></i> Trends <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Cumulative spending line + month-over-month growth bars (green/red) with a <strong>current-month forecast</strong> projected from spend-to-date</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar-week text-primary"></i> Seasonality <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Spending by day of week (Mon–Sun) and by month of year &mdash; identifies your busiest buying periods</p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -330,11 +351,23 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-arrow-left-right text-primary"></i> Compare <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Pick any two members to compare side by side: summary cards, monthly spending line, and by-type grouped bars</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
                                 <h6><i class="bi bi-people text-primary"></i> By Group</h6>
-                                <p class="small text-muted mb-2">Aggregated spending for each group/unit</p>
+                                <p class="small text-muted mb-2">Aggregated spending for each group/unit (Primary Memberships only)</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>Click to expand</strong> and see member breakdown
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-diagram-2 text-primary"></i> By Unit <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Spending rolled up to unit-level entities, including sub-unit / project memberships that By Group omits — useful for groups with nested units</p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -352,6 +385,27 @@
                                 <p class="small text-muted mb-2">Ranking of item types by spending, with item count and quantity</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>Click on a type name</strong> to see the member, group, and company breakdown for that type
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar-event text-primary"></i> By Event <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Spending keyed by Event Date, with per-event totals and order-to-event <strong>lead-time stats</strong> (avg / min / max days)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-trophy text-primary"></i> Top Items <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-0">Top 20 most expensive purchases, top 20 most frequently bought titles, and avg / min / max unit price per type</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-hourglass-split text-primary"></i> Inactive <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
+                                <p class="small text-muted mb-2">Members with no recent purchases, with a selectable threshold (30 / 90 / 180 / 365 days)</p>
+                                <div class="tip-box mt-auto">
+                                    <i class="bi bi-hand-index"></i> <strong>Click on a member name</strong> to view their detail
                                 </div>
                             </div>
                         </div>

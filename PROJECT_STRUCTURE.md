@@ -10,7 +10,7 @@ numa-log/
 ├── items.php                 # Item list (CRUD) — was index.php prior to v1.6
 ├── api.php                   # REST API for items, reports, idols, types, backups
 ├── api_users.php             # REST API for user management
-├── report.php                # Reports page (Monthly, Member, Group, Company, Type)
+├── report.php                # Reports page (13 tabs: Overview, Monthly, Trends, Seasonality, Member, Compare, Group, Unit, Company, Type, Event, Top Items, Inactive)
 ├── idols.php                 # Idol hierarchy management
 ├── types.php                 # Type category management
 ├── users.php                 # User management

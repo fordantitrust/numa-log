@@ -4,6 +4,16 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.7.1 (2026-05-30)
+
+### Help pages — updated to reflect all current features
+
+- **Quick Start** — added automatic Dashboard redirect note after first login, updated report count from 5 to 13, added Language Switcher tip box (v1.7.0)
+- **Reports section** — expanded from 5 to all 13 tabs with accurate descriptions: Overview, Monthly, Trends, Seasonality, By Member, Compare, By Group, By Unit, By Company, By Type, By Event, Top Items, Inactive
+- Added v-badges on new tabs (v1.6.1) so users can spot features added after their install
+
+---
+
 ## v1.7.0 (2026-05-29)
 
 ### Bilingual UI — English & Thai (app-wide i18n)
