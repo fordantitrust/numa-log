@@ -200,7 +200,7 @@
                         <span class="step-number">5</span>
                         <div>
                             <strong>ดูรายงาน</strong><br>
-                            <span class="text-muted">ไปที่หน้า <strong>Report</strong> เพื่อดูสรุปยอดใช้จ่ายใน 14 มุมมอง <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
+                            <span class="text-muted">ไปที่หน้า <strong>Report</strong> เพื่อดูสรุปยอดใช้จ่ายใน 13 มุมมอง <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
                         </div>
                     </div>
                     <div class="tip-box mt-3">
@@ -314,7 +314,7 @@
                         <div class="feature-icon feature-icon-pink"><i class="bi bi-bar-chart-line"></i></div>
                         <h4 class="mb-0">รายงาน</h4>
                     </div>
-                    <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน <strong>14 มุมมอง (tab)</strong> พร้อมกราฟแบบ interactive &mdash; tab ที่โหลดข้อมูลมากจะ lazy-load ครั้งแรกที่เปิด</p>
+                    <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน <strong>13 มุมมอง (tab)</strong> จัดกลุ่มเป็น dropdown พร้อมกราฟแบบ interactive &mdash; tab ที่โหลดข้อมูลมากจะ lazy-load ครั้งแรกที่เปิด (งบประมาณดูได้ที่หน้า <a href="#budget">งบประมาณ</a> แยกต่างหาก)</p>
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -411,12 +411,6 @@
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อสมาชิก</strong> เพื่อดูรายละเอียด
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-wallet2 text-primary"></i> Budget (งบประมาณ) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.8.0</span></h6>
-                                <p class="small text-muted mb-0">ความคืบหน้าการใช้จ่ายเทียบงบของเดือนที่เลือก พร้อมส่วน <strong>ภาพรวม/Insights</strong> &mdash; ดูรายละเอียดในหัวข้อ <a href="#budget">งบประมาณ</a></p>
                             </div>
                         </div>
                     </div>

@@ -76,7 +76,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     <!-- Tabs: Progress (report) vs Manage (definitions) -->
     <ul class="nav nav-pills mb-3 gap-1" role="tablist">
         <li class="nav-item">
-            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#paneReport">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#paneInsights">
+                <i class="bi bi-graph-up-arrow"></i> <?= t('budget.tab_insights') ?>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneReport">
                 <i class="bi bi-bar-chart-line"></i> <?= t('budget.tab_report') ?>
             </button>
         </li>
@@ -85,16 +90,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 <i class="bi bi-sliders"></i> <?= t('budget.tab_manage') ?>
             </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneInsights">
-                <i class="bi bi-graph-up-arrow"></i> <?= t('budget.tab_insights') ?>
-            </button>
-        </li>
     </ul>
 
     <div class="tab-content">
         <!-- Progress / Report -->
-        <div class="tab-pane fade show active" id="paneReport">
+        <div class="tab-pane fade" id="paneReport">
             <div class="row g-3">
                 <div class="col-12 col-lg-8">
                     <div class="card">
@@ -124,6 +124,8 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
         <!-- Manage definitions -->
         <div class="tab-pane fade" id="paneManage">
+            <!-- Allocation of the recurring Overall budget across sub-budgets -->
+            <div id="manageAllocationPanel" class="mb-3"></div>
             <div class="card">
                 <div class="card-header py-2 d-flex justify-content-between align-items-center">
                     <span><strong><i class="bi bi-sliders"></i> <?= t('budget.tab_manage') ?></strong>
@@ -155,7 +157,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         </div>
 
         <!-- Insights: multi-month spend-vs-budget analytics -->
-        <div class="tab-pane fade" id="paneInsights">
+        <div class="tab-pane fade show active" id="paneInsights">
             <div class="mb-2 stat-muted"><?= t('budget.insights_hint') ?></div>
             <div id="budgetInsightsRoot"></div>
         </div>
@@ -256,9 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
     $('monthSelect').addEventListener('change', loadBudgets);
     loadBudgets();
 
-    // Lazy-mount the Insights analytics the first time its tab is shown.
-    document.querySelector('[data-bs-target="#paneInsights"]')
-        .addEventListener('shown.bs.tab', () => Budget.Insights.mount($('budgetInsightsRoot')), { once: true });
+    // Insights is the default landing tab, so mount it on load (shown.bs.tab won't fire
+    // for the already-active tab). mount() is idempotent.
+    Budget.Insights.mount($('budgetInsightsRoot'));
 });
 
 function currentMonth() { return $('monthSelect').value || new Date().toLocaleDateString('en-CA').slice(0, 7); }
@@ -315,6 +317,8 @@ function renderReport() {
 
 // Manage tab — recurring default definitions with edit/delete.
 function renderTable() {
+    // Allocation of the recurring Overall default across recurring sub-budgets.
+    $('manageAllocationPanel').innerHTML = Budget.renderAllocationSummary(defaults);
     if (defaults.length === 0) {
         $('budgetTable').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${t('budget.none')}</td></tr>`;
         return;

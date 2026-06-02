@@ -200,7 +200,7 @@
                         <span class="step-number">5</span>
                         <div>
                             <strong>View reports</strong><br>
-                            <span class="text-muted">Go to the <strong>Report</strong> page to see spending analytics across 14 views <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
+                            <span class="text-muted">Go to the <strong>Report</strong> page to see spending analytics across 13 views <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
                         </div>
                     </div>
                     <div class="tip-box mt-3">
@@ -314,7 +314,7 @@
                         <div class="feature-icon feature-icon-pink"><i class="bi bi-bar-chart-line"></i></div>
                         <h4 class="mb-0">Reports</h4>
                     </div>
-                    <p class="text-muted">The <strong>Report</strong> page provides analytics across <strong>14 views (tabs)</strong> with interactive charts &mdash; data-heavy tabs are lazy-loaded the first time they are opened.</p>
+                    <p class="text-muted">The <strong>Report</strong> page provides analytics across <strong>13 views (tabs)</strong> grouped into dropdowns, with interactive charts &mdash; data-heavy tabs are lazy-loaded the first time they are opened. (Budgets live on the separate <a href="#budget">Budgets</a> page.)</p>
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -411,12 +411,6 @@
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>Click on a member name</strong> to view their detail
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-wallet2 text-primary"></i> Budget <span class="badge bg-info ms-1" style="font-size:.65rem">v1.8.0</span></h6>
-                                <p class="small text-muted mb-0">Spending vs. budget for the selected month, plus the <strong>Insights</strong> analytics block &mdash; see the <a href="#budget">Budgets</a> section for details</p>
                             </div>
                         </div>
                     </div>

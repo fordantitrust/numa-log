@@ -4,6 +4,19 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.5 (2026-06-03)
+
+### Budgets
+
+- **Insights is now the budget landing tab** — on `budget.php` the tab order is **Insights → Progress → Manage**, with Insights shown first on load.
+- **Allocation summary on the Manage tab** — the Manage tab now shows the allocation box (Overall budget → allocated to sub-budgets → unallocated remaining), based on the recurring defaults, so you can see how much is left to allocate while editing budgets.
+
+### Removed
+
+- **Budget report tab** — removed the duplicate Budget tab from the report page (`report.php`); budgets live solely on the dedicated `budget.php` page. The report page is back to 13 tabs. The navbar link to the Budget page remains.
+
+---
+
 ## v1.9.4 (2026-06-03)
 
 ### Fixes

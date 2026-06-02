@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.4 — Fix: in Budget Insights, the "Spent vs. budget by month" chart now shows the budget line for non-Overall scopes (member/group/company/type), not just spending bars.
+**Latest:** v1.9.5 — Budgets: Insights is now the landing tab on `budget.php` (Insights → Progress → Manage), the Manage tab shows an allocation summary (unallocated remaining), and the duplicate Budget tab was removed from the report page.
+
+**v1.9.4** — Fix: in Budget Insights, the "Spent vs. budget by month" chart now shows the budget line for non-Overall scopes (member/group/company/type), not just spending bars.
 
 **v1.9.3** — Budgets: an allocation summary (Overall → allocated to sub-budgets → unallocated) in the right-hand panel; fixed double-counted total limit/spent when an Overall budget coexists with sub-budgets; and fixed the budget-edit dropdown not pre-selecting the target.
 
