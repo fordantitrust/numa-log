@@ -439,17 +439,20 @@ echo green(" OK\n\n");
 // the v5 migration. We open the same SQLite file directly to verify state.
 // ─────────────────────────────────────────────────────────────────────────────
 
-section('0. Schema Migration (v5)');
+section('0. Schema Migration');
 
 $migPdo = new PDO("sqlite:{$TEST_DB}", null, null, [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
 
-// 0a. schema_meta.version = 5
+// 0a. schema_meta.version matches DB_SCHEMA_VERSION in config.php
+// Parsed from source (not included) to avoid config.php side effects in this CLI.
+$configSrc = file_get_contents("{$PROJECT_DIR}/config.php");
+$expectedVer = preg_match('/DB_SCHEMA_VERSION\s*=\s*(\d+)/', $configSrc ?: '', $m) ? (int) $m[1] : 0;
 $ver = (int) $migPdo->query("SELECT value FROM schema_meta WHERE key='version'")->fetchColumn();
-if ($ver === 5) pass('schema_meta.version = 5');
-else            fail('schema_meta.version = 5', "got {$ver}");
+if ($ver === $expectedVer) pass("schema_meta.version = {$expectedVer}");
+else                       fail("schema_meta.version = {$expectedVer}", "got {$ver}");
 
 // 0b. idol_memberships table exists with expected columns
 $mbCols = $migPdo->query("PRAGMA table_info(idol_memberships)")->fetchAll(PDO::FETCH_COLUMN, 1);
