@@ -49,6 +49,7 @@
             <?= langSwitcher() ?>
             <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
             <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
+            <a href="budget.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-piggy-bank"></i><span class="d-none d-sm-inline"> <?= t('nav.budget') ?></span></a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
             <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
@@ -140,6 +141,11 @@
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabInactive">
                 <i class="bi bi-hourglass-split"></i> <?= t('report.tab_inactive') ?>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabBudget">
+                <i class="bi bi-wallet2"></i> <?= t('report.tab_budget') ?>
             </button>
         </li>
     </ul>
@@ -1028,12 +1034,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- Budget Tab -->
+        <div class="tab-pane fade" id="tabBudget">
+            <div class="card p-3 mb-3 d-flex flex-row align-items-center gap-2 flex-wrap">
+                <span class="fw-semibold"><i class="bi bi-piggy-bank text-primary"></i> <span id="budgetReportPeriod"></span></span>
+                <label class="small text-muted mb-0 ms-2"><?= t('budget.month') ?></label>
+                <input type="month" class="form-control form-control-sm" id="budgetMonth" style="width:auto">
+                <a href="budget.php" class="btn btn-outline-primary btn-sm ms-auto"><i class="bi bi-gear"></i> <?= t('common.manage') ?></a>
+            </div>
+            <div class="card">
+                <div class="card-body" id="budgetReport">
+                    <div class="text-center text-muted py-4"><?= t('common.loading') ?></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js"></script>
+<script src="assets/budget.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -1084,6 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '#tabEvent': loadEvent,
         '#tabTopItems': loadTopItems,
         '#tabInactive': loadInactive,
+        '#tabBudget': initBudgetTab,
     };
     const loaded = {};
     document.querySelectorAll('[data-bs-toggle="pill"]').forEach(btn => {
@@ -1093,6 +1116,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// --- Budget ---
+function initBudgetTab() {
+    const el = $('budgetMonth');
+    el.value = new Date().toLocaleDateString('en-CA').slice(0, 7);
+    el.addEventListener('change', loadBudgetReport);
+    loadBudgetReport();
+}
+
+async function loadBudgetReport() {
+    const month = $('budgetMonth').value || new Date().toLocaleDateString('en-CA').slice(0, 7);
+    const months = (window.I18N && window.I18N['date.months_long']) || [];
+    const [yy, mm] = month.split('-').map(Number);
+    $('budgetReportPeriod').textContent = (months[mm - 1] || mm) + ' ' + yy;
+    const res = await fetch('api.php?action=budget_progress&month=' + month).then(r => r.json());
+    const el = $('budgetReport');
+    if (res.error) { el.innerHTML = `<div class="text-danger">${t('budget.err_load')}</div>`; return; }
+    const budgets = res.budgets || [];
+    if (budgets.length === 0) {
+        el.innerHTML = `<div class="text-center text-muted py-4">${t('budget.none')}
+            <div class="mt-2"><a href="budget.php" class="btn btn-outline-primary btn-sm"><i class="bi bi-plus-lg"></i> ${t('budget.none_cta')}</a></div></div>`;
+        return;
+    }
+    el.innerHTML = budgets.map(b => Budget.renderBudgetBar(b)).join('');
+}
 
 // --- Monthly ---
 async function loadMonthly() {

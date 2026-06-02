@@ -46,6 +46,7 @@
             <?= langSwitcher() ?>
             <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
             <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
+            <a href="budget.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-piggy-bank"></i><span class="d-none d-sm-inline"> <?= t('nav.budget') ?></span></a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
             <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
             <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
@@ -116,6 +117,19 @@
         </div>
     </div>
 
+    <!-- Budget progress (current month) -->
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0"><i class="bi bi-piggy-bank text-primary"></i> <?= t('budget.dashboard_title') ?></h6>
+                    <a href="budget.php" class="btn btn-outline-primary btn-sm py-0"><i class="bi bi-gear"></i> <?= t('common.manage') ?></a>
+                </div>
+                <div id="budgetCard"><div class="text-muted small"><?= t('common.loading') ?></div></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Monthly trend + Type doughnut -->
     <div class="row g-3 mb-3">
         <div class="col-12 col-lg-8">
@@ -174,6 +188,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js"></script>
+<script src="assets/budget.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let chartMonthly, chartType, chartCompany;
@@ -183,7 +198,27 @@ const PALETTE = ['#7c3aed','#a78bfa','#ec4899','#f59e0b','#0891b2','#10b981','#e
 document.addEventListener('DOMContentLoaded', () => {
     $('periodSelect').addEventListener('change', loadDashboard);
     loadDashboard();
+    loadBudgetCard();
 });
+
+// Budgets are tied to the current calendar month, independent of the period selector.
+async function loadBudgetCard() {
+    const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
+    const res = await fetch('api.php?action=budget_progress&month=' + month, { cache: 'no-store' }).then(r => r.json());
+    const el = $('budgetCard');
+    if (!res || res.error) { el.innerHTML = ''; return; }
+    const budgets = res.budgets || [];
+    if (budgets.length === 0) {
+        el.innerHTML = `<div class="text-muted small"><a href="budget.php" class="text-decoration-none">${t('budget.dashboard_none')}</a></div>`;
+        return;
+    }
+    // Show overall first, then any near/over budgets (limit to keep the card compact).
+    const overall = budgets.filter(b => b.scope_type === 'overall');
+    const alerts  = budgets.filter(b => b.scope_type !== 'overall' && b.status !== 'ok');
+    const shown   = overall.concat(alerts).slice(0, 6);
+    const list    = shown.length ? shown : budgets.slice(0, 3);
+    el.innerHTML = list.map(b => Budget.renderBudgetBar(b)).join('');
+}
 
 function currentRange() {
     const v = $('periodSelect').value;

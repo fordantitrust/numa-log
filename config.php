@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.7.2');
-const DB_SCHEMA_VERSION = 5;
+define('APP_VERSION', '1.8.0');
+const DB_SCHEMA_VERSION = 7;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -115,6 +115,16 @@ function initDB(): void
     if ($currentVer < 5) {
         require_once __DIR__ . '/migrations/v5_idol_refactor.php';
         runMigrationV5($pdo);
+        $currentVer = 5;
+    }
+    if ($currentVer < 6) {
+        require_once __DIR__ . '/migrations/v6_budgets.php';
+        runMigrationV6($pdo);
+        $currentVer = 6;
+    }
+    if ($currentVer < 7) {
+        require_once __DIR__ . '/migrations/v7_budget_periods.php';
+        runMigrationV7($pdo);
     }
 }
 

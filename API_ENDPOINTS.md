@@ -3,7 +3,7 @@
 ## Overview
 
 The API is split into two files:
-- **`api.php`** — Items, Reports, Idol Entities, Type Categories, Backups
+- **`api.php`** — Items, Reports, Idol Entities, Type Categories, Budgets, Backups
 - **`api_users.php`** — User management
 
 All responses are JSON (`Content-Type: application/json`).
@@ -447,6 +447,66 @@ Delete a type category.
 ```json
 { "success": true }
 ```
+
+---
+
+## Budgets (`api.php`)
+
+Recurring monthly spending limits per scope. See the `budgets` table in [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md).
+
+### `budget_list` — GET
+
+Two modes:
+- **`?mode=defaults`** — recurring default definitions only (`period IS NULL`), for the Manage view. No spending fields.
+- **`?month=YYYY-MM`** (default) — **effective** budgets for the month: per scope, a month override wins over the recurring default. Enriched with spending and colour status. **`budget_progress`** returns this same payload (dashboard card / report tab).
+
+**Query:** `mode` (`defaults` | omitted) · `month` (optional `YYYY-MM`, defaults to current month)
+
+**Response (effective / progress):**
+```json
+{
+  "month": "2026-06",
+  "budgets": [
+    {
+      "id": 7, "scope_type": "overall", "scope_ref_id": null, "scope_ref_name": "",
+      "period": "2026-06", "label": "Overall", "display_hint": "",
+      "amount": 12000, "warn_pct": 50, "danger_pct": 90, "note": "",
+      "spent": 4200, "remaining": 7800, "pct": 35, "status": "ok",
+      "is_override": true, "has_default": true, "default_id": 6, "override_id": 7
+    }
+  ]
+}
+```
+`status` is `ok` | `near` | `over`. `is_override` = a month override applies; `has_default` = a recurring default also exists; `default_id` / `override_id` identify the underlying rows (used by "edit this month" / "reset to default").
+
+### `budget_save` — POST
+
+Create or update a budget. Duplicate (same scope + same period) returns HTTP `409`.
+
+**POST Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Omit or `0` to create; provide to update |
+| `scope_type` | string | `overall`, `type`, `group`, `company`, `member` (required) |
+| `scope_ref_name` | string | Required when `scope_type='type'` (the type name) |
+| `scope_ref_id` | int | Required when `scope_type` is group/company/member (`idol_entities.id`) |
+| `amount` | number | Monthly limit (฿), `≥ 0` |
+| `warn_pct` | int | Yellow threshold % (default 80) |
+| `danger_pct` | int | Red threshold % (default 100); requires `1 ≤ warn_pct ≤ danger_pct ≤ 1000` |
+| `period` | string | Omit/empty = recurring default; `'YYYY-MM'` = override for that month |
+| `note` | string | Optional |
+| `csrf_token` | string | CSRF token |
+
+**Response:** `{ "success": true, "id": 3 }`
+
+### `budget_delete` — POST
+
+Delete a budget. Deleting a month override reverts that month to the recurring default ("reset").
+
+**POST Body:** `id` (int, required), `csrf_token`
+
+**Response:** `{ "success": true }`
 
 ---
 

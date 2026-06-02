@@ -4,6 +4,20 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.8.0 (2026-06-02)
+
+### Budgets & Spending Goals
+
+A new feature for setting recurring **monthly spending limits** and tracking progress against them.
+
+- **Per-scope budgets** — set a monthly limit for the **overall** total, or scoped to a specific **type**, **group**, **company**, or **member**. Group/company/member spending is computed with the same membership-aware joins as the existing reports.
+- **Recurring default + per-month overrides** — each scope has a recurring default amount that applies to every month, and you can override the amount/thresholds for a specific month (or add a budget that only applies to one month). The effective budget for a month is the override if one exists, else the default.
+- **Configurable colour thresholds** — each budget defines its own yellow (`warn_pct`) and red (`danger_pct`) percentages. Bars show green below yellow, yellow up to red, and red at/above the red threshold. Over-budget is a visual warning only; it never blocks adding items.
+- **Three surfaces** — a dedicated **`budget.php`** page with **Progress** (per-month view + tweak) and **Manage** (recurring defaults) tabs, a **Budgets This Month** card on the Dashboard, and a new **Budget** tab in the report page. Month headers show the selected month name.
+- **Schema v6 + v7** — adds the `budgets` table (`v6_budgets.php`) and the per-month `period` column (`v7_budget_periods.php`); existing budgets become recurring defaults. Both auto-applied with a pre-migration backup.
+
+---
+
 ## v1.7.2 (2026-05-30)
 
 ### Dependency update

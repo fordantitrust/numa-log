@@ -51,6 +51,27 @@ Report queries pick the membership whose `start_date` ≤ `items.order_date` ≤
 | description | TEXT | Description |
 | sort_order | INTEGER | Display order |
 
+### `budgets` (v6, `period` added in v7)
+Monthly spending limits per scope, with a recurring default plus per-month overrides.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER PK | Auto-increment ID |
+| scope_type | TEXT | `overall`, `type`, `group`, `company`, or `member` (CHECK-constrained) |
+| scope_ref_id | INTEGER | `idol_entities.id` for group/company/member; NULL for overall/type |
+| scope_ref_name | TEXT | Type name when `scope_type='type'`; otherwise a name snapshot of the referenced entity |
+| amount | REAL | Monthly limit (฿) |
+| warn_pct | INTEGER | Yellow threshold % (default 80) |
+| danger_pct | INTEGER | Red threshold % (default 100); enforced `1 ≤ warn_pct ≤ danger_pct` |
+| note | TEXT | Optional note |
+| is_active | INTEGER | `1` = active (only active budgets are listed / counted) |
+| period | TEXT | **v7.** `NULL` = recurring default (every month); `'YYYY-MM'` = override for that month |
+| created_at | TEXT | Record creation timestamp |
+
+> **Effective budget** for (scope, month) = the override row (`period = month`) if one exists, else the recurring default (`period IS NULL`). One default per scope and one override per scope per month are enforced in `handleBudgetSave` (HTTP 409 on duplicate).
+>
+> Spending is computed per calendar month (`strftime('%Y-%m', order_date)`). Group/company/member scopes reuse the same membership-aware joins (`is_primary = 1`, date-bounded) as the By-Group / By-Company / By-Member reports. Colour status: `ok` when `pct < warn_pct`, `near` when `warn_pct ≤ pct < danger_pct`, `over` when `pct ≥ danger_pct`.
+
 ### `users`
 | Column | Type | Description |
 |--------|------|-------------|

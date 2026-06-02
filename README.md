@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.7.2 — Dependency update: phpoffice/phpspreadsheet 5.4.0 → 5.7.0.
+**Latest:** v1.8.0 — Budgets & Spending Goals: monthly spending limits per scope (overall, type, group, company, member) with a recurring default plus per-month overrides and configurable colour-alert thresholds. New `budget.php` page (Progress / Manage tabs), a dashboard card, and a Budget report tab.
 
 ## License
 

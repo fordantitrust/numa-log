@@ -111,6 +111,9 @@ window.fetch = function(url, opts = {}) {
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span>
             </a>
+            <a href="budget.php" class="btn btn-outline-light btn-sm me-2">
+                <i class="bi bi-piggy-bank"></i><span class="d-none d-sm-inline"> <?= t('nav.budget') ?></span>
+            </a>
             <a href="idols.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span>
             </a>

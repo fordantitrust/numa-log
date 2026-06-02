@@ -54,6 +54,10 @@ try {
         'report_type_detail' => handleReportTypeDetail($pdo),
         'type_save' => handleTypeSave($pdo),
         'type_delete' => handleTypeDelete($pdo),
+        'budget_list' => handleBudgetList($pdo),
+        'budget_save' => handleBudgetSave($pdo),
+        'budget_delete' => handleBudgetDelete($pdo),
+        'budget_progress' => handleBudgetProgress($pdo),
         'backup_list' => handleBackupList(),
         'backup_create' => handleBackupCreate(),
         'backup_restore' => handleBackupRestore(),
@@ -1435,6 +1439,332 @@ function handleTypeDelete(PDO $pdo): void
         jsonResponse(['error' => 'ID is required'], 400);
     }
     $pdo->prepare("DELETE FROM type_categories WHERE id = :id")->execute([':id' => $id]);
+    jsonResponse(['success' => true]);
+}
+
+// --- Budgets / Spending Goals ---
+// NB: arrays are inlined rather than file-level `const`s — the action dispatch at the
+// top of this file runs before any mid-file const statement would be evaluated.
+
+/** Validate a YYYY-MM month string, falling back to the current month. */
+function validBudgetMonth(string $m): string
+{
+    return preg_match('/^\d{4}-\d{2}$/', $m) ? $m : date('Y-m');
+}
+
+/** Colour status for a budget: ok < warn_pct <= near < danger_pct <= over. */
+function budgetStatus(float $spent, float $amount, int $warn, int $danger): string
+{
+    if ($amount <= 0) return 'ok';
+    $pct = $spent / $amount * 100;
+    if ($pct >= $danger) return 'over';
+    if ($pct >= $warn)   return 'near';
+    return 'ok';
+}
+
+/**
+ * Spending for one budget scope within a calendar month (YYYY-MM).
+ * Entity scopes (member/group/company) use the same membership-aware join as the
+ * By-Member / By-Group / By-Company reports so the numbers stay consistent.
+ */
+function budgetSpentForMonth(PDO $pdo, string $scopeType, ?int $refId, string $refName, string $month): float
+{
+    $monthClause = "strftime('%Y-%m', i.order_date) = :month";
+    $params      = [':month' => $month];
+
+    $membershipJoin = "
+        JOIN idol_entities m
+            ON m.id = i.idol_id AND m.category = 'member'
+        JOIN idol_memberships ms
+            ON ms.member_id = m.id
+            AND ms.is_primary = 1
+            AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+        JOIN idol_entities g
+            ON g.id = ms.group_id AND g.category IN ('group','unit')";
+
+    switch ($scopeType) {
+        case 'overall':
+            $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
+                    FROM items i WHERE i.order_date != '' AND $monthClause";
+            break;
+        case 'type':
+            $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
+                    FROM items i WHERE i.type = :ref AND $monthClause";
+            $params[':ref'] = $refName;
+            break;
+        case 'member':
+            $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
+                    FROM items i WHERE i.idol_id = :ref AND $monthClause";
+            $params[':ref'] = $refId;
+            break;
+        case 'group':
+            $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
+                    FROM items i $membershipJoin
+                    WHERE g.id = :ref AND $monthClause";
+            $params[':ref'] = $refId;
+            break;
+        case 'company':
+            $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
+                    FROM items i $membershipJoin
+                    JOIN idol_entities c ON c.id = g.parent_id AND c.category = 'company'
+                    WHERE c.id = :ref AND $monthClause";
+            $params[':ref'] = $refId;
+            break;
+        default:
+            return 0.0;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return (float) $stmt->fetchColumn();
+}
+
+/** Resolve a fresh display label + hint for a scope (entity names may have changed). */
+function budgetResolveLabel(PDO $pdo, string $scopeType, ?int $refId, string $refName): array
+{
+    $label = $refName;
+    $hint  = '';
+    if (in_array($scopeType, ['group', 'company', 'member'], true) && $refId) {
+        $stmt = $pdo->prepare("SELECT name, display_hint FROM idol_entities WHERE id = :id");
+        $stmt->execute([':id' => $refId]);
+        $e = $stmt->fetch();
+        if ($e) { $label = $e['name']; $hint = (string) ($e['display_hint'] ?? ''); }
+    }
+    return [$label, $hint];
+}
+
+/** Stable key identifying a budget scope (independent of period). */
+function budgetScopeKey(array $b): string
+{
+    return $b['scope_type'] . '|' . ($b['scope_ref_id'] ?? '') . '|' . ($b['scope_ref_name'] ?? '');
+}
+
+/** Display ordering for scope types. */
+function budgetScopeOrder(string $s): int
+{
+    return ['overall' => 0, 'company' => 1, 'group' => 2, 'member' => 3, 'type' => 4][$s] ?? 5;
+}
+
+/** Enrich a raw budgets row with a fresh scope label, spending and colour status. */
+function budgetRow(PDO $pdo, array $b, string $month): array
+{
+    $scopeType = $b['scope_type'];
+    $refId     = $b['scope_ref_id'] !== null ? (int) $b['scope_ref_id'] : null;
+    $refName   = (string) ($b['scope_ref_name'] ?? '');
+    [$label, $hint] = budgetResolveLabel($pdo, $scopeType, $refId, $refName);
+
+    $amount = (float) $b['amount'];
+    $warn   = (int) $b['warn_pct'];
+    $danger = (int) $b['danger_pct'];
+    $spent  = budgetSpentForMonth($pdo, $scopeType, $refId, $refName, $month);
+
+    return [
+        'id'             => (int) $b['id'],
+        'scope_type'     => $scopeType,
+        'scope_ref_id'   => $refId,
+        'scope_ref_name' => $refName,
+        'period'         => $b['period'] ?? null,
+        'label'          => $label,
+        'display_hint'   => $hint,
+        'amount'         => $amount,
+        'warn_pct'       => $warn,
+        'danger_pct'     => $danger,
+        'note'           => (string) ($b['note'] ?? ''),
+        'spent'          => $spent,
+        'remaining'      => $amount - $spent,
+        'pct'            => $amount > 0 ? round($spent / $amount * 100, 1) : 0.0,
+        'status'         => budgetStatus($spent, $amount, $warn, $danger),
+    ];
+}
+
+/**
+ * Effective budgets for a month: per scope, a month override (period = month)
+ * wins over the recurring default (period IS NULL). Each row carries flags so the
+ * UI can show the source and offer "edit this month" / "reset to default".
+ */
+function loadEffectiveBudgets(PDO $pdo, string $month): array
+{
+    $defaults = $pdo->query("SELECT * FROM budgets WHERE is_active = 1 AND period IS NULL")->fetchAll();
+    $stmt = $pdo->prepare("SELECT * FROM budgets WHERE is_active = 1 AND period = :m");
+    $stmt->execute([':m' => $month]);
+    $overrides = $stmt->fetchAll();
+
+    $map = [];
+    foreach ($defaults as $d)  { $map[budgetScopeKey($d)]['default']  = $d; }
+    foreach ($overrides as $o) { $map[budgetScopeKey($o)]['override'] = $o; }
+
+    $out = [];
+    foreach ($map as $pair) {
+        $eff = $pair['override'] ?? $pair['default'];
+        $row = budgetRow($pdo, $eff, $month);
+        $row['is_override'] = isset($pair['override']);
+        $row['has_default'] = isset($pair['default']);
+        $row['default_id']  = isset($pair['default'])  ? (int) $pair['default']['id']  : null;
+        $row['override_id'] = isset($pair['override']) ? (int) $pair['override']['id'] : null;
+        $out[] = $row;
+    }
+
+    usort($out, fn($a, $b) => [budgetScopeOrder($a['scope_type']), $a['label']]
+                          <=> [budgetScopeOrder($b['scope_type']), $b['label']]);
+    return $out;
+}
+
+/** Recurring default budgets only (period IS NULL) — for the Manage view. */
+function loadDefaultBudgets(PDO $pdo): array
+{
+    $rows = $pdo->query("SELECT * FROM budgets WHERE is_active = 1 AND period IS NULL")->fetchAll();
+    $out  = [];
+    foreach ($rows as $b) {
+        $refId = $b['scope_ref_id'] !== null ? (int) $b['scope_ref_id'] : null;
+        [$label, $hint] = budgetResolveLabel($pdo, $b['scope_type'], $refId, (string) ($b['scope_ref_name'] ?? ''));
+        $out[] = [
+            'id'             => (int) $b['id'],
+            'scope_type'     => $b['scope_type'],
+            'scope_ref_id'   => $refId,
+            'scope_ref_name' => (string) ($b['scope_ref_name'] ?? ''),
+            'period'         => null,
+            'label'          => $label,
+            'display_hint'   => $hint,
+            'amount'         => (float) $b['amount'],
+            'warn_pct'       => (int) $b['warn_pct'],
+            'danger_pct'     => (int) $b['danger_pct'],
+            'note'           => (string) ($b['note'] ?? ''),
+        ];
+    }
+    usort($out, fn($a, $b) => [budgetScopeOrder($a['scope_type']), $a['label']]
+                          <=> [budgetScopeOrder($b['scope_type']), $b['label']]);
+    return $out;
+}
+
+function handleBudgetList(PDO $pdo): void
+{
+    // ?mode=defaults → recurring definitions (Manage tab); otherwise effective-for-month.
+    if (($_GET['mode'] ?? '') === 'defaults') {
+        jsonResponse(['budgets' => loadDefaultBudgets($pdo)]);
+    }
+    $month = validBudgetMonth(trim($_GET['month'] ?? ''));
+    jsonResponse(['month' => $month, 'budgets' => loadEffectiveBudgets($pdo, $month)]);
+}
+
+// Effective budgets for a month — used by the dashboard card and report tab.
+function handleBudgetProgress(PDO $pdo): void
+{
+    $month = validBudgetMonth(trim($_GET['month'] ?? ''));
+    jsonResponse(['month' => $month, 'budgets' => loadEffectiveBudgets($pdo, $month)]);
+}
+
+function handleBudgetSave(PDO $pdo): void
+{
+    $id        = (int) ($_POST['id'] ?? 0);
+    $scopeType = trim($_POST['scope_type'] ?? 'overall');
+    if (!in_array($scopeType, ['overall', 'type', 'group', 'company', 'member'], true)) {
+        jsonResponse(['error' => 'Invalid scope_type'], 400);
+    }
+
+    $amount = (float) ($_POST['amount'] ?? 0);
+    if ($amount < 0) {
+        jsonResponse(['error' => 'Amount must be >= 0'], 400);
+    }
+
+    $warn   = (int) ($_POST['warn_pct'] ?? 80);
+    $danger = (int) ($_POST['danger_pct'] ?? 100);
+    if ($warn < 1 || $danger < 1 || $warn > $danger || $danger > 1000) {
+        jsonResponse(['error' => 'Invalid thresholds: require 1 <= warn_pct <= danger_pct <= 1000'], 400);
+    }
+
+    // period: '' → recurring default; 'YYYY-MM' → override for that month
+    $period = trim($_POST['period'] ?? '');
+    if ($period !== '' && !preg_match('/^\d{4}-\d{2}$/', $period)) {
+        jsonResponse(['error' => 'Invalid period format'], 400);
+    }
+    $periodVal = $period === '' ? null : $period;
+
+    $note    = trim($_POST['note'] ?? '');
+    $refId   = null;
+    $refName = '';
+
+    if ($scopeType === 'type') {
+        $refName = trim($_POST['scope_ref_name'] ?? '');
+        if ($refName === '') {
+            jsonResponse(['error' => 'Type is required'], 400);
+        }
+    } elseif (in_array($scopeType, ['group', 'company', 'member'], true)) {
+        $refId = (int) ($_POST['scope_ref_id'] ?? 0);
+        if ($refId <= 0) {
+            jsonResponse(['error' => 'Entity is required'], 400);
+        }
+        $allowed = match ($scopeType) {
+            'company' => ['company'],
+            'group'   => ['group', 'unit'],
+            default   => ['member'],
+        };
+        $stmt = $pdo->prepare("SELECT name, category FROM idol_entities WHERE id = :id");
+        $stmt->execute([':id' => $refId]);
+        $ent = $stmt->fetch();
+        if (!$ent || !in_array($ent['category'], $allowed, true)) {
+            jsonResponse(['error' => 'Invalid entity for this scope'], 400);
+        }
+        $refName = $ent['name']; // snapshot
+    }
+
+    // Reject a second active budget for the same scope AND period
+    // (one recurring default per scope; one override per scope per month).
+    $dupCond   = "is_active = 1 AND scope_type = :st AND id != :id";
+    $dupParams = [':st' => $scopeType, ':id' => $id];
+    if ($scopeType === 'type') {
+        $dupCond .= " AND scope_ref_name = :rn";
+        $dupParams[':rn'] = $refName;
+    } elseif (in_array($scopeType, ['group', 'company', 'member'], true)) {
+        $dupCond .= " AND scope_ref_id = :rid";
+        $dupParams[':rid'] = $refId;
+    }
+    if ($periodVal === null) {
+        $dupCond .= " AND period IS NULL";
+    } else {
+        $dupCond .= " AND period = :pd";
+        $dupParams[':pd'] = $periodVal;
+    }
+    $stmt = $pdo->prepare("SELECT id FROM budgets WHERE $dupCond LIMIT 1");
+    $stmt->execute($dupParams);
+    if ($stmt->fetchColumn() !== false) {
+        jsonResponse(['error' => 'A budget for this scope and period already exists'], 409);
+    }
+
+    if ($id > 0) {
+        $stmt = $pdo->prepare("
+            UPDATE budgets
+            SET scope_type = :st, scope_ref_id = :rid, scope_ref_name = :rn,
+                amount = :amt, warn_pct = :warn, danger_pct = :danger, note = :note, period = :pd
+            WHERE id = :id
+        ");
+        $stmt->execute([
+            ':st' => $scopeType, ':rid' => $refId, ':rn' => $refName,
+            ':amt' => $amount, ':warn' => $warn, ':danger' => $danger,
+            ':note' => $note, ':pd' => $periodVal, ':id' => $id,
+        ]);
+    } else {
+        $stmt = $pdo->prepare("
+            INSERT INTO budgets (scope_type, scope_ref_id, scope_ref_name, amount, warn_pct, danger_pct, note, period)
+            VALUES (:st, :rid, :rn, :amt, :warn, :danger, :note, :pd)
+        ");
+        $stmt->execute([
+            ':st' => $scopeType, ':rid' => $refId, ':rn' => $refName,
+            ':amt' => $amount, ':warn' => $warn, ':danger' => $danger, ':note' => $note, ':pd' => $periodVal,
+        ]);
+        $id = (int) $pdo->lastInsertId();
+    }
+
+    jsonResponse(['success' => true, 'id' => $id]);
+}
+
+function handleBudgetDelete(PDO $pdo): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    if (!$id) {
+        jsonResponse(['error' => 'ID is required'], 400);
+    }
+    $pdo->prepare("DELETE FROM budgets WHERE id = :id")->execute([':id' => $id]);
     jsonResponse(['success' => true]);
 }
 
