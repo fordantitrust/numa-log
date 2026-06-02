@@ -95,6 +95,9 @@
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-bar-chart-line"></i> Report
             </a>
+            <a href="budget.php" class="btn btn-outline-light btn-sm me-2">
+                <i class="bi bi-piggy-bank"></i> Budget
+            </a>
             <?php $u = currentUser(); ?>
             <?php if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
@@ -144,6 +147,7 @@
                     <a href="#getting-started" class="toc-link"><i class="bi bi-rocket-takeoff"></i> Getting Started</a>
                     <a href="#items" class="toc-link"><i class="bi bi-list-ul"></i> Item Management</a>
                     <a href="#reports" class="toc-link"><i class="bi bi-bar-chart-line"></i> Reports</a>
+                    <a href="#budget" class="toc-link"><i class="bi bi-piggy-bank"></i> Budgets</a>
                     <a href="#idols" class="toc-link"><i class="bi bi-people"></i> Idol Management</a>
                     <a href="#types" class="toc-link"><i class="bi bi-tags"></i> Type Management</a>
                     <a href="#users" class="toc-link"><i class="bi bi-person-gear"></i> User Management</a>
@@ -196,7 +200,7 @@
                         <span class="step-number">5</span>
                         <div>
                             <strong>View reports</strong><br>
-                            <span class="text-muted">Go to the <strong>Report</strong> page to see spending analytics across 13 views <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
+                            <span class="text-muted">Go to the <strong>Report</strong> page to see spending analytics across 14 views <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
                         </div>
                     </div>
                     <div class="tip-box mt-3">
@@ -310,7 +314,7 @@
                         <div class="feature-icon feature-icon-pink"><i class="bi bi-bar-chart-line"></i></div>
                         <h4 class="mb-0">Reports</h4>
                     </div>
-                    <p class="text-muted">The <strong>Report</strong> page provides analytics across <strong>13 views (tabs)</strong> with interactive charts &mdash; data-heavy tabs are lazy-loaded the first time they are opened.</p>
+                    <p class="text-muted">The <strong>Report</strong> page provides analytics across <strong>14 views (tabs)</strong> with interactive charts &mdash; data-heavy tabs are lazy-loaded the first time they are opened.</p>
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -406,6 +410,95 @@
                                 <p class="small text-muted mb-2">Members with no recent purchases, with a selectable threshold (30 / 90 / 180 / 365 days)</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>Click on a member name</strong> to view their detail
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-wallet2 text-primary"></i> Budget <span class="badge bg-info ms-1" style="font-size:.65rem">v1.8.0</span></h6>
+                                <p class="small text-muted mb-0">Spending vs. budget for the selected month, plus the <strong>Insights</strong> analytics block &mdash; see the <a href="#budget">Budgets</a> section for details</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget -->
+            <div class="card mb-3" id="budget">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="feature-icon feature-icon-green"><i class="bi bi-piggy-bank"></i></div>
+                        <h4 class="mb-0">Budgets <span class="badge bg-info ms-1" style="font-size:.7rem">v1.8.0</span></h4>
+                    </div>
+                    <p class="text-muted">The <strong>Budget</strong> page sets monthly spending limits and tracks spending against them, with colour-coded status bars. It is a <em>visual warning only</em> &mdash; it never blocks adding items.</p>
+
+                    <div class="accordion" id="accBudget">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#budgetManage">
+                                    <i class="bi bi-sliders me-2"></i> Set budgets (Manage)
+                                </button>
+                            </h2>
+                            <div id="budgetManage" class="accordion-collapse collapse show" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>Define a <strong>recurring default</strong> that applies to every month, scoped one of five ways:</p>
+                                    <table class="table table-sm help-table mt-2 mb-2">
+                                        <tr><th style="width:140px">Overall</th><td>Total budget per month</td></tr>
+                                        <tr><th>By Type</th><td>Budget per item type, e.g. Photocard</td></tr>
+                                        <tr><th>By Company</th><td>Budget per company</td></tr>
+                                        <tr><th>By Group</th><td>Budget per group / unit</td></tr>
+                                        <tr><th>By Member</th><td>Budget per member</td></tr>
+                                    </table>
+                                    <p class="mb-1">Each budget sets a <strong>limit (฿)</strong> and colour thresholds:</p>
+                                    <ul class="mb-0">
+                                        <li><span class="badge bg-success">Green</span> below the yellow %</li>
+                                        <li><span class="badge bg-warning text-dark">Yellow</span> from the yellow % up to the red %</li>
+                                        <li><span class="badge bg-danger">Red</span> at or above the red % (over budget)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#budgetProgress">
+                                    <i class="bi bi-bar-chart-line me-2"></i> Track by month (Progress)
+                                </button>
+                            </h2>
+                            <div id="budgetProgress" class="accordion-collapse collapse" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>The <strong>Progress</strong> tab shows a progress bar for every budget in the selected month (spent / limit and remaining).</p>
+                                    <ul class="mb-0">
+                                        <li>Pick a month with the <strong>Month</strong> selector at the top</li>
+                                        <li>Click <i class="bi bi-pencil"></i> to <strong>override the budget for that month only</strong>, leaving the recurring default untouched</li>
+                                        <li>Click <i class="bi bi-arrow-counterclockwise"></i> to <strong>reset back to the recurring default</strong></li>
+                                        <li><span class="badge bg-light text-secondary border">Default</span> = recurring budget, <span class="badge bg-primary-subtle text-primary border">Custom</span> = month override</li>
+                                    </ul>
+                                    <div class="tip-box mt-2">
+                                        <i class="bi bi-info-circle"></i> Group / Company / Member budgets use the same membership-aware joins as the reports, so the numbers match.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#budgetInsights">
+                                    <i class="bi bi-graph-up-arrow me-2"></i> Insights <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.0</span>
+                                </button>
+                            </h2>
+                            <div id="budgetInsights" class="accordion-collapse collapse" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>The <strong>Insights</strong> tab analyses spending vs. budget <strong>over time</strong> to answer "how am I doing historically?" (available both on the Budget page and in the report page's Budget tab).</p>
+                                    <ul>
+                                        <li><strong>Scope selector</strong> &mdash; Overall, or any scope that has a budget. Comparing one scope at a time avoids double-counting nested entities.</li>
+                                        <li><strong>Range</strong> &mdash; last 6 / 12 / 24 months (default 12)</li>
+                                        <li><strong>KPI cards</strong> &mdash; total &amp; average spend, average budget, average % used, months over budget, and the peak month</li>
+                                        <li><strong>Spent vs. budget chart</strong> &mdash; monthly spend bars (green / yellow / red by status) with the limit drawn as a line</li>
+                                        <li><strong>% used trend</strong> &mdash; a line with a 100% reference</li>
+                                        <li><strong>Recommendations</strong> &mdash; automatic tips: over budget frequently, over last month, projected overspend at the current pace, trending up/down, consistently under budget (suggests a lower limit), or on track</li>
+                                    </ul>
+                                    <div class="tip-box mb-0">
+                                        <i class="bi bi-lightbulb"></i> If the selected scope has spending but no budget yet, you'll be prompted to set one to start tracking.
+                                    </div>
                                 </div>
                             </div>
                         </div>

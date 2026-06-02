@@ -95,6 +95,9 @@
             <a href="report.php" class="btn btn-outline-light btn-sm me-2">
                 <i class="bi bi-bar-chart-line"></i> Report
             </a>
+            <a href="budget.php" class="btn btn-outline-light btn-sm me-2">
+                <i class="bi bi-piggy-bank"></i> Budget
+            </a>
             <?php $u = currentUser(); ?>
             <?php if (AUTH_ENABLED && $u): ?>
             <div class="btn-group">
@@ -144,6 +147,7 @@
                     <a href="#getting-started" class="toc-link"><i class="bi bi-rocket-takeoff"></i> เริ่มต้นใช้งาน</a>
                     <a href="#items" class="toc-link"><i class="bi bi-list-ul"></i> จัดการรายการ</a>
                     <a href="#reports" class="toc-link"><i class="bi bi-bar-chart-line"></i> รายงาน</a>
+                    <a href="#budget" class="toc-link"><i class="bi bi-piggy-bank"></i> งบประมาณ</a>
                     <a href="#idols" class="toc-link"><i class="bi bi-people"></i> จัดการไอดอล</a>
                     <a href="#types" class="toc-link"><i class="bi bi-tags"></i> จัดการประเภท</a>
                     <a href="#users" class="toc-link"><i class="bi bi-person-gear"></i> จัดการผู้ใช้</a>
@@ -196,7 +200,7 @@
                         <span class="step-number">5</span>
                         <div>
                             <strong>ดูรายงาน</strong><br>
-                            <span class="text-muted">ไปที่หน้า <strong>Report</strong> เพื่อดูสรุปยอดใช้จ่ายใน 13 มุมมอง <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
+                            <span class="text-muted">ไปที่หน้า <strong>Report</strong> เพื่อดูสรุปยอดใช้จ่ายใน 14 มุมมอง <span class="badge bg-info" style="font-size:.65rem">v1.6.1</span></span>
                         </div>
                     </div>
                     <div class="tip-box mt-3">
@@ -310,7 +314,7 @@
                         <div class="feature-icon feature-icon-pink"><i class="bi bi-bar-chart-line"></i></div>
                         <h4 class="mb-0">รายงาน</h4>
                     </div>
-                    <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน <strong>13 มุมมอง (tab)</strong> พร้อมกราฟแบบ interactive &mdash; tab ที่โหลดข้อมูลมากจะ lazy-load ครั้งแรกที่เปิด</p>
+                    <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน <strong>14 มุมมอง (tab)</strong> พร้อมกราฟแบบ interactive &mdash; tab ที่โหลดข้อมูลมากจะ lazy-load ครั้งแรกที่เปิด</p>
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -406,6 +410,95 @@
                                 <p class="small text-muted mb-2">สมาชิกที่ไม่มีการซื้อในช่วงที่กำหนด (30/90/180/365 วัน)</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อสมาชิก</strong> เพื่อดูรายละเอียด
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-wallet2 text-primary"></i> Budget (งบประมาณ) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.8.0</span></h6>
+                                <p class="small text-muted mb-0">ความคืบหน้าการใช้จ่ายเทียบงบของเดือนที่เลือก พร้อมส่วน <strong>ภาพรวม/Insights</strong> &mdash; ดูรายละเอียดในหัวข้อ <a href="#budget">งบประมาณ</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget -->
+            <div class="card mb-3" id="budget">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="feature-icon feature-icon-green"><i class="bi bi-piggy-bank"></i></div>
+                        <h4 class="mb-0">งบประมาณ <span class="badge bg-info ms-1" style="font-size:.7rem">v1.8.0</span></h4>
+                    </div>
+                    <p class="text-muted">หน้า <strong>Budget</strong> ตั้งงบรายเดือนและติดตามยอดใช้จ่ายเทียบกับลิมิต พร้อมแถบสีเตือนสถานะ &mdash; เป็น <em>การเตือนเชิงภาพ</em> เท่านั้น ไม่บล็อกการเพิ่มรายการ</p>
+
+                    <div class="accordion" id="accBudget">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#budgetManage">
+                                    <i class="bi bi-sliders me-2"></i> ตั้งงบ (Manage)
+                                </button>
+                            </h2>
+                            <div id="budgetManage" class="accordion-collapse collapse show" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>ตั้ง <strong>งบตั้งต้นแบบประจำ (recurring default)</strong> ที่ใช้กับทุกเดือน โดยเลือกขอบเขต (scope) ได้ 5 แบบ:</p>
+                                    <table class="table table-sm help-table mt-2 mb-2">
+                                        <tr><th style="width:140px">Overall (ภาพรวม)</th><td>งบรวมทั้งหมดต่อเดือน</td></tr>
+                                        <tr><th>By Type</th><td>งบต่อประเภทสินค้า เช่น Photocard</td></tr>
+                                        <tr><th>By Company</th><td>งบต่อค่าย</td></tr>
+                                        <tr><th>By Group</th><td>งบต่อกลุ่ม/ยูนิต</td></tr>
+                                        <tr><th>By Member</th><td>งบต่อสมาชิก</td></tr>
+                                    </table>
+                                    <p class="mb-1">แต่ละงบกำหนด <strong>ลิมิต (฿)</strong> และเกณฑ์สี:</p>
+                                    <ul class="mb-0">
+                                        <li><span class="badge bg-success">เขียว</span> ต่ำกว่า % เหลือง</li>
+                                        <li><span class="badge bg-warning text-dark">เหลือง</span> ตั้งแต่ % เหลือง ถึงก่อน % แดง</li>
+                                        <li><span class="badge bg-danger">แดง</span> ตั้งแต่ % แดงขึ้นไป (เกินงบ)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#budgetProgress">
+                                    <i class="bi bi-bar-chart-line me-2"></i> ติดตามรายเดือน (Progress)
+                                </button>
+                            </h2>
+                            <div id="budgetProgress" class="accordion-collapse collapse" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>แท็บ <strong>Progress</strong> แสดงแถบความคืบหน้าของทุกงบในเดือนที่เลือก (ใช้ไป / ลิมิต และยอดคงเหลือ)</p>
+                                    <ul class="mb-0">
+                                        <li>เลือกเดือนได้จากช่อง <strong>Month</strong> ด้านบน</li>
+                                        <li>กดไอคอน <i class="bi bi-pencil"></i> เพื่อ <strong>กำหนดงบเฉพาะเดือนนั้น (override)</strong> โดยไม่กระทบงบตั้งต้น</li>
+                                        <li>กดไอคอน <i class="bi bi-arrow-counterclockwise"></i> เพื่อ <strong>คืนค่ากลับเป็นงบตั้งต้น</strong></li>
+                                        <li>ป้าย <span class="badge bg-light text-secondary border">Default</span> = ใช้งบประจำ, <span class="badge bg-primary-subtle text-primary border">Custom</span> = override เฉพาะเดือน</li>
+                                    </ul>
+                                    <div class="tip-box mt-2">
+                                        <i class="bi bi-info-circle"></i> งบของ Group/Company/Member คำนวณยอดด้วย membership join ชุดเดียวกับรายงาน ตัวเลขจึงตรงกัน
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#budgetInsights">
+                                    <i class="bi bi-graph-up-arrow me-2"></i> ภาพรวม / Insights <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.0</span>
+                                </button>
+                            </h2>
+                            <div id="budgetInsights" class="accordion-collapse collapse" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>แท็บ <strong>ภาพรวม</strong> วิเคราะห์ยอดใช้จ่ายเทียบงบ <strong>ย้อนหลัง</strong> เพื่อตอบว่า "ที่ผ่านมาเป็นอย่างไร" (มีทั้งในหน้า Budget และแท็บ Budget ของหน้า Report)</p>
+                                    <ul>
+                                        <li><strong>เลือกขอบเขต (Scope)</strong> &mdash; Overall หรือ scope ใดที่มีงบ เทียบทีละ scope เพื่อเลี่ยงการนับซ้ำของหน่วยที่ซ้อนกัน</li>
+                                        <li><strong>เลือกช่วงเวลา</strong> &mdash; 6 / 12 / 24 เดือนล่าสุด (ค่าเริ่มต้น 12)</li>
+                                        <li><strong>การ์ด KPI</strong> &mdash; ใช้จ่ายรวม/เฉลี่ย, งบเฉลี่ย, % ใช้เฉลี่ย, จำนวนเดือนที่เกินงบ, เดือนที่ใช้สูงสุด</li>
+                                        <li><strong>กราฟยอดเทียบงบรายเดือน</strong> &mdash; แท่งยอดใช้จ่าย (สีเขียว/เหลือง/แดงตามสถานะ) + เส้นลิมิต</li>
+                                        <li><strong>กราฟแนวโน้ม % ของงบที่ใช้</strong> &mdash; เส้นพร้อมเส้นอ้างอิง 100%</li>
+                                        <li><strong>คำแนะนำ</strong> &mdash; วิเคราะห์อัตโนมัติ เช่น เกินงบบ่อย, เกินเดือนล่าสุด, คาดว่าจะเกินตามอัตราเดือนปัจจุบัน, แนวโน้มขึ้น/ลง, ใช้ต่ำกว่างบสม่ำเสมอ (แนะนำปรับลดลิมิต) หรืออยู่ในเกณฑ์ดี</li>
+                                    </ul>
+                                    <div class="tip-box mb-0">
+                                        <i class="bi bi-lightbulb"></i> ถ้า scope ที่เลือกมีการใช้จ่ายแต่ยังไม่ได้ตั้งงบ ระบบจะแนะนำให้ตั้งงบเพื่อเริ่มติดตาม
+                                    </div>
                                 </div>
                             </div>
                         </div>
