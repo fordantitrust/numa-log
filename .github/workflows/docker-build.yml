@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main, master]
+    tags: ['v*']          # publishing a Release/tag like v1.8.0 builds a versioned image
   pull_request:
     branches: [main, master]
 
@@ -69,6 +70,9 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=sha,format=short
+            type=semver,pattern={{version}}        # v1.8.0 -> 1.8.0
+            type=semver,pattern={{major}}.{{minor}} # v1.8.0 -> 1.8
+            type=semver,pattern={{major}}           # v1.8.0 -> 1
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6

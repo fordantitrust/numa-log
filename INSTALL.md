@@ -11,10 +11,14 @@
 
 ## 1. Requirements
 
-**Option A: Docker (Recommended)**
+**Option A: Docker — Pre-built image from GHCR (Recommended)**
+- Docker & Docker Compose
+- No build tools needed — the image is built by GitHub Actions
+
+**Option B: Docker — Build locally**
 - Docker & Docker Compose
 
-**Option B: Manual**
+**Option C: Manual**
 - PHP 8.2+
 - Composer
 - Apache with mod_rewrite (XAMPP recommended)
@@ -24,7 +28,64 @@
 
 ## 2. Installation
 
-### Option A: Docker (Recommended)
+### Option A: Docker — Pre-built image from GHCR (Recommended)
+
+Every push to `master` triggers a GitHub Actions workflow that builds the Docker
+image and publishes it to the **GitHub Container Registry (GHCR)**. You can pull
+this image directly instead of building it yourself.
+
+Image: `ghcr.io/fordantitrust/numa-log:latest`
+
+#### Quick Start
+
+Create a `docker-compose.yml` (or use the one provided, replacing `build: .`
+with the `image:` line below):
+
+```yaml
+services:
+  app:
+    image: ghcr.io/fordantitrust/numa-log:latest
+    container_name: numa-log
+    ports:
+      - "8080:80"
+    volumes:
+      - app-data:/var/www/html/data
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Bangkok
+
+volumes:
+  app-data:
+```
+
+Then pull and start:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Open browser at **http://localhost:8080**
+
+> If the GHCR package is **private**, log in first:
+> ```bash
+> echo <YOUR_GITHUB_TOKEN> | docker login ghcr.io -u <your-username> --password-stdin
+> ```
+> The token needs the `read:packages` scope. Public packages need no login.
+
+Alternatively, run without Compose:
+
+```bash
+docker run -d --name numa-log -p 8080:80 \
+  -v numa-log-data:/var/www/html/data \
+  -e TZ=Asia/Bangkok \
+  --restart unless-stopped \
+  ghcr.io/fordantitrust/numa-log:latest
+```
+
+---
+
+### Option B: Docker — Build locally
 
 #### Quick Start
 
@@ -87,7 +148,7 @@ docker cp ./backup.sqlite numa-log:/var/www/html/data/database.sqlite
 
 ---
 
-### Option B: Manual (XAMPP / PHP Built-in Server)
+### Option C: Manual (XAMPP / PHP Built-in Server)
 
 #### 1. Clone the repository
 
@@ -148,7 +209,23 @@ Database schema changes (new tables, columns, indexes) are applied automatically
 
 ---
 
-### Option A: Docker
+### Option A: Docker — Pre-built image from GHCR
+
+```bash
+# 1. Pull the latest published image
+docker compose pull
+
+# 2. Recreate the container with the new image
+docker compose up -d
+```
+
+No `git pull` or rebuild needed — you get whatever GitHub Actions last published
+to `ghcr.io/fordantitrust/numa-log:latest`. Your data in the `app-data` volume is
+untouched.
+
+---
+
+### Option B: Docker — Build locally
 
 ```bash
 # 1. Pull the latest code
@@ -168,7 +245,7 @@ docker cp numa-log:/var/www/html/data/database.sqlite ./backup-before-upgrade.sq
 
 ---
 
-### Option B: Manual (XAMPP)
+### Option C: Manual (XAMPP)
 
 ```bash
 # 1. Pull the latest code
