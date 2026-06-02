@@ -187,7 +187,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
-<script src="assets/i18n.js"></script>
+<script src="assets/i18n.js?v=<?= APP_VERSION ?>"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);

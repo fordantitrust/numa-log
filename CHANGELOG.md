@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.1 (2026-06-02)
+
+### Fixes
+
+- **Asset cache-busting** — `assets/budget.js` and `assets/i18n.js` are now loaded with a `?v=APP_VERSION` query string on every page. Previously the browser could serve a stale cached copy after an upgrade (e.g. the new `Budget.Insights` module was missing, causing a `Cannot read properties of undefined (reading 'mount')` error on the Insights tab). Bumping the version now forces a fresh fetch automatically.
+
+---
+
 ## v1.9.0 (2026-06-02)
 
 ### Budget Insights

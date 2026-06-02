@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.0 — Budget Insights: a new analytics view (in the `budget.php` Insights tab and the Budget report tab) showing spending vs. budget over the last 6/12/24 months per scope — KPI overview, a spent-vs-budget chart, a % used trend line, and rule-based recommendations (over budget often, trending up/down, projected overspend, consistently under).
+**Latest:** v1.9.1 — Fix: asset cache-busting (`?v=APP_VERSION`) so browsers always load the current `budget.js` / `i18n.js` after an upgrade, resolving a stale-cache error on the Budget Insights tab.
+
+**v1.9.0** — Budget Insights: a new analytics view (in the `budget.php` Insights tab and the Budget report tab) showing spending vs. budget over the last 6/12/24 months per scope — KPI overview, a spent-vs-budget chart, a % used trend line, and rule-based recommendations (over budget often, trending up/down, projected overspend, consistently under).
 
 ## License
 

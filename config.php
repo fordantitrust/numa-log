@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.9.0');
+define('APP_VERSION', '1.9.1');
 const DB_SCHEMA_VERSION = 7;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
