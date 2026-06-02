@@ -58,6 +58,7 @@ try {
         'budget_save' => handleBudgetSave($pdo),
         'budget_delete' => handleBudgetDelete($pdo),
         'budget_progress' => handleBudgetProgress($pdo),
+        'budget_analytics' => handleBudgetAnalytics($pdo),
         'backup_list' => handleBackupList(),
         'backup_create' => handleBackupCreate(),
         'backup_restore' => handleBackupRestore(),
@@ -1766,6 +1767,216 @@ function handleBudgetDelete(PDO $pdo): void
     }
     $pdo->prepare("DELETE FROM budgets WHERE id = :id")->execute([':id' => $id]);
     jsonResponse(['success' => true]);
+}
+
+/** Distinct selectable budget scopes: Overall + every scope with an active budget. */
+function budgetScopeOptions(PDO $pdo): array
+{
+    $out = [[
+        'scope_type'     => 'overall',
+        'scope_ref_id'   => null,
+        'scope_ref_name' => '',
+        'label'          => '',
+        'display_hint'   => '',
+    ]];
+    $seen = [];
+    $rows = $pdo->query("SELECT DISTINCT scope_type, scope_ref_id, scope_ref_name FROM budgets WHERE is_active = 1")->fetchAll();
+    foreach ($rows as $r) {
+        if ($r['scope_type'] === 'overall') continue; // already present
+        $key = budgetScopeKey($r);
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
+        $refId = $r['scope_ref_id'] !== null ? (int) $r['scope_ref_id'] : null;
+        [$label, $hint] = budgetResolveLabel($pdo, $r['scope_type'], $refId, (string) ($r['scope_ref_name'] ?? ''));
+        $out[] = [
+            'scope_type'     => $r['scope_type'],
+            'scope_ref_id'   => $refId,
+            'scope_ref_name' => (string) ($r['scope_ref_name'] ?? ''),
+            'label'          => $label,
+            'display_hint'   => $hint,
+        ];
+    }
+    usort($out, fn($a, $b) => [budgetScopeOrder($a['scope_type']), $a['label']]
+                          <=> [budgetScopeOrder($b['scope_type']), $b['label']]);
+    return $out;
+}
+
+/**
+ * Rule-based budget recommendations as {code, severity, params}. Text is rendered
+ * client-side via t('budget.rec_'+code, params) so it stays bilingual.
+ */
+function buildBudgetRecommendations(array $series, string $currentMonth): array
+{
+    $recs         = [];
+    $budgetMonths = array_values(array_filter($series, fn($s) => $s['has_budget']));
+    $n            = count($budgetMonths);
+
+    // No budget defined anywhere in the window
+    if ($n === 0) {
+        if (array_sum(array_column($series, 'spent')) > 0) {
+            $recs[] = ['code' => 'no_budget', 'severity' => 'info', 'params' => []];
+        }
+        return $recs;
+    }
+
+    // Over budget frequently
+    $overCount = count(array_filter($budgetMonths, fn($s) => $s['over']));
+    if ($overCount >= 2) {
+        $recs[] = ['code' => 'over_frequent', 'severity' => 'danger', 'params' => ['m' => $overCount, 'n' => $n]];
+    }
+
+    // Latest month already over
+    $last = end($series);
+    if ($last && $last['has_budget'] && $last['over']) {
+        $recs[] = ['code' => 'over_recent', 'severity' => 'danger', 'params' => []];
+    }
+
+    // Pace projection for the in-progress current month
+    if ($last && $last['month'] === $currentMonth && $last['has_budget'] && $last['budget'] > 0 && !$last['over']) {
+        $day = (int) date('j');
+        $daysInMonth = (int) date('t');
+        if ($day >= 1 && $day < $daysInMonth) {
+            $projected = $last['spent'] / ($day / $daysInMonth);
+            if ($projected > $last['budget'] * 1.05) {
+                $recs[] = ['code' => 'projection', 'severity' => 'warning', 'params' => ['projected' => round($projected)]];
+            }
+        }
+    }
+
+    // Spending trend: recent half vs earlier half (needs >= 4 months of data)
+    $spents = array_column($series, 'spent');
+    $cnt    = count($spents);
+    if ($cnt >= 4) {
+        $half    = intdiv($cnt, 2);
+        $earlier = array_slice($spents, 0, $half);
+        $recent  = array_slice($spents, $cnt - $half);
+        $ea = array_sum($earlier) / count($earlier);
+        $ra = array_sum($recent) / count($recent);
+        if ($ea > 0) {
+            $delta = ($ra - $ea) / $ea * 100;
+            if ($delta >= 15) {
+                $recs[] = ['code' => 'trending_up', 'severity' => 'warning', 'params' => ['pct' => round($delta)]];
+            } elseif ($delta <= -15) {
+                $recs[] = ['code' => 'trending_down', 'severity' => 'success', 'params' => ['pct' => round(abs($delta))]];
+            }
+        }
+    }
+
+    // Consistently well under budget → suggest a tighter limit
+    if ($n >= 3) {
+        $allUnder = true;
+        foreach ($budgetMonths as $s) {
+            if ($s['budget'] <= 0 || $s['pct'] >= 60) { $allUnder = false; break; }
+        }
+        if ($allUnder) {
+            $maxSpent  = max(array_column($budgetMonths, 'spent'));
+            $suggested = (int) (ceil(($maxSpent * 1.1) / 100) * 100);
+            $recs[] = ['code' => 'consistently_under', 'severity' => 'info', 'params' => ['suggested' => $suggested]];
+        }
+    }
+
+    // All clear
+    if (empty($recs)) {
+        $recs[] = ['code' => 'on_track', 'severity' => 'success', 'params' => []];
+    }
+
+    return $recs;
+}
+
+/**
+ * Multi-month spending-vs-budget analytics for one scope: a per-month series
+ * (spent, effective limit, % used, colour status), summary stats, the selectable
+ * scope list, and rule-based recommendations. Powers the Budget Insights view.
+ */
+function handleBudgetAnalytics(PDO $pdo): void
+{
+    $scopeType = (string) ($_GET['scope_type'] ?? 'overall');
+    if (!in_array($scopeType, ['overall', 'type', 'group', 'company', 'member'], true)) {
+        $scopeType = 'overall';
+    }
+    $refId   = isset($_GET['scope_ref_id']) && $_GET['scope_ref_id'] !== '' ? (int) $_GET['scope_ref_id'] : null;
+    $refName = (string) ($_GET['scope_ref_name'] ?? '');
+
+    $months = (int) ($_GET['months'] ?? 12);
+    if ($months < 1)  $months = 12;
+    if ($months > 36) $months = 36;
+
+    // Ascending month list ending at the current month.
+    $monthKeys = [];
+    for ($i = $months - 1; $i >= 0; $i--) {
+        $monthKeys[] = date('Y-m', strtotime("first day of -{$i} month"));
+    }
+    $currentMonth = date('Y-m');
+
+    // Load this scope's recurring default + per-month overrides once.
+    $key      = budgetScopeKey(['scope_type' => $scopeType, 'scope_ref_id' => $refId, 'scope_ref_name' => $refName]);
+    $default  = null;
+    $overrides = [];
+    $stmt = $pdo->prepare("SELECT * FROM budgets WHERE is_active = 1 AND scope_type = :st");
+    $stmt->execute([':st' => $scopeType]);
+    foreach ($stmt->fetchAll() as $r) {
+        if (budgetScopeKey($r) !== $key) continue;
+        if ($r['period'] === null) $default = $r;
+        else                       $overrides[$r['period']] = $r;
+    }
+
+    $series           = [];
+    $monthsWithBudget = 0;
+    foreach ($monthKeys as $mk) {
+        $def       = $overrides[$mk] ?? $default;
+        $hasBudget = $def !== null;
+        $amount    = $hasBudget ? (float) $def['amount']   : 0.0;
+        $warn      = $hasBudget ? (int) $def['warn_pct']   : 80;
+        $danger    = $hasBudget ? (int) $def['danger_pct'] : 100;
+        $spent     = budgetSpentForMonth($pdo, $scopeType, $refId, $refName, $mk);
+        if ($hasBudget) $monthsWithBudget++;
+        $series[] = [
+            'month'      => $mk,
+            'budget'     => $amount,
+            'spent'      => $spent,
+            'pct'        => $amount > 0 ? round($spent / $amount * 100, 1) : 0.0,
+            'status'     => $hasBudget ? budgetStatus($spent, $amount, $warn, $danger) : 'none',
+            'has_budget' => $hasBudget,
+            'over'       => $hasBudget && $amount > 0 && $spent > $amount,
+        ];
+    }
+
+    // Summary stats
+    $n            = count($series);
+    $totalSpent   = array_sum(array_column($series, 'spent'));
+    $budgetMonths = array_values(array_filter($series, fn($s) => $s['has_budget']));
+    $bm           = count($budgetMonths);
+    $maxMonth = null; $maxAmt = 0.0;
+    foreach ($series as $s) {
+        if ($s['spent'] > $maxAmt) { $maxAmt = $s['spent']; $maxMonth = $s['month']; }
+    }
+    $summary = [
+        'months_tracked'     => $n,
+        'months_with_budget' => $monthsWithBudget,
+        'total_spent'        => $totalSpent,
+        'avg_spent'          => $n  ? $totalSpent / $n : 0.0,
+        'avg_budget'         => $bm ? array_sum(array_column($budgetMonths, 'budget')) / $bm : 0.0,
+        'avg_pct'            => $bm ? round(array_sum(array_column($budgetMonths, 'pct')) / $bm, 1) : 0.0,
+        'over_count'         => count(array_filter($budgetMonths, fn($s) => $s['over'])),
+        'near_count'         => count(array_filter($budgetMonths, fn($s) => $s['status'] === 'near')),
+        'max_spent'          => ['month' => $maxMonth, 'amount' => $maxAmt],
+    ];
+
+    [$selLabel, $selHint] = budgetResolveLabel($pdo, $scopeType, $refId, $refName);
+
+    jsonResponse([
+        'scope' => [
+            'scope_type'     => $scopeType,
+            'scope_ref_id'   => $refId,
+            'scope_ref_name' => $refName,
+            'label'          => $scopeType === 'overall' ? '' : $selLabel,
+            'display_hint'   => $selHint,
+        ],
+        'months'          => $series,
+        'scopes'          => budgetScopeOptions($pdo),
+        'summary'         => $summary,
+        'recommendations' => buildBudgetRecommendations($series, $currentMonth),
+    ]);
 }
 
 // --- Backup/Restore ---

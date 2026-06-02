@@ -765,6 +765,19 @@ assertJson('report_by_company', apiGet($BASE_URL, 'report_by_company', [], $COOK
     return isset($d['data']) ? null : 'Missing data field';
 });
 
+// 3j. Budget analytics (Insights) — overall scope, default range
+assertJson('budget_analytics overall', apiGet($BASE_URL, 'budget_analytics', ['scope_type' => 'overall', 'months' => 12], $COOKIE_FILE), 200, function ($d) {
+    foreach (['scope', 'months', 'scopes', 'summary', 'recommendations'] as $k) {
+        if (!isset($d[$k])) return "Missing {$k} field";
+    }
+    if (!is_array($d['months']) || count($d['months']) !== 12) return 'Expected 12 month entries';
+    $first = $d['months'][0];
+    foreach (['month', 'budget', 'spent', 'pct', 'status', 'has_budget', 'over'] as $k) {
+        if (!array_key_exists($k, $first)) return "Month entry missing {$k}";
+    }
+    return null;
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TEST SUITE 4 — Idol Entities
 // ─────────────────────────────────────────────────────────────────────────────

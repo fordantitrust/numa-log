@@ -85,6 +85,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 <i class="bi bi-sliders"></i> <?= t('budget.tab_manage') ?>
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneInsights">
+                <i class="bi bi-graph-up-arrow"></i> <?= t('budget.tab_insights') ?>
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -146,6 +151,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Insights: multi-month spend-vs-budget analytics -->
+        <div class="tab-pane fade" id="paneInsights">
+            <div class="mb-2 stat-muted"><?= t('budget.insights_hint') ?></div>
+            <div id="budgetInsightsRoot"></div>
         </div>
     </div>
 </div>
@@ -227,6 +238,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js"></script>
 <script src="assets/budget.js"></script>
@@ -242,6 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('monthSelect').value = new Date().toLocaleDateString('en-CA').slice(0, 7);
     $('monthSelect').addEventListener('change', loadBudgets);
     loadBudgets();
+
+    // Lazy-mount the Insights analytics the first time its tab is shown.
+    document.querySelector('[data-bs-target="#paneInsights"]')
+        .addEventListener('shown.bs.tab', () => Budget.Insights.mount($('budgetInsightsRoot')), { once: true });
 });
 
 function currentMonth() { return $('monthSelect').value || new Date().toLocaleDateString('en-CA').slice(0, 7); }

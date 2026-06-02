@@ -1048,6 +1048,7 @@
                     <div class="text-center text-muted py-4"><?= t('common.loading') ?></div>
                 </div>
             </div>
+            <div id="budgetInsightsRoot" class="mt-3"></div>
         </div>
     </div>
 </div>
@@ -1123,6 +1124,7 @@ function initBudgetTab() {
     el.value = new Date().toLocaleDateString('en-CA').slice(0, 7);
     el.addEventListener('change', loadBudgetReport);
     loadBudgetReport();
+    Budget.Insights.mount($('budgetInsightsRoot'));
 }
 
 async function loadBudgetReport() {

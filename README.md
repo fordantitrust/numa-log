@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.8.0 — Budgets & Spending Goals: monthly spending limits per scope (overall, type, group, company, member) with a recurring default plus per-month overrides and configurable colour-alert thresholds. New `budget.php` page (Progress / Manage tabs), a dashboard card, and a Budget report tab.
+**Latest:** v1.9.0 — Budget Insights: a new analytics view (in the `budget.php` Insights tab and the Budget report tab) showing spending vs. budget over the last 6/12/24 months per scope — KPI overview, a spent-vs-budget chart, a % used trend line, and rule-based recommendations (over budget often, trending up/down, projected overspend, consistently under).
 
 ## License
 

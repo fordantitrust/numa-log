@@ -4,6 +4,22 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.0 (2026-06-02)
+
+### Budget Insights
+
+A historical analytics view for budgets — answers "how am I doing **over time**?" alongside the existing single-month Progress view.
+
+- **Scope selector** — pick *Overall* or any scope that has a budget (type / group / company / member). Comparing one scope at a time avoids double-counting nested entities.
+- **Selectable range** — last **6 / 12 / 24** months (default 12).
+- **Overview KPIs** — total & average spend, average budget, average % used, months over budget, and the highest-spend month.
+- **Spent vs. budget chart** — monthly spend bars coloured by status (green / yellow / red) with the effective limit drawn as a line.
+- **% used trend** — a line tracking each month's spend as a percentage of its budget, with a 100% reference.
+- **Recommendations** — rule-based, bilingual tips: over budget frequently, over last month, projected overspend at the current pace, spending trending up/down, consistently under budget (with a suggested lower limit), or on track.
+- **Two surfaces** — a new **Insights** tab on `budget.php` and the same block appended to the **Budget** tab in the report page; all rendering is shared via `assets/budget.js`. New `budget_analytics` API action. No schema change.
+
+---
+
 ## v1.8.0 (2026-06-02)
 
 ### Budgets & Spending Goals
