@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.3 — Budgets: an allocation summary (Overall → allocated to sub-budgets → unallocated) in the right-hand panel; fixed double-counted total limit/spent when an Overall budget coexists with sub-budgets; and fixed the budget-edit dropdown not pre-selecting the target.
+**Latest:** v1.9.4 — Fix: in Budget Insights, the "Spent vs. budget by month" chart now shows the budget line for non-Overall scopes (member/group/company/type), not just spending bars.
+
+**v1.9.3** — Budgets: an allocation summary (Overall → allocated to sub-budgets → unallocated) in the right-hand panel; fixed double-counted total limit/spent when an Overall budget coexists with sub-budgets; and fixed the budget-edit dropdown not pre-selecting the target.
 
 **v1.9.2** — UI: the 14 report tabs are grouped into compact dropdowns (Over Time / Breakdown / More) so the menu stays on one row.
 

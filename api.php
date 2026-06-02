@@ -1909,13 +1909,20 @@ function handleBudgetAnalytics(PDO $pdo): void
     $currentMonth = date('Y-m');
 
     // Load this scope's recurring default + per-month overrides once.
-    $key      = budgetScopeKey(['scope_type' => $scopeType, 'scope_ref_id' => $refId, 'scope_ref_name' => $refName]);
+    // Match on the relevant identifier — id for entities, name for type — rather than
+    // the full scope key: the client sends only scope_ref_id for entities (no name),
+    // so comparing the name snapshot would never match the stored row.
     $default  = null;
     $overrides = [];
     $stmt = $pdo->prepare("SELECT * FROM budgets WHERE is_active = 1 AND scope_type = :st");
     $stmt->execute([':st' => $scopeType]);
     foreach ($stmt->fetchAll() as $r) {
-        if (budgetScopeKey($r) !== $key) continue;
+        $match = match ($scopeType) {
+            'overall' => true,
+            'type'    => (string) ($r['scope_ref_name'] ?? '') === $refName,
+            default   => $r['scope_ref_id'] !== null && (int) $r['scope_ref_id'] === $refId,
+        };
+        if (!$match) continue;
         if ($r['period'] === null) $default = $r;
         else                       $overrides[$r['period']] = $r;
     }

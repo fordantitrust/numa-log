@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.4 (2026-06-03)
+
+### Fixes
+
+- **Budget Insights: budget line missing for non-Overall scopes** — in the "Spent vs. budget by month" chart, selecting a scope other than *Overall* (a member / group / company / type) showed the spending bars but no budget line. The `budget_analytics` endpoint matched budgets by the full scope key (which includes the name snapshot), but the client sends only `scope_ref_id` for entities, so the stored budget never matched. It now matches on the right identifier per scope type (id for entities, name for type), so the budget line — and the budget-derived KPIs and recommendations — appear correctly.
+
+---
+
 ## v1.9.3 (2026-06-03)
 
 ### Budgets
