@@ -152,6 +152,9 @@ return [
     'report.tab_top'         => 'รายการเด่น',
     'report.tab_inactive'    => 'ไม่เคลื่อนไหว',
     'report.tab_budget'      => 'งบประมาณ',
+    'report.group_time'      => 'ตามเวลา',
+    'report.group_breakdown' => 'แยกตาม',
+    'report.group_more'      => 'อื่นๆ',
 
     'report.others'          => 'อื่นๆ',
     'report.group_unit'      => 'กลุ่ม / ยูนิต',
@@ -506,6 +509,14 @@ return [
     'budget.rec_trending_down'   => 'ดีมาก — การใช้จ่ายมีแนวโน้มลดลง ช่วงหลังต่ำกว่าราว {pct}%',
     'budget.rec_consistently_under' => 'ใช้ต่ำกว่างบอย่างสม่ำเสมอ — อาจปรับลดลิมิตลงเหลือราว ฿{suggested}',
     'budget.rec_on_track'        => 'อยู่ในเกณฑ์ดี — ใช้จ่ายอยู่ในงบสบายๆ',
+
+    // ── Budget allocation summary ──────────────────────────────────────────
+    'budget.alloc_title'         => 'การจัดสรรงบ',
+    'budget.alloc_overall'       => 'งบภาพรวมทั้งหมด',
+    'budget.alloc_allocated'     => 'จัดสรรให้งบย่อยแล้ว',
+    'budget.alloc_unallocated'   => 'ยังไม่จัดสรร',
+    'budget.alloc_over'          => 'จัดสรรเกินงบ',
+    'budget.alloc_overlap_note'  => 'งบย่อยมาจากหลายมิติและอาจซ้อนทับกัน ค่า “จัดสรรแล้ว” จึงเป็นการประมาณ',
 
     // ── Date names (arrays) ────────────────────────────────────────────────
     'date.months'       => ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],

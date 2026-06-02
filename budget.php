@@ -117,6 +117,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <div class="card-header py-2"><strong><i class="bi bi-calculator"></i> <?= t('budget.summary') ?></strong> <span class="text-muted small" id="summaryPeriod"></span></div>
                         <div class="card-body py-2" id="statsPanel">-</div>
                     </div>
+                    <div id="allocationPanel"></div>
                 </div>
             </div>
         </div>
@@ -342,14 +343,20 @@ function gotoManage() {
 }
 
 function renderStats() {
-    const totalLimit = budgets.reduce((s, b) => s + b.amount, 0);
-    const totalSpent = budgets.reduce((s, b) => s + b.spent, 0);
+    // When an Overall budget exists it IS the ceiling — don't add sub-budgets on top
+    // (a member's spending is already inside Overall). Fall back to summing only when
+    // there's no Overall budget to anchor the totals.
+    const overall = budgets.find(b => b.scope_type === 'overall');
+    const totalLimit = overall ? overall.amount : budgets.reduce((s, b) => s + b.amount, 0);
+    const totalSpent = overall ? overall.spent  : budgets.reduce((s, b) => s + b.spent, 0);
     const overCount = budgets.filter(b => b.status === 'over').length;
     $('statsPanel').innerHTML = `
         <div>${t('budget.stat_total')} <strong>${budgets.length}</strong></div>
         <div>${t('budget.stat_limit')} <strong>${Budget.fmtMoney(totalLimit)}</strong></div>
         <div>${t('budget.stat_spent')} <strong>${Budget.fmtMoney(totalSpent)}</strong></div>
         <div class="mt-2 pt-2 border-top">${t('budget.stat_over')} <strong class="${overCount ? 'text-danger' : ''}">${overCount}</strong></div>`;
+    // Allocation breakdown (Overall vs sub-budgets) lives in the right column too.
+    $('allocationPanel').innerHTML = Budget.renderAllocationSummary(budgets);
 }
 
 // --- Form ---
@@ -445,7 +452,10 @@ async function onScopeChange() {
         search.classList.remove('d-none');
         search.value = '';
         ref.innerHTML = '';
-        searchEntities('');
+        // Must await: openBudgetForm() preselects the value right after onScopeChange()
+        // returns, so the options have to be in the DOM first — otherwise this overwrites
+        // the selection a moment later and the dropdown appears empty.
+        await searchEntities('');
     }
 }
 

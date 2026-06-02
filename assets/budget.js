@@ -68,6 +68,39 @@
         </div>`;
     }
 
+    /**
+     * Allocation summary for the selected month: shows how the Overall budget is
+     * carved up by the sub-budgets (earmarked) and what's left unallocated.
+     * Spending is NOT touched here — each bar still compares its own spent vs limit.
+     * Only meaningful when an Overall budget plus at least one sub-budget exist.
+     * Returns '' otherwise.
+     */
+    function renderAllocationSummary(budgets) {
+        budgets = budgets || [];
+        const overall = budgets.find(b => b.scope_type === 'overall');
+        const subs    = budgets.filter(b => b.scope_type !== 'overall');
+        if (!overall || subs.length === 0) return '';
+
+        const allocated = subs.reduce((s, b) => s + (b.amount || 0), 0);
+        const unalloc   = overall.amount - allocated;
+        // Summing across more than one scope dimension can double-count nested/overlapping
+        // scopes (e.g. a member inside a budgeted group), so flag it as an estimate.
+        const overlap   = new Set(subs.map(b => b.scope_type)).size >= 2;
+        const unallocCls = unalloc < 0 ? 'text-danger' : '';
+
+        return `
+        <div class="card mt-3">
+            <div class="card-header py-2"><strong><i class="bi bi-pie-chart"></i> ${escHtml(t('budget.alloc_title'))}</strong></div>
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between"><span>${escHtml(t('budget.alloc_overall'))}</span><strong>${fmtMoney(overall.amount)}</strong></div>
+                <div class="d-flex justify-content-between text-muted"><span>${escHtml(t('budget.alloc_allocated'))} <span class="small">(${subs.length})</span></span><span>&minus;${fmtMoney(allocated)}</span></div>
+                <hr class="my-1">
+                <div class="d-flex justify-content-between"><span class="fw-semibold">${escHtml(t(unalloc < 0 ? 'budget.alloc_over' : 'budget.alloc_unallocated'))}</span><strong class="${unallocCls}">${fmtMoney(Math.abs(unalloc))}</strong></div>
+                ${overlap ? `<div class="small text-warning mt-1"><i class="bi bi-exclamation-triangle"></i> ${escHtml(t('budget.alloc_overlap_note'))}</div>` : ''}
+            </div>
+        </div>`;
+    }
+
     // Localized "June 2026" label for a YYYY-MM value.
     function fmtMonthLabel(ym) {
         if (!ym) return '';
@@ -280,7 +313,7 @@
 
     window.Budget = {
         fmtMoney, escHtml, scopeTypeLabel, scopeLabel, statusText, renderBudgetBar, STATUS_COLOR,
-        fmtMonthLabel, fmtMonthShort,
+        renderAllocationSummary, fmtMonthLabel, fmtMonthShort,
         Insights: { mount: mountInsights },
     };
 })();

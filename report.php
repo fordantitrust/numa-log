@@ -76,73 +76,53 @@
 </nav>
 
 <div class="container-fluid py-3">
-    <!-- Tab Navigation -->
-    <ul class="nav nav-pills mb-3 gap-1" role="tablist">
+    <!-- Tab Navigation — 14 tabs grouped into dropdowns to stay compact -->
+    <ul class="nav nav-pills mb-3 gap-1" id="reportTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabOverview">
                 <i class="bi bi-grid-1x2"></i> <?= t('report.tab_overview') ?>
             </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabMonthly">
-                <i class="bi bi-calendar3"></i> <?= t('report.tab_monthly') ?>
-            </button>
+
+        <!-- Over Time -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                <i class="bi bi-calendar3"></i> <?= t('report.group_time') ?>
+            </a>
+            <ul class="dropdown-menu">
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabMonthly"><i class="bi bi-calendar3 me-1"></i> <?= t('report.tab_monthly') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabTrends"><i class="bi bi-graph-up-arrow me-1"></i> <?= t('report.tab_trends') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabSeasonality"><i class="bi bi-calendar-week me-1"></i> <?= t('report.tab_seasonality') ?></button></li>
+            </ul>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTrends">
-                <i class="bi bi-graph-up-arrow"></i> <?= t('report.tab_trends') ?>
-            </button>
+
+        <!-- Breakdown -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                <i class="bi bi-diagram-3"></i> <?= t('report.group_breakdown') ?>
+            </a>
+            <ul class="dropdown-menu">
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabIdol"><i class="bi bi-person-hearts me-1"></i> <?= t('report.tab_member') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabCompare"><i class="bi bi-arrow-left-right me-1"></i> <?= t('report.tab_compare') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabGroup"><i class="bi bi-diagram-3 me-1"></i> <?= t('report.tab_group') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabUnit"><i class="bi bi-diagram-2 me-1"></i> <?= t('report.tab_unit') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabCompany"><i class="bi bi-building me-1"></i> <?= t('report.tab_company') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabType"><i class="bi bi-tags me-1"></i> <?= t('report.tab_type') ?></button></li>
+            </ul>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabSeasonality">
-                <i class="bi bi-calendar-week"></i> <?= t('report.tab_seasonality') ?>
-            </button>
+
+        <!-- More -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                <i class="bi bi-three-dots"></i> <?= t('report.group_more') ?>
+            </a>
+            <ul class="dropdown-menu">
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabEvent"><i class="bi bi-calendar-event me-1"></i> <?= t('report.tab_event') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabTopItems"><i class="bi bi-trophy me-1"></i> <?= t('report.tab_top') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabInactive"><i class="bi bi-hourglass-split me-1"></i> <?= t('report.tab_inactive') ?></button></li>
+            </ul>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabIdol">
-                <i class="bi bi-person-hearts"></i> <?= t('report.tab_member') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabCompare">
-                <i class="bi bi-arrow-left-right"></i> <?= t('report.tab_compare') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabGroup">
-                <i class="bi bi-diagram-3"></i> <?= t('report.tab_group') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabUnit">
-                <i class="bi bi-diagram-2"></i> <?= t('report.tab_unit') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabCompany">
-                <i class="bi bi-building"></i> <?= t('report.tab_company') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabType">
-                <i class="bi bi-tags"></i> <?= t('report.tab_type') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabEvent">
-                <i class="bi bi-calendar-event"></i> <?= t('report.tab_event') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTopItems">
-                <i class="bi bi-trophy"></i> <?= t('report.tab_top') ?>
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabInactive">
-                <i class="bi bi-hourglass-split"></i> <?= t('report.tab_inactive') ?>
-            </button>
-        </li>
+
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabBudget">
                 <i class="bi bi-wallet2"></i> <?= t('report.tab_budget') ?>
@@ -1114,6 +1094,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('shown.bs.tab', e => {
             const target = e.target.getAttribute('data-bs-target');
             if (lazy[target] && !loaded[target]) { loaded[target] = true; lazy[target](); }
+            // Highlight the parent dropdown toggle when one of its tabs is active.
+            document.querySelectorAll('#reportTabs .nav-link.dropdown-toggle').forEach(t => t.classList.remove('active'));
+            const dd = e.target.closest('.dropdown');
+            if (dd) dd.querySelector('.dropdown-toggle').classList.add('active');
         });
     });
 });
@@ -1141,7 +1125,7 @@ async function loadBudgetReport() {
             <div class="mt-2"><a href="budget.php" class="btn btn-outline-primary btn-sm"><i class="bi bi-plus-lg"></i> ${t('budget.none_cta')}</a></div></div>`;
         return;
     }
-    el.innerHTML = budgets.map(b => Budget.renderBudgetBar(b)).join('');
+    el.innerHTML = budgets.map(b => Budget.renderBudgetBar(b)).join('') + Budget.renderAllocationSummary(budgets);
 }
 
 // --- Monthly ---

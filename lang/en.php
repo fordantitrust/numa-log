@@ -158,6 +158,9 @@ return [
     'report.tab_top'         => 'Top Items',
     'report.tab_inactive'    => 'Inactive',
     'report.tab_budget'      => 'Budget',
+    'report.group_time'      => 'Over Time',
+    'report.group_breakdown' => 'Breakdown',
+    'report.group_more'      => 'More',
 
     'report.others'          => 'Others',
     'report.group_unit'      => 'Group / Unit',
@@ -512,6 +515,14 @@ return [
     'budget.rec_trending_down'   => 'Nice — spending is trending down, about {pct}% lower recently.',
     'budget.rec_consistently_under' => 'Consistently well under budget — you could lower the limit to around ฿{suggested}.',
     'budget.rec_on_track'        => 'On track — spending is comfortably within budget.',
+
+    // ── Budget allocation summary ──────────────────────────────────────────
+    'budget.alloc_title'         => 'Budget allocation',
+    'budget.alloc_overall'       => 'Overall budget',
+    'budget.alloc_allocated'     => 'Allocated to sub-budgets',
+    'budget.alloc_unallocated'   => 'Unallocated',
+    'budget.alloc_over'          => 'Over-allocated',
+    'budget.alloc_overlap_note'  => 'Sub-budgets span multiple dimensions and may overlap, so "allocated" is an estimate.',
 
     // ── Date names (arrays) ────────────────────────────────────────────────
     'date.months'       => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],

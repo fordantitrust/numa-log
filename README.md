@@ -184,7 +184,11 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.1 — Fix: asset cache-busting (`?v=APP_VERSION`) so browsers always load the current `budget.js` / `i18n.js` after an upgrade, resolving a stale-cache error on the Budget Insights tab.
+**Latest:** v1.9.3 — Budgets: an allocation summary (Overall → allocated to sub-budgets → unallocated) in the right-hand panel; fixed double-counted total limit/spent when an Overall budget coexists with sub-budgets; and fixed the budget-edit dropdown not pre-selecting the target.
+
+**v1.9.2** — UI: the 14 report tabs are grouped into compact dropdowns (Over Time / Breakdown / More) so the menu stays on one row.
+
+**v1.9.1** — Fix: asset cache-busting (`?v=APP_VERSION`) so browsers always load the current `budget.js` / `i18n.js` after an upgrade, resolving a stale-cache error on the Budget Insights tab.
 
 **v1.9.0** — Budget Insights: a new analytics view (in the `budget.php` Insights tab and the Budget report tab) showing spending vs. budget over the last 6/12/24 months per scope — KPI overview, a spent-vs-budget chart, a % used trend line, and rule-based recommendations (over budget often, trending up/down, projected overspend, consistently under).
 

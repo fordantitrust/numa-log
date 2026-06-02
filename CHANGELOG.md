@@ -4,6 +4,24 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.3 (2026-06-03)
+
+### Budgets
+
+- **Allocation summary** — the budget views now show how the **Overall** budget is carved up: Overall limit → allocated to sub-budgets → unallocated remaining. It warns when sub-budgets span multiple scope dimensions (which can overlap), and on `budget.php` it lives in the right-hand panel next to the Summary card.
+- **Fix: total limit/spent no longer double-counts** — the Summary panel treated the Overall budget plus every sub-budget as additive (e.g. Overall ฿1,000 + Member ฿100 showed ฿1,100). When an Overall budget exists it is now used as the true ceiling; sub-budgets are not summed on top.
+- **Fix: budget edit dropdown not pre-selected** — when editing a budget or setting one for the current month, the target (member/group/company) dropdown is now pre-selected with the correct entity. Previously a non-awaited entity search overwrote the selection, forcing a manual re-pick every time.
+
+---
+
+## v1.9.2 (2026-06-02)
+
+### UI
+
+- **Compact report tabs** — the 14 report tabs are now grouped into dropdowns to keep the menu on one row: **Overview**, **Over Time** (Monthly / Trends / Seasonality), **Breakdown** (By Member / Compare / By Group / By Unit / By Company / By Type), **More** (By Event / Top Items / Inactive), and **Budget**. The parent dropdown highlights when one of its tabs is active. Lazy-loading and all tab content are unchanged.
+
+---
+
 ## v1.9.1 (2026-06-02)
 
 ### Fixes
