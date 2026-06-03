@@ -58,6 +58,7 @@ try {
         'budget_save' => handleBudgetSave($pdo),
         'budget_delete' => handleBudgetDelete($pdo),
         'budget_progress' => handleBudgetProgress($pdo),
+        'budget_matrix' => handleBudgetMatrix($pdo),
         'budget_analytics' => handleBudgetAnalytics($pdo),
         'backup_list' => handleBackupList(),
         'backup_create' => handleBackupCreate(),
@@ -1653,6 +1654,80 @@ function handleBudgetProgress(PDO $pdo): void
 {
     $month = validBudgetMonth(trim($_GET['month'] ?? ''));
     jsonResponse(['month' => $month, 'budgets' => loadEffectiveBudgets($pdo, $month)]);
+}
+
+/**
+ * Settings overview matrix: one row per budget scope, with the recurring default
+ * and an effective amount for every month in [from, to]. No spend is computed —
+ * this is purely about the budget *amounts*, so it stays a couple of cheap queries.
+ * Month cells expose override_id so the UI can edit/reset a single month in place.
+ */
+function handleBudgetMatrix(PDO $pdo): void
+{
+    $from = validBudgetMonth(trim($_GET['from'] ?? ''));
+    $to   = validBudgetMonth(trim($_GET['to'] ?? ''));
+    if ($from > $to) { [$from, $to] = [$to, $from]; }
+
+    // Enumerate the months in the inclusive range.
+    $months = [];
+    [$y, $m] = array_map('intval', explode('-', $from));
+    while (sprintf('%04d-%02d', $y, $m) <= $to) {
+        $months[] = sprintf('%04d-%02d', $y, $m);
+        if (++$m > 12) { $m = 1; $y++; }
+        if (count($months) > 240) break; // hard safety cap (20 years)
+    }
+
+    $defaults  = $pdo->query("SELECT * FROM budgets WHERE is_active = 1 AND period IS NULL")->fetchAll();
+    $stmt = $pdo->prepare("SELECT * FROM budgets WHERE is_active = 1 AND period BETWEEN :a AND :b");
+    $stmt->execute([':a' => $from, ':b' => $to]);
+    $overrides = $stmt->fetchAll();
+
+    // Index by scope key: defaults plus each scope's per-month overrides.
+    $scopes = [];
+    $ensure = function (array $b) use (&$scopes, $pdo): string {
+        $key = budgetScopeKey($b);
+        if (!isset($scopes[$key])) {
+            $refId = $b['scope_ref_id'] !== null ? (int) $b['scope_ref_id'] : null;
+            [$label, $hint] = budgetResolveLabel($pdo, $b['scope_type'], $refId, (string) ($b['scope_ref_name'] ?? ''));
+            $scopes[$key] = [
+                'scope_type'     => $b['scope_type'],
+                'scope_ref_id'   => $refId,
+                'scope_ref_name' => (string) ($b['scope_ref_name'] ?? ''),
+                'label'          => $label,
+                'display_hint'   => $hint,
+                'default'        => null,
+                'cells'          => [],
+            ];
+        }
+        return $key;
+    };
+
+    foreach ($defaults as $d) {
+        $key = $ensure($d);
+        $scopes[$key]['default'] = [
+            'id'         => (int) $d['id'],
+            'amount'     => (float) $d['amount'],
+            'warn_pct'   => (int) $d['warn_pct'],
+            'danger_pct' => (int) $d['danger_pct'],
+            'note'       => (string) ($d['note'] ?? ''),
+        ];
+    }
+    foreach ($overrides as $o) {
+        $key = $ensure($o);
+        $scopes[$key]['cells'][(string) $o['period']] = [
+            'override_id' => (int) $o['id'],
+            'amount'      => (float) $o['amount'],
+            'warn_pct'    => (int) $o['warn_pct'],
+            'danger_pct'  => (int) $o['danger_pct'],
+            'note'        => (string) ($o['note'] ?? ''),
+        ];
+    }
+
+    $out = array_values($scopes);
+    usort($out, fn($a, $b) => [budgetScopeOrder($a['scope_type']), $a['label']]
+                          <=> [budgetScopeOrder($b['scope_type']), $b['label']]);
+
+    jsonResponse(['from' => $from, 'to' => $to, 'months' => $months, 'scopes' => $out]);
 }
 
 function handleBudgetSave(PDO $pdo): void

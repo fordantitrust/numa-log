@@ -21,6 +21,22 @@
         .table th { font-size: 12px; text-transform: uppercase; color: #6b7280; white-space: nowrap; }
         .table td { vertical-align: middle; }
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .matrix-table th, .matrix-table td { white-space: nowrap; }
+        .matrix-table .col-scope { position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: 1px 0 0 #e5e7eb; }
+        .matrix-table thead .col-scope { z-index: 3; }
+        .matrix-table .cell { cursor: pointer; text-align: right; font-variant-numeric: tabular-nums; }
+        .matrix-table .cell:hover { background: #f5f3ff; }
+        .matrix-table .cell.is-custom { font-weight: 600; color: var(--primary); background: #f5f3ff; }
+        .matrix-table .cell.is-empty { color: #d1d5db; }
+        .matrix-table .cell .reset { visibility: hidden; color: #9ca3af; }
+        .matrix-table .cell.is-custom:hover .reset { visibility: visible; }
+        .matrix-table th.month-col { text-align: right; font-weight: 600; }
+        .matrix-table th.month-col.is-current { color: var(--primary); }
+        .matrix-table tfoot td { background: #f9fafb; font-weight: 600; border-top: 2px solid #e5e7eb;
+            text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .matrix-table tfoot td.col-scope { text-align: left; background: #f9fafb; }
+        .matrix-table tfoot td.neg { color: #dc2626; }
+        .matrix-table tfoot tr.note td { font-weight: 400; background: #fff; border-top: 0; text-align: left; white-space: normal; }
         @media (max-width: 575.98px) {
             input[type="text"], input[type="date"], input[type="month"], input[type="number"],
             select, textarea { font-size: 16px !important; }
@@ -83,6 +99,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneReport">
                 <i class="bi bi-bar-chart-line"></i> <?= t('budget.tab_report') ?>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#paneMonthly">
+                <i class="bi bi-calendar3"></i> <?= t('budget.tab_monthly') ?>
             </button>
         </li>
         <li class="nav-item">
@@ -150,6 +171,32 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                             <tbody id="budgetTable">
                                 <tr><td colspan="8" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
                             </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly: settings matrix — every scope across the months of a year -->
+        <div class="tab-pane fade" id="paneMonthly">
+            <div class="card">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span><strong><i class="bi bi-calendar3"></i> <?= t('budget.tab_monthly') ?></strong>
+                        <span class="stat-muted ms-1 d-none d-sm-inline"><?= t('budget.monthly_hint') ?></span></span>
+                    <span class="d-flex align-items-center gap-1">
+                        <button class="btn btn-outline-primary btn-sm px-2" onclick="shiftYear(-1)" title="<?= t('budget.prev_year') ?>"><i class="bi bi-chevron-left"></i></button>
+                        <strong class="mx-1" id="matrixYear" style="min-width:3.5rem;text-align:center"></strong>
+                        <button class="btn btn-outline-primary btn-sm px-2" onclick="shiftYear(1)" title="<?= t('budget.next_year') ?>"><i class="bi bi-chevron-right"></i></button>
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0 matrix-table">
+                            <thead><tr id="matrixHead"></tr></thead>
+                            <tbody id="matrixBody">
+                                <tr><td class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
+                            </tbody>
+                            <tfoot id="matrixFoot"></tfoot>
                         </table>
                     </div>
                 </div>
@@ -253,6 +300,12 @@ let allTypes = [];
 let searchTimer = null;
 let pendingDelete = null;
 
+// Monthly matrix (settings overview) state.
+const SCOPE_BADGE = { overall: 'bg-dark', type: 'bg-info', group: 'bg-primary', company: 'bg-danger', member: 'bg-warning text-dark' };
+let matrixYear = new Date().getFullYear();
+let matrixMounted = false;
+let matrixData = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     $('monthSelect').value = new Date().toLocaleDateString('en-CA').slice(0, 7);
     $('monthSelect').addEventListener('change', loadBudgets);
@@ -261,6 +314,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Insights is the default landing tab, so mount it on load (shown.bs.tab won't fire
     // for the already-active tab). mount() is idempotent.
     Budget.Insights.mount($('budgetInsightsRoot'));
+
+    // Monthly matrix is lazy-loaded on first reveal.
+    document.querySelector('[data-bs-target="#paneMonthly"]')
+        .addEventListener('shown.bs.tab', () => { if (!matrixMounted) { matrixMounted = true; loadMatrix(); } });
 });
 
 function currentMonth() { return $('monthSelect').value || new Date().toLocaleDateString('en-CA').slice(0, 7); }
@@ -505,6 +562,150 @@ async function saveBudget() {
     if (res.error) { alert(res.error); return; }
     bootstrap.Modal.getInstance($('formModal')).hide();
     loadBudgets();
+    reloadMatrixIfMounted();
+}
+
+// ── Monthly matrix (settings overview) ──────────────────────────────────────
+function reloadMatrixIfMounted() { if (matrixMounted) loadMatrix(); }
+
+function shiftYear(delta) { matrixYear += delta; loadMatrix(); }
+
+function monthAbbr(m) {
+    const months = (window.I18N && window.I18N['date.months_long']) || [];
+    return (months[m - 1] || String(m)).slice(0, 3);
+}
+
+async function loadMatrix() {
+    $('matrixYear').textContent = matrixYear;
+    const from = matrixYear + '-01', to = matrixYear + '-12';
+    const res = await fetch(`api.php?action=budget_matrix&from=${from}&to=${to}`).then(r => r.json());
+    if (res.error) { $('matrixBody').innerHTML = `<tr><td colspan="14" class="text-danger py-3">${t('budget.err_load')}</td></tr>`; return; }
+    matrixData = res;
+    renderMatrix();
+}
+
+function renderMatrix() {
+    const curMonth = new Date().toLocaleDateString('en-CA').slice(0, 7);
+    let head = `<th class="col-scope">${Budget.escHtml(t('budget.scope'))}</th>`
+             + `<th class="text-end">${Budget.escHtml(t('budget.col_default'))}</th>`;
+    head += matrixData.months.map(ym => {
+        const mm = parseInt(ym.slice(5), 10);
+        return `<th class="month-col${ym === curMonth ? ' is-current' : ''}">${Budget.escHtml(monthAbbr(mm))}</th>`;
+    }).join('');
+    $('matrixHead').innerHTML = head;
+
+    if (!matrixData.scopes.length) {
+        $('matrixBody').innerHTML = `<tr><td colspan="${matrixData.months.length + 2}" class="text-center text-muted py-4">${t('budget.none')}</td></tr>`;
+        $('matrixFoot').innerHTML = '';
+        return;
+    }
+    $('matrixBody').innerHTML = matrixData.scopes.map((s, i) => {
+        const badge = `<span class="badge ${SCOPE_BADGE[s.scope_type] || 'bg-secondary'}" style="font-weight:500">${Budget.escHtml(Budget.scopeTypeLabel(s.scope_type))}</span>`;
+        const name  = s.scope_type === 'overall' ? '' : ` <strong>${Budget.escHtml(Budget.scopeLabel(s))}</strong>`;
+        const scopeCell = `<td class="col-scope">${badge}${name}</td>`;
+        const defCell = s.default
+            ? `<td class="cell" onclick="editDefaultFromMatrix(${i})">${Budget.fmtMoney(s.default.amount)}</td>`
+            : `<td class="cell is-empty" onclick="editDefaultFromMatrix(${i})">—</td>`;
+        const monthCells = matrixData.months.map(ym => {
+            const cell = s.cells[ym];
+            if (cell) {
+                return `<td class="cell is-custom" onclick="setMonthFromMatrix(${i},'${ym}')">${Budget.fmtMoney(cell.amount)} `
+                     + `<i class="bi bi-arrow-counterclockwise reset" title="${t('budget.reset_default')}" onclick="event.stopPropagation();resetMonthFromMatrix(${i},'${ym}')"></i></td>`;
+            }
+            if (s.default) return `<td class="cell" onclick="setMonthFromMatrix(${i},'${ym}')">${Budget.fmtMoney(s.default.amount)}</td>`;
+            return `<td class="cell is-empty" onclick="setMonthFromMatrix(${i},'${ym}')">—</td>`;
+        }).join('');
+        return `<tr>${scopeCell}${defCell}${monthCells}</tr>`;
+    }).join('');
+
+    renderMatrixFoot();
+}
+
+// Effective budget amount for a scope in a given month (override → default → null).
+// Pass period = '' for the recurring-default ("Default") column.
+function matrixEff(s, period) {
+    if (period && s.cells[period]) return s.cells[period].amount;
+    return s.default ? s.default.amount : null;
+}
+
+// Summary rows: Overall budget, Allocated to sub-budgets, Unallocated remaining —
+// per month, mirroring the allocation box but across the whole year.
+function renderMatrixFoot() {
+    const overall = matrixData.scopes.find(s => s.scope_type === 'overall');
+    const subs    = matrixData.scopes.filter(s => s.scope_type !== 'overall');
+    if (!overall && !subs.length) { $('matrixFoot').innerHTML = ''; return; }
+
+    const periods = [''].concat(matrixData.months); // '' = Default column
+    const sumSubs = p => subs.reduce((acc, s) => acc + (matrixEff(s, p) || 0), 0);
+
+    const cells = (fn, cls) => periods.map(p => {
+        const v = fn(p);
+        const neg = (typeof v === 'number' && v < 0) ? ' neg' : '';
+        return `<td class="${cls || ''}${neg}">${v == null ? '—' : Budget.fmtMoney(v)}</td>`;
+    }).join('');
+
+    let rows = '';
+    if (overall) {
+        rows += `<tr><td class="col-scope"><i class="bi bi-wallet2 text-dark"></i> ${Budget.escHtml(t('budget.alloc_overall'))}</td>${cells(p => matrixEff(overall, p))}</tr>`;
+    }
+    if (subs.length) {
+        rows += `<tr><td class="col-scope"><i class="bi bi-diagram-3 text-secondary"></i> ${Budget.escHtml(t('budget.alloc_allocated'))} <span class="text-muted">(${subs.length})</span></td>${cells(p => sumSubs(p))}</tr>`;
+    }
+    if (overall && subs.length) {
+        rows += `<tr><td class="col-scope"><i class="bi bi-cash-stack text-secondary"></i> ${Budget.escHtml(t('budget.alloc_unallocated'))}</td>`
+              + periods.map(p => {
+                    const ov = matrixEff(overall, p);
+                    if (ov == null) return `<td>—</td>`;
+                    const rem = ov - sumSubs(p);
+                    return `<td class="${rem < 0 ? 'neg' : ''}">${Budget.fmtMoney(rem)}</td>`;
+                }).join('') + `</tr>`;
+        // Sub-budgets across multiple dimensions can overlap, so flag it as an estimate.
+        if (new Set(subs.map(s => s.scope_type)).size >= 2) {
+            rows += `<tr class="note"><td colspan="${matrixData.months.length + 2}"><small class="text-warning"><i class="bi bi-exclamation-triangle"></i> ${Budget.escHtml(t('budget.alloc_overlap_note'))}</small></td></tr>`;
+        }
+    }
+    $('matrixFoot').innerHTML = rows;
+}
+
+// Scope identity for openBudgetForm (mirrors editBudget/setMonth).
+function matrixScopeOpts(s) {
+    return { scopeType: s.scope_type, refId: s.scope_ref_id,
+             refName: s.scope_type === 'type' ? s.scope_ref_name : s.label };
+}
+
+// Default column → edit the recurring default (create one if absent).
+function editDefaultFromMatrix(i) {
+    const s = matrixData.scopes[i], d = s.default;
+    openBudgetForm({
+        ...matrixScopeOpts(s),
+        id: d ? d.id : '', amount: d ? d.amount : '',
+        warn: d ? d.warn_pct : 80, danger: d ? d.danger_pct : 100, note: d ? d.note : '',
+        period: '', lockScope: true,
+        title: t('budget.edit_prefix', { name: Budget.scopeLabel(s) }),
+    });
+}
+
+// Month cell → set/override that month (prefilled from the override, else the default).
+function setMonthFromMatrix(i, month) {
+    const s = matrixData.scopes[i], cell = s.cells[month], base = cell || s.default || {};
+    openBudgetForm({
+        ...matrixScopeOpts(s),
+        id: cell ? cell.override_id : '',
+        amount: base.amount ?? '', warn: base.warn_pct ?? 80, danger: base.danger_pct ?? 100, note: base.note ?? '',
+        period: month, lockScope: true,
+        title: t('budget.set_this_month') + ' · ' + fmtMonthLabel(month),
+    });
+}
+
+// Reset a month override back to the recurring default (delete the override).
+function resetMonthFromMatrix(i, month) {
+    const s = matrixData.scopes[i], cell = s.cells[month];
+    if (!cell) return;
+    pendingDelete = cell.override_id;
+    $('delTitle').textContent = t('budget.reset_confirm');
+    $('delBodyLabel').textContent = t('budget.reset_q');
+    $('delName').textContent = Budget.scopeLabel(s) + ' · ' + fmtMonthLabel(month);
+    new bootstrap.Modal($('deleteModal')).show();
 }
 
 // Manage: delete a recurring default.
@@ -537,6 +738,7 @@ async function confirmDelete() {
     pendingDelete = null;
     bootstrap.Modal.getInstance($('deleteModal')).hide();
     loadBudgets();
+    reloadMatrixIfMounted();
 }
 </script>
 </body>

@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.5 — Budgets: Insights is now the landing tab on `budget.php` (Insights → Progress → Manage), the Manage tab shows an allocation summary (unallocated remaining), and the duplicate Budget tab was removed from the report page.
+**Latest:** v1.9.6 — Budgets: new **Monthly** tab on `budget.php` — a Scopes × Months grid showing every budget scope across a year (Default column + one column per month) so you can see all months at once. Click any cell to set/override that month or edit the recurring default; custom months are highlighted with a one-click reset. Footer rows total Overall / Allocated / Unallocated per month.
 
 **v1.9.4** — Fix: in Budget Insights, the "Spent vs. budget by month" chart now shows the budget line for non-Overall scopes (member/group/company/type), not just spending bars.
 

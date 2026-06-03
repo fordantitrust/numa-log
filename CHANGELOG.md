@@ -4,6 +4,17 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.6 (2026-06-03)
+
+### Budgets
+
+- **New Monthly tab** — `budget.php` gains a **Monthly** tab: a Scopes × Months grid (one row per budget scope, a **Default** column, then one column per month of a year) so you can see every month's budget at a glance instead of stepping through the month picker. Use the ‹ Year › controls to move between years.
+- **Edit in place** — click the Default cell to edit a scope's recurring default, or any month cell to set/override that month (prefilled from the override, else the default). Custom (overridden) months are highlighted, with a one-click reset back to the default. New scopes are still created on the Manage tab.
+- **Allocation summary rows** — the grid footer totals each month: **Overall budget**, **Allocated to sub-budgets**, and **Unallocated remaining** (red when over-allocated), so you can see how the overall budget is carved up across the whole year at a glance.
+- Backed by a new `budget_matrix` API endpoint that returns the per-scope, per-month budget amounts for a date range in a couple of cheap queries (no spend computation).
+
+---
+
 ## v1.9.5 (2026-06-03)
 
 ### Budgets
