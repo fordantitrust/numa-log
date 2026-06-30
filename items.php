@@ -40,6 +40,8 @@
         /* Searchable dropdown */
         .sd-wrap { position: relative; }
         .sd-wrap input { cursor: text; }
+        .sd-clear { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); border: none; background: transparent; color: #9ca3af; padding: 0 4px; line-height: 1; cursor: pointer; z-index: 3; }
+        .sd-clear:hover { color: #ef4444; }
         .sd-list {
             position: absolute; top: 100%; left: 0; right: 0; z-index: 1050;
             max-height: 200px; overflow-y: auto; background: white;
@@ -218,10 +220,13 @@ require __DIR__ . '/navbar.php';
 
     <!-- Bulk Action Bar -->
     <div id="bulkBar" class="card mb-2 d-none">
-        <div class="card-body py-2 d-flex align-items-center gap-2">
+        <div class="card-body py-2 d-flex align-items-center flex-wrap gap-2">
             <span id="bulkCount" class="small fw-semibold"></span>
             <button class="btn btn-primary btn-sm" onclick="showBulkAssignModal()">
                 <i class="bi bi-link-45deg"></i> <?= t('events.assign_to_event') ?>
+            </button>
+            <button class="btn btn-outline-danger btn-sm" onclick="confirmBulkUnassign()">
+                <i class="bi bi-x-circle"></i> <?= t('events.unassign_from_event') ?>
             </button>
             <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()"><?= t('common.cancel') ?></button>
         </div>
@@ -281,7 +286,8 @@ require __DIR__ . '/navbar.php';
                         <div class="col-12">
                             <label class="form-label small"><?= t('events.event_label') ?></label>
                             <div class="sd-wrap">
-                                <input type="text" class="form-control form-control-sm" id="itemEventName" autocomplete="off" placeholder="<?= t('events.no_event_ph') ?>">
+                                <input type="text" class="form-control form-control-sm" id="itemEventName" autocomplete="off" placeholder="<?= t('events.no_event_ph') ?>" style="padding-right:28px">
+                                <button type="button" class="sd-clear d-none" id="itemEventClear" onclick="clearItemEvent()" title="<?= t('events.clear_event') ?>"><i class="bi bi-x-lg"></i></button>
                                 <input type="hidden" id="itemEventId">
                                 <div class="sd-list" id="eventDropdown"></div>
                             </div>
@@ -478,7 +484,7 @@ async function loadFilters() {
     msEvent = initMultiSelect('msEvent', () => eventsData.map(eventDisplay), () => { currentPage = 1; loadData(); });
     initSearchableDropdown('itemIdol', 'idolDropdown', () => filtersData.idols);
     initSearchableDropdown('itemType', 'typeDropdown', () => filtersData.types);
-    initEventDropdown('itemEventName', 'eventDropdown', 'itemEventId', 'itemEventDate', () => eventsData);
+    initEventDropdown('itemEventName', 'eventDropdown', 'itemEventId', 'itemEventDate', () => eventsData, 'itemEventClear');
     initEventDropdown('bulkEventName', 'bulkEventDropdown', 'bulkEventId', null, () => eventsData);
     refreshPendingBanner();
 }
@@ -748,6 +754,7 @@ function showFormModal(id = null) {
     $('itemIdolId').value = '';
     $('itemEventId').value = '';
     $('itemEventName').value = '';
+    $('itemEventClear').classList.add('d-none');
     $('itemIdolHint').style.display = 'none';
     $('itemIdolHint').innerHTML = '';
     $('itemForm').reset();
@@ -764,6 +771,7 @@ async function editItem(id) {
     $('itemEventDate').value = d.event_date || '';
     $('itemEventId').value = d.event_id || '';
     $('itemEventName').value = d.event_id && d.event_name ? `${d.event_name} (${d.event_date})` : '';
+    $('itemEventClear').classList.toggle('d-none', !d.event_id);
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
     $('itemIdolId').value = d.idol_id || '';
@@ -785,6 +793,7 @@ async function cloneItem(id) {
     $('itemEventDate').value = today;
     $('itemEventId').value = '';
     $('itemEventName').value = '';
+    $('itemEventClear').classList.add('d-none');
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
     $('itemIdolId').value = d.idol_id || '';
@@ -917,14 +926,17 @@ function exportExcel() {
 }
 
 // --- Event Dropdown ---
-function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems) {
+function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems, clearBtnId) {
     const input  = document.getElementById(inputId);
     const list   = document.getElementById(listId);
     const hidden = document.getElementById(hiddenId);
+    const clearBtn = clearBtnId ? document.getElementById(clearBtnId) : null;
     if (!input || input._edInit) return;
     input._edInit = true;
 
-    input.addEventListener('input', () => { if (hidden) hidden.value = ''; });
+    const toggleClear = () => { if (clearBtn) clearBtn.classList.toggle('d-none', !hidden.value); };
+
+    input.addEventListener('input', () => { if (hidden) hidden.value = ''; toggleClear(); });
 
     function render() {
         const q = input.value.toLowerCase();
@@ -956,6 +968,7 @@ function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems) {
             const df = document.getElementById(dateFillId);
             if (df) df.value = date;
         }
+        toggleClear();
         list.classList.remove('show');
     });
 
@@ -964,6 +977,14 @@ function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems) {
     document.addEventListener('click', e => {
         if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('show');
     });
+}
+
+// Clear the event link on the item form (keeps the item's own Event Date).
+function clearItemEvent() {
+    $('itemEventId').value = '';
+    $('itemEventName').value = '';
+    $('itemEventClear').classList.add('d-none');
+    $('eventDropdown').classList.remove('show');
 }
 
 // --- Checkbox / Bulk Select ---
@@ -1026,6 +1047,19 @@ async function confirmBulkAssign() {
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
     bootstrap.Modal.getInstance($('bulkAssignModal')).hide();
+    clearSelection();
+    loadData();
+}
+
+async function confirmBulkUnassign() {
+    if (!selectedIds.size) return;
+    if (!confirm(t('events.bulk_unassign_confirm', { n: selectedIds.size }))) return;
+    const body = new FormData();
+    body.append('action', 'event_bulk_assign');
+    body.append('event_id', ''); // empty event_id = unassign (set NULL)
+    [...selectedIds].forEach(id => body.append('ids[]', id));
+    const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
+    if (res.error) { alert(res.error); return; }
     clearSelection();
     loadData();
 }

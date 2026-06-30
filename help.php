@@ -492,7 +492,7 @@
                                     <p>กดปุ่ม <strong>Add Event</strong> แล้วกรอก:</p>
                                     <table class="table table-sm help-table mt-2 mb-0">
                                         <tr><th style="width:140px">Event Name</th><td>ชื่องาน เช่น "TWICE 5th World Tour Bangkok" (ตั้งซ้ำชื่อเดิมคนละวันได้)</td></tr>
-                                        <tr><th>Event Date</th><td>วันที่จัดงาน</td></tr>
+                                        <tr><th>Start Date / End Date</th><td>วันเริ่มและวันสิ้นสุดของงาน &mdash; งานหลายวัน (เช่น คอนเสิร์ต 2 วัน) ใส่ End Date ได้ ส่วนงานวันเดียว <strong>เว้น End Date ว่างไว้</strong> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.9</span></td></tr>
                                         <tr><th>Description</th><td>รายละเอียดเพิ่มเติม (ไม่บังคับ)</td></tr>
                                     </table>
                                 </div>
@@ -520,8 +520,24 @@
                                 <div class="accordion-body">
                                     <p>สำหรับรายการเก่าที่มี Event Date อยู่แล้วแต่ยังไม่ได้ผูกกับอีเวนต์ที่ตั้งชื่อ มี 2 วิธี:</p>
                                     <ul class="mb-0">
-                                        <li><strong>Auto-assign</strong> &mdash; ในหน้า Events แต่ละแถวจะมีปุ่มแสดงจำนวนรายการที่มีวันที่ตรงกันแต่ยังไม่ผูก กดปุ่มเดียวผูกให้ทั้งหมด</li>
+                                        <li><strong>Auto-assign</strong> &mdash; ในหน้า Events แต่ละแถวจะมีปุ่มแสดงจำนวนรายการที่ยังไม่ผูกซึ่งมีวันที่อยู่ <strong>ในช่วงของงาน</strong> (งานหลายวันจะนับทุกวันในช่วง) กดปุ่มเดียวผูกให้ทั้งหมด <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.9</span></li>
                                         <li><strong>เลือกแล้วผูกเอง</strong> &mdash; ในหน้า Items ติ๊กเลือกหลายรายการ (checkbox ซ้ายสุดของตาราง) แล้วกด <strong>Assign to Event</strong> เพื่อเลือกอีเวนต์ปลายทาง</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventUnassign">
+                                    <i class="bi bi-x-circle me-2"></i> ยกเลิกการผูกอีเวนต์ <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.10</span>
+                                </button>
+                            </h2>
+                            <div id="eventUnassign" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>หากผูกอีเวนต์ผิด สามารถปลดออกได้โดยไม่ต้องลบอะไร:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>ทีละรายการ</strong> &mdash; เปิดแก้ไขรายการ แล้วกดปุ่ม <i class="bi bi-x-lg"></i> ข้างช่อง Event เพื่อล้างในคลิกเดียว (Event Date ของรายการยังคงอยู่)</li>
+                                        <li><strong>แบบกลุ่ม</strong> &mdash; ในหน้า Items ติ๊กเลือกหลายรายการ แล้วกด <strong>Unassign</strong> ในแถบเครื่องมือเพื่อปลดอีเวนต์ออกพร้อมกัน</li>
                                     </ul>
                                 </div>
                             </div>

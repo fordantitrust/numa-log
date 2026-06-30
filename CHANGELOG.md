@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.10 (2026-06-30)
+
+### Events
+
+- **Un-assign events** — items can now be unlinked from an event without deleting anything: the item edit form gains a one-click **✕ clear** button next to the Event field (keeps the item's own Event Date), and the Items bulk action bar gains an **Unassign** button to clear the event link on many selected items at once. `event_bulk_assign` now treats an empty `event_id` as "unassign" (sets `event_id = NULL`).
+
+---
+
 ## v1.9.9 (2026-06-30)
 
 ### Events

@@ -293,6 +293,9 @@ return [
     'events.n_selected'           => '{n} selected',
     'events.pick_event'           => 'Pick an event...',
     'events.pick_event_required'  => 'Please select an event first.',
+    'events.clear_event'          => 'Clear event',
+    'events.unassign_from_event'  => 'Unassign',
+    'events.bulk_unassign_confirm' => 'Remove the event link from {n} item(s)? (Items are not deleted.)',
 
     'report.ti_expensive'   => 'Top 20 Most Expensive Purchases',
     'report.ti_unit_baht'   => 'Unit ฿',

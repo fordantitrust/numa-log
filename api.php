@@ -1579,7 +1579,10 @@ function handleEventDelete(PDO $pdo): void
 
 function handleEventBulkAssign(PDO $pdo): void
 {
-    $eventId = (int) ($_POST['event_id'] ?? 0);
+    // An empty/zero event_id means "unassign" — clear the event link (set NULL).
+    $eventRaw = $_POST['event_id'] ?? '';
+    $unassign = ($eventRaw === '' || (int) $eventRaw === 0);
+    $eventId  = (int) $eventRaw;
     $rawIds  = $_POST['ids'] ?? [];
     if (is_string($rawIds)) {
         $rawIds = array_filter(array_map('trim', explode(',', $rawIds)));
@@ -1590,13 +1593,20 @@ function handleEventBulkAssign(PDO $pdo): void
         jsonResponse(['error' => 'No item IDs provided'], 400);
     }
 
+    $phs = implode(',', array_fill(0, count($ids), '?'));
+
+    if ($unassign) {
+        $stmt = $pdo->prepare("UPDATE items SET event_id = NULL WHERE id IN ($phs)");
+        $stmt->execute($ids);
+        jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
+    }
+
     $ev = $pdo->prepare("SELECT id FROM events WHERE id = :id");
     $ev->execute([':id' => $eventId]);
     if (!$ev->fetchColumn()) {
         jsonResponse(['error' => 'Event not found'], 404);
     }
 
-    $phs  = implode(',', array_fill(0, count($ids), '?'));
     $stmt = $pdo->prepare("UPDATE items SET event_id = ? WHERE id IN ($phs)");
     $stmt->execute([$eventId, ...$ids]);
     jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);

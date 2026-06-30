@@ -287,6 +287,9 @@ return [
     'events.n_selected'           => 'เลือกแล้ว {n} รายการ',
     'events.pick_event'           => 'เลือกอีเวนต์...',
     'events.pick_event_required'  => 'กรุณาเลือกอีเวนต์ก่อน',
+    'events.clear_event'          => 'ล้างอีเวนต์',
+    'events.unassign_from_event'  => 'ปลดอีเวนต์',
+    'events.bulk_unassign_confirm' => 'ปลดลิงก์อีเวนต์ออกจาก {n} รายการ? (ไม่ลบรายการ)',
 
     'report.ti_expensive'   => '20 รายการที่แพงที่สุด',
     'report.ti_unit_baht'   => 'ราคา/ชิ้น',

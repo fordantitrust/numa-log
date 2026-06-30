@@ -492,7 +492,7 @@
                                     <p>Click <strong>Add Event</strong> and fill in:</p>
                                     <table class="table table-sm help-table mt-2 mb-0">
                                         <tr><th style="width:140px">Event Name</th><td>e.g. "TWICE 5th World Tour Bangkok" (the same name can be reused on a different date)</td></tr>
-                                        <tr><th>Event Date</th><td>The date the event takes place</td></tr>
+                                        <tr><th>Start Date / End Date</th><td>The event's start and end dates &mdash; multi-day events (e.g. a two-day concert) can set an End Date; for a single-day event, <strong>leave End Date empty</strong> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.9</span></td></tr>
                                         <tr><th>Description</th><td>Optional extra details</td></tr>
                                     </table>
                                 </div>
@@ -520,8 +520,24 @@
                                 <div class="accordion-body">
                                     <p>For older items that already have an Event Date but aren't linked to a named event yet, there are two ways to catch up:</p>
                                     <ul class="mb-0">
-                                        <li><strong>Auto-assign</strong> &mdash; on the Events page, each row shows a button with the count of items sharing that date but not yet linked. One click assigns them all.</li>
+                                        <li><strong>Auto-assign</strong> &mdash; on the Events page, each row shows a button with the count of unlinked items whose date falls <strong>within the event's range</strong> (multi-day events count every day in the span). One click assigns them all. <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.9</span></li>
                                         <li><strong>Manual bulk assign</strong> &mdash; on the Items page, check the boxes (leftmost column) on the items you want, then click <strong>Assign to Event</strong> to pick the target event.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventUnassign">
+                                    <i class="bi bi-x-circle me-2"></i> Un-assigning an Event <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.10</span>
+                                </button>
+                            </h2>
+                            <div id="eventUnassign" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>Linked the wrong event? You can unlink without deleting anything:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>Single item</strong> &mdash; open the item for editing and click the <i class="bi bi-x-lg"></i> button next to the Event field to clear it in one click (the item's own Event Date is kept).</li>
+                                        <li><strong>In bulk</strong> &mdash; on the Items page, check multiple items, then click <strong>Unassign</strong> in the bulk action bar to clear the event link on all of them at once.</li>
                                     </ul>
                                 </div>
                             </div>
