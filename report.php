@@ -42,38 +42,7 @@
 </head>
 <body>
 
-<nav class="navbar navbar-dark" style="background:var(--primary)">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-bar-chart-line"></i> <?= t('nav.report') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div class="d-flex align-items-center">
-            <?= langSwitcher() ?>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
-            <a href="budget.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-piggy-bank"></i><span class="d-none d-sm-inline"> <?= t('nav.budget') ?></span></a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
-            <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
-            <div class="btn-group">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i><span class="d-none d-sm-inline"> <?= htmlspecialchars($u['display_name']) ?></span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php endif; ?>
-                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
-                </ul>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php $navActive = 'report'; $navIcon = 'bi-bar-chart-line'; $navTitle = t('nav.report'); require __DIR__ . '/navbar.php'; ?>
 
 <div class="container-fluid py-3">
     <!-- Tab Navigation — 14 tabs grouped into dropdowns to stay compact -->
@@ -910,7 +879,7 @@
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th><?= t('report.ev_event_date') ?></th>
+                                        <th><?= t('report.ev_event_name') ?> / <?= t('report.ev_event_date') ?></th>
                                         <th class="text-end"><?= t('common.items') ?></th>
                                         <th class="text-end"><?= t('report.ev_idols') ?></th>
                                         <th class="text-end"><?= t('common.qty') ?></th>
@@ -2300,31 +2269,56 @@ async function loadUnit() {
 // =====================================================================
 async function loadEvent() {
     const res = await fetch('api.php?action=report_event').then(r => r.json());
-    const data = res.data || [];
+    const named   = res.named   || [];
+    const unlinked = res.unlinked || [];
+    const allData  = [...named, ...unlinked];
     const lt = res.lead_time || {};
-    $('evCount').textContent = fmtInt(data.length);
+
+    $('evCount').textContent = fmtInt(named.length);
     $('evLead').textContent = (lt.avg_days !== null && lt.avg_days !== undefined) ? lt.avg_days + ' ' + t('report.days_suffix') : '-';
     $('evLeadRange').textContent = (lt.min_days !== null && lt.min_days !== undefined) ? `${lt.min_days} – ${lt.max_days} ${t('report.days_suffix')}` : '-';
     $('evNoEvent').textContent = fmtInt(res.no_event || 0);
 
-    const chron = [...data].reverse();
+    const chron = [...allData].reverse();
     if (chartEvent) chartEvent.destroy();
     chartEvent = new Chart($('chartEvent').getContext('2d'), {
         type: 'bar',
-        data: { labels: chron.map(r => r.event), datasets: [{ data: chron.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }] },
+        data: {
+            labels: chron.map(r => r.event_name ? `${r.event_name} (${r.event_date})` : r.event_date),
+            datasets: [{ data: chron.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }]
+        },
         options: barOptsBaht()
     });
 
-    const tot = data.reduce((a, r) => { a.items += r.items; a.qty += r.total_qty; a.price += Number(r.total_price); return a; }, { items: 0, qty: 0, price: 0 });
-    $('tableEvent').innerHTML = data.map(r => `<tr>
-        <td><a href="items.php?date_from=${r.event}&date_to=${r.event}" class="text-decoration-none">${r.event}</a></td>
+    const namedRows = named.map(r => `<tr>
+        <td>
+            <a href="items.php?event_id=${r.event_id}" class="text-decoration-none fw-semibold">${escHtml(r.event_name)}</a>
+            <div class="text-muted" style="font-size:11px">${r.event_date}</div>
+        </td>
         <td class="text-end">${fmtInt(r.items)}</td>
         <td class="text-end">${fmtInt(r.idols)}</td>
         <td class="text-end">${fmtInt(r.total_qty)}</td>
         <td class="text-end">${fmt(r.total_price)}</td>
-    </tr>`).join('') || `<tr><td colspan="5" class="text-center text-muted py-3">${t('report.ev_no_items')}</td></tr>`;
-    $('footEvent').innerHTML = data.length ? `<tr>
-        <td>${t('common.total')} (${data.length})</td>
+    </tr>`).join('');
+
+    const unlinkedSection = unlinked.length ? `<tr>
+        <td colspan="5" class="py-1 px-2 text-muted" style="font-size:11px;background:#f9fafb">${t('report.ev_unlinked_section')}</td>
+    </tr>` + unlinked.map(r => `<tr class="text-muted">
+        <td>
+            <a href="items.php?date_from=${r.event_date}&date_to=${r.event_date}" class="text-decoration-none text-muted">${r.event_date}</a>
+            <span class="badge bg-secondary ms-1" style="font-size:10px">${t('report.ev_unlinked')}</span>
+        </td>
+        <td class="text-end">${fmtInt(r.items)}</td>
+        <td class="text-end">${fmtInt(r.idols)}</td>
+        <td class="text-end">${fmtInt(r.total_qty)}</td>
+        <td class="text-end">${fmt(r.total_price)}</td>
+    </tr>`).join('') : '';
+
+    $('tableEvent').innerHTML = (namedRows + unlinkedSection) || `<tr><td colspan="5" class="text-center text-muted py-3">${t('report.ev_no_items')}</td></tr>`;
+
+    const tot = allData.reduce((a, r) => { a.items += r.items; a.qty += r.total_qty; a.price += Number(r.total_price); return a; }, { items: 0, qty: 0, price: 0 });
+    $('footEvent').innerHTML = allData.length ? `<tr>
+        <td>${t('common.total')} (${allData.length})</td>
         <td class="text-end">${fmtInt(tot.items)}</td>
         <td></td>
         <td class="text-end">${fmtInt(tot.qty)}</td>

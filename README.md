@@ -184,7 +184,11 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.6 — Budgets: new **Monthly** tab on `budget.php` — a Scopes × Months grid showing every budget scope across a year (Default column + one column per month) so you can see all months at once. Click any cell to set/override that month or edit the recurring default; custom months are highlighted with a one-click reset. Footer rows total Overall / Allocated / Unallocated per month.
+**Latest:** v1.9.8 — Navigation & Items UI: navbar now uses a responsive Bootstrap hamburger menu (`navbar-expand-lg`) with the full menu always shown in a fixed order and the current page highlighted instead of hidden; the Items filter bar was reorganized into two rows with an Event multi-select filter, and **Export**/**Add Item** moved into the filter card's header for a consistent, always-visible position.
+
+**v1.9.7** — Events: new **Events** feature with dedicated `events.php` management page, named event entities (`events` table, schema v8), `event_id` FK on items, searchable event dropdown in item form (auto-fills Event Date), per-row event badge in item list, bulk-assign and auto-assign by date for migrating old data, and an upgraded "By Event" report tab showing named events with clickable links.
+
+**v1.9.6** — Budgets: new **Monthly** tab on `budget.php` — a Scopes × Months grid showing every budget scope across a year (Default column + one column per month) so you can see all months at once. Click any cell to set/override that month or edit the recurring default; custom months are highlighted with a one-click reset. Footer rows total Overall / Allocated / Unallocated per month.
 
 **v1.9.4** — Fix: in Budget Insights, the "Spent vs. budget by month" chart now shows the budget line for non-Overall scopes (member/group/company/type), not just spending bars.
 
@@ -193,8 +197,6 @@ See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 **v1.9.2** — UI: the 14 report tabs are grouped into compact dropdowns (Over Time / Breakdown / More) so the menu stays on one row.
 
 **v1.9.1** — Fix: asset cache-busting (`?v=APP_VERSION`) so browsers always load the current `budget.js` / `i18n.js` after an upgrade, resolving a stale-cache error on the Budget Insights tab.
-
-**v1.9.0** — Budget Insights: a new analytics view (in the `budget.php` Insights tab and the Budget report tab) showing spending vs. budget over the last 6/12/24 months per scope — KPI overview, a spent-vs-budget chart, a % used trend line, and rule-based recommendations (over budget often, trending up/down, projected overspend, consistently under).
 
 ## License
 

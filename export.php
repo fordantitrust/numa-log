@@ -42,13 +42,22 @@ if (!empty($_GET['date_to'])) {
     $where[] = 'order_date <= :date_to';
     $params[':date_to'] = $_GET['date_to'];
 }
+$eventIds = array_values(array_filter(array_map('intval', (array) ($_GET['event_id'] ?? []))));
+if (!empty($eventIds)) {
+    $phs = implode(',', array_map(fn($i) => ":evid$i", array_keys($eventIds)));
+    $where[] = "i.event_id IN ($phs)";
+    foreach ($eventIds as $i => $v) { $params[":evid$i"] = $v; }
+}
 
 $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
 $stmt = $pdo->prepare("
-    SELECT order_date, event_date, title, idol, type, price_per_qty, qty, idol_id
-    FROM items {$whereSQL}
-    ORDER BY order_date ASC, id ASC
+    SELECT i.order_date, i.event_date, i.title, i.idol, i.type,
+           i.price_per_qty, i.qty, i.idol_id, ev.name AS event_name
+    FROM items i
+    LEFT JOIN events ev ON ev.id = i.event_id
+    {$whereSQL}
+    ORDER BY i.order_date ASC, i.id ASC
 ");
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
@@ -58,14 +67,14 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('Items');
 
-// Header row — same column order as import format + Price Total + Idol ID (v5)
-$headers = ['Order Date', 'Event Date', 'Title', 'Idol', 'Type', 'Price per Qty', 'Qty', 'Price Total', 'Idol ID'];
+// Header row — same column order as import format + Price Total + Event Name + Idol ID
+$headers = ['Order Date', 'Event Date', 'Title', 'Idol', 'Type', 'Price per Qty', 'Qty', 'Price Total', 'Event Name', 'Idol ID'];
 foreach ($headers as $col => $header) {
     $sheet->setCellValue(chr(65 + $col) . '1', $header);
 }
 
 // Style header row
-$sheet->getStyle('A1:I1')->applyFromArray([
+$sheet->getStyle('A1:J1')->applyFromArray([
     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '7C3AED']],
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
@@ -82,17 +91,18 @@ foreach ($rows as $i => $row) {
     $sheet->setCellValue('F' . $r, (float) $row['price_per_qty']);
     $sheet->setCellValue('G' . $r, (int) $row['qty']);
     $sheet->setCellValue('H' . $r, '=F' . $r . '*G' . $r);
+    $sheet->setCellValue('I' . $r, $row['event_name'] ?? '');
     if ($row['idol_id'] !== null) {
-        $sheet->setCellValue('I' . $r, (int) $row['idol_id']);
+        $sheet->setCellValue('J' . $r, (int) $row['idol_id']);
     }
 }
 
 // Auto-size columns
-foreach (range('A', 'I') as $col) {
+foreach (range('A', 'J') as $col) {
     $sheet->getColumnDimension($col)->setAutoSize(true);
 }
 // Idol ID column is informational — hide by default; users can unhide if needed.
-$sheet->getColumnDimension('I')->setVisible(false);
+$sheet->getColumnDimension('J')->setVisible(false);
 
 // Freeze header row
 $sheet->freezePane('A2');

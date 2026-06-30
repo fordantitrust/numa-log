@@ -71,10 +71,6 @@
         .help-table th { background: #f9fafb; font-size: 13px; }
         .help-table td { font-size: 13px; vertical-align: middle; }
         .nav-section { position: sticky; top: 1rem; }
-        .lang-switcher { font-size: 13px; }
-        .lang-switcher a { color: rgba(255,255,255,.7); text-decoration: none; padding: 2px 8px; border-radius: 4px; }
-        .lang-switcher a:hover { color: white; background: rgba(255,255,255,.15); }
-        .lang-switcher a.active { color: white; background: rgba(255,255,255,.25); font-weight: 600; }
         @media (max-width: 991px) {
             .nav-section { position: static; margin-bottom: 1rem; }
         }
@@ -82,57 +78,13 @@
 </head>
 <body>
 
-<nav class="navbar navbar-dark" style="background:var(--primary)">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-list-ul"></i> Items
-            </a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-bar-chart-line"></i> Report
-            </a>
-            <a href="budget.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-piggy-bank"></i> Budget
-            </a>
-            <?php $u = currentUser(); ?>
-            <?php if (AUTH_ENABLED && $u): ?>
-            <div class="btn-group">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php endif; ?>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                </ul>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php $navActive = 'help'; $navIcon = 'bi-stars'; $navTitle = 'Numa Log'; require __DIR__ . '/navbar.php'; ?>
 
 <!-- Hero Section -->
 <div class="help-hero">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h1><i class="bi bi-question-circle"></i> Help & Guide</h1>
-                <p>คู่มือการใช้งาน Numa Log &mdash; ระบบบันทึกและวิเคราะห์ข้อมูลการซื้อสินค้าไอดอล</p>
-            </div>
-            <div class="lang-switcher">
-                <a href="help.php?lang=th" class="active">TH</a>
-                <a href="help_en.php?lang=en">EN</a>
-            </div>
-        </div>
+        <h1><i class="bi bi-question-circle"></i> Help & Guide</h1>
+        <p>คู่มือการใช้งาน Numa Log &mdash; ระบบบันทึกและวิเคราะห์ข้อมูลการซื้อสินค้าไอดอล</p>
     </div>
 </div>
 
@@ -148,6 +100,7 @@
                     <a href="#items" class="toc-link"><i class="bi bi-list-ul"></i> จัดการรายการ</a>
                     <a href="#reports" class="toc-link"><i class="bi bi-bar-chart-line"></i> รายงาน</a>
                     <a href="#budget" class="toc-link"><i class="bi bi-piggy-bank"></i> งบประมาณ</a>
+                    <a href="#events" class="toc-link"><i class="bi bi-calendar-event"></i> จัดการอีเวนต์</a>
                     <a href="#idols" class="toc-link"><i class="bi bi-people"></i> จัดการไอดอล</a>
                     <a href="#types" class="toc-link"><i class="bi bi-tags"></i> จัดการประเภท</a>
                     <a href="#users" class="toc-link"><i class="bi bi-person-gear"></i> จัดการผู้ใช้</a>
@@ -228,11 +181,12 @@
                             <div id="itemAdd" class="accordion-collapse collapse show" data-bs-parent="#accItems">
                                 <div class="accordion-body">
                                     <ol>
-                                        <li>กดปุ่ม <span class="shortcut-key">Add Item</span> ที่แถบด้านบน</li>
+                                        <li>กดปุ่ม <span class="shortcut-key">Add Item</span> ที่หัวการ์ดตัวกรอง (Filters) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.8</span></li>
                                         <li>กรอกข้อมูลในฟอร์ม:
                                             <table class="table table-sm help-table mt-2 mb-2">
                                                 <tr><th style="width:140px">Order Date</th><td>วันที่สั่งซื้อ</td></tr>
                                                 <tr><th>Event Date</th><td>วันที่งาน/อีเวนต์ (ถ้ามี)</td></tr>
+                                                <tr><th>Event</th><td>เลือกอีเวนต์ที่ตั้งชื่อไว้แบบค้นหาได้ &mdash; เลือกแล้วเติม Event Date ให้อัตโนมัติ <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.7</span> (ดูหัวข้อ <a href="#events">จัดการอีเวนต์</a>)</td></tr>
                                                 <tr><th>Title</th><td>ชื่อสินค้า</td></tr>
                                                 <tr><th>Idol</th><td>ชื่อไอดอล/กลุ่ม &mdash; พิมพ์เพื่อค้นหาจาก dropdown</td></tr>
                                                 <tr><th>Type</th><td>ประเภทสินค้า &mdash; พิมพ์เพื่อค้นหาจาก dropdown</td></tr>
@@ -394,8 +348,8 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-calendar-event text-primary"></i> By Event (ตามงาน) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
-                                <p class="small text-muted mb-0">รายงานตาม Event Date แสดงยอดใช้จ่ายต่ออีเวนต์ + สถิติ lead-time (เวลาระหว่างสั่งซื้อถึงวันงาน: เฉลี่ย/min/max)</p>
+                                <h6><i class="bi bi-calendar-event text-primary"></i> By Event (ตามงาน) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.7</span></h6>
+                                <p class="small text-muted mb-0">แสดงยอดใช้จ่ายต่ออีเวนต์ที่ตั้งชื่อไว้ (ดูหัวข้อ <a href="#events">จัดการอีเวนต์</a>) พร้อมลิงก์ไปหน้า Items ที่กรองตามงานนั้น ส่วนรายการที่ยังไม่ผูกกับอีเวนต์จะถูกจัดกลุ่มตาม Event Date แยกไว้ด้านล่าง + สถิติ lead-time (เวลาระหว่างสั่งซื้อถึงวันงาน: เฉลี่ย/min/max)</p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -496,6 +450,97 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#budgetMonthly">
+                                    <i class="bi bi-grid-3x3 me-2"></i> ตารางรายเดือน (Monthly) <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.6</span>
+                                </button>
+                            </h2>
+                            <div id="budgetMonthly" class="accordion-collapse collapse" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>แท็บ <strong>Monthly</strong> แสดงตาราง Scopes × Months &mdash; หนึ่งแถวต่อหนึ่ง scope งบ คอลัมน์ <strong>Default</strong> ตามด้วยคอลัมน์รายเดือนตลอดทั้งปี ใช้ปุ่ม ‹ ปี › เพื่อเปลี่ยนปีที่ดู</p>
+                                    <ul class="mb-0">
+                                        <li>คลิกช่อง <strong>Default</strong> เพื่อแก้งบตั้งต้นแบบประจำ</li>
+                                        <li>คลิกช่องเดือนใดก็ได้เพื่อ <strong>ตั้ง/override</strong> งบเฉพาะเดือนนั้น (ค่าเริ่มต้นดึงจาก override เดิมหรืองบตั้งต้น) เดือนที่ override ไว้จะถูกไฮไลต์ พร้อมปุ่มรีเซ็ตกลับเป็นค่าตั้งต้นได้ทันที</li>
+                                        <li>แถวสรุปท้ายตารางรวมยอดแต่ละเดือน: <strong>งบรวม (Overall)</strong>, <strong>จัดสรรแล้ว (Allocated)</strong>, <strong>คงเหลือยังไม่จัดสรร (Unallocated)</strong> (แดงถ้าจัดสรรเกินงบรวม)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Management -->
+            <div class="card mb-3" id="events">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="feature-icon feature-icon-pink"><i class="bi bi-calendar-event"></i></div>
+                        <h4 class="mb-0">จัดการอีเวนต์ <span class="badge bg-info ms-1" style="font-size:.7rem">v1.9.7</span></h4>
+                    </div>
+                    <p class="text-muted">หน้า <strong>Events</strong> ใช้ตั้งชื่อ "งาน" จริง (คอนเสิร์ต แฟนมีต แฟนไซน์ ฯลฯ) แล้วผูกรายการที่ซื้อเข้ากับงานนั้น แทนที่จะมีแค่วันที่งานลอย ๆ เหมือนเดิม</p>
+
+                    <div class="accordion" id="accEvents">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#eventAdd">
+                                    <i class="bi bi-plus-circle me-2"></i> สร้างอีเวนต์
+                                </button>
+                            </h2>
+                            <div id="eventAdd" class="accordion-collapse collapse show" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>กดปุ่ม <strong>Add Event</strong> แล้วกรอก:</p>
+                                    <table class="table table-sm help-table mt-2 mb-0">
+                                        <tr><th style="width:140px">Event Name</th><td>ชื่องาน เช่น "TWICE 5th World Tour Bangkok" (ตั้งซ้ำชื่อเดิมคนละวันได้)</td></tr>
+                                        <tr><th>Event Date</th><td>วันที่จัดงาน</td></tr>
+                                        <tr><th>Description</th><td>รายละเอียดเพิ่มเติม (ไม่บังคับ)</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventLink">
+                                    <i class="bi bi-link-45deg me-2"></i> ผูกรายการเข้ากับอีเวนต์
+                                </button>
+                            </h2>
+                            <div id="eventLink" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>ในฟอร์มเพิ่ม/แก้ไขรายการ (หน้า Items) มีช่อง <strong>Event</strong> แบบค้นหาได้ &mdash; พิมพ์ชื่องานแล้วเลือกจากรายการ ระบบจะ <strong>เติม Event Date ให้อัตโนมัติ</strong> (ยังแก้ไขวันที่เองได้ภายหลัง) รายการที่ผูกแล้วจะมีป้ายชื่องานแสดงในตารางรายการ</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventBulk">
+                                    <i class="bi bi-collection me-2"></i> ผูกข้อมูลเก่าแบบกลุ่ม
+                                </button>
+                            </h2>
+                            <div id="eventBulk" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>สำหรับรายการเก่าที่มี Event Date อยู่แล้วแต่ยังไม่ได้ผูกกับอีเวนต์ที่ตั้งชื่อ มี 2 วิธี:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>Auto-assign</strong> &mdash; ในหน้า Events แต่ละแถวจะมีปุ่มแสดงจำนวนรายการที่มีวันที่ตรงกันแต่ยังไม่ผูก กดปุ่มเดียวผูกให้ทั้งหมด</li>
+                                        <li><strong>เลือกแล้วผูกเอง</strong> &mdash; ในหน้า Items ติ๊กเลือกหลายรายการ (checkbox ซ้ายสุดของตาราง) แล้วกด <strong>Assign to Event</strong> เพื่อเลือกอีเวนต์ปลายทาง</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventFilter">
+                                    <i class="bi bi-funnel me-2"></i> กรองรายการตามอีเวนต์
+                                </button>
+                            </h2>
+                            <div id="eventFilter" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p class="mb-0">ในหน้า Items ตัวกรอง <strong>Event</strong> เลือกได้หลายอีเวนต์พร้อมกัน (เหมือนตัวกรอง Idol/Type) และคลิกจำนวนรายการในหน้า Events ก็พาไปหน้า Items ที่กรองตามอีเวนต์นั้นทันที</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tip-box mb-0">
+                        <i class="bi bi-info-circle"></i> ลบอีเวนต์จะแค่ <strong>ยกเลิกการผูก</strong> รายการที่เชื่อมอยู่ (event_id กลับเป็นว่าง) &mdash; ไม่ลบรายการสินค้า
                     </div>
                 </div>
             </div>

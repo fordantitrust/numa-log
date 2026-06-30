@@ -54,6 +54,11 @@ try {
         'report_type_detail' => handleReportTypeDetail($pdo),
         'type_save' => handleTypeSave($pdo),
         'type_delete' => handleTypeDelete($pdo),
+        'event_list' => handleEventList($pdo),
+        'event_save' => handleEventSave($pdo),
+        'event_delete' => handleEventDelete($pdo),
+        'event_bulk_assign' => handleEventBulkAssign($pdo),
+        'event_auto_assign' => handleEventAutoAssign($pdo),
         'budget_list' => handleBudgetList($pdo),
         'budget_save' => handleBudgetSave($pdo),
         'budget_delete' => handleBudgetDelete($pdo),
@@ -118,6 +123,12 @@ function handleList(PDO $pdo): void
         $where[] = 'order_date <= :date_to';
         $params[':date_to'] = $_GET['date_to'];
     }
+    $eventIds = array_values(array_filter(array_map('intval', (array) ($_GET['event_id'] ?? []))));
+    if (!empty($eventIds)) {
+        $phs = implode(',', array_map(fn($i) => ":evid$i", array_keys($eventIds)));
+        $where[] = "i.event_id IN ($phs)";
+        foreach ($eventIds as $i => $v) { $params[":evid$i"] = $v; }
+    }
 
     $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
@@ -127,23 +138,27 @@ function handleList(PDO $pdo): void
     if (!in_array($sortCol, $allowedSort, true)) {
         $sortCol = 'order_date';
     }
+    $sortColSQL = "i.{$sortCol}";
 
-    // Count total
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM items {$whereSQL}");
+    // Count total (alias items as i so event_id filter works)
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM items i {$whereSQL}");
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
     // Summary
-    $sumStmt = $pdo->prepare("SELECT COALESCE(SUM(price_per_qty * qty), 0) as total_price, COALESCE(SUM(qty), 0) as total_qty FROM items {$whereSQL}");
+    $sumStmt = $pdo->prepare("SELECT COALESCE(SUM(i.price_per_qty * i.qty), 0) as total_price, COALESCE(SUM(i.qty), 0) as total_qty FROM items i {$whereSQL}");
     $sumStmt->execute($params);
     $summary = $sumStmt->fetch();
 
-    // Fetch rows
+    // Fetch rows — JOIN events for event_name
     $stmt = $pdo->prepare("
-        SELECT id, order_date, event_date, title, idol, type, price_per_qty, qty,
-               (price_per_qty * qty) as total_price
-        FROM items {$whereSQL}
-        ORDER BY {$sortCol} {$sortDir}, id DESC
+        SELECT i.id, i.order_date, i.event_date, i.event_id, ev.name AS event_name,
+               i.title, i.idol, i.type, i.price_per_qty, i.qty,
+               (i.price_per_qty * i.qty) as total_price
+        FROM items i
+        LEFT JOIN events ev ON ev.id = i.event_id
+        {$whereSQL}
+        ORDER BY {$sortColSQL} {$sortDir}, i.id DESC
         LIMIT :limit OFFSET :offset
     ");
     foreach ($params as $k => $v) {
@@ -169,7 +184,12 @@ function handleList(PDO $pdo): void
 function handleGet(PDO $pdo): void
 {
     $id = (int) ($_GET['id'] ?? 0);
-    $stmt = $pdo->prepare('SELECT * FROM items WHERE id = :id');
+    $stmt = $pdo->prepare('
+        SELECT i.*, ev.name AS event_name
+        FROM items i
+        LEFT JOIN events ev ON ev.id = i.event_id
+        WHERE i.id = :id
+    ');
     $stmt->execute([':id' => $id]);
     $item = $stmt->fetch();
     if (!$item) {
@@ -186,8 +206,8 @@ function handleCreate(PDO $pdo): void
     $data[':idol_id'] = $idolResolved['idol_id'];
 
     $stmt = $pdo->prepare('
-        INSERT INTO items (order_date, event_date, title, idol, type, price_per_qty, qty, idol_id)
-        VALUES (:order_date, :event_date, :title, :idol, :type, :price_per_qty, :qty, :idol_id)
+        INSERT INTO items (order_date, event_date, event_id, title, idol, type, price_per_qty, qty, idol_id)
+        VALUES (:order_date, :event_date, :event_id, :title, :idol, :type, :price_per_qty, :qty, :idol_id)
     ');
     $stmt->execute($data);
     jsonResponse(['success' => true, 'id' => (int) $pdo->lastInsertId()]);
@@ -209,6 +229,7 @@ function handleUpdate(PDO $pdo): void
         UPDATE items SET
             order_date = :order_date,
             event_date = :event_date,
+            event_id = :event_id,
             title = :title,
             idol = :idol,
             type = :type,
@@ -908,10 +929,39 @@ function handleReportByUnit(PDO $pdo): void
  */
 function handleReportEvent(PDO $pdo): void
 {
-    // Per-event aggregate
-    $events = $pdo->query("
+    // Named events: aggregate items linked via event_id
+    $named = $pdo->query("
         SELECT
-            event_date                          AS event,
+            e.id                                AS event_id,
+            e.name                              AS event_name,
+            e.event_date                        AS event_date,
+            COUNT(i.id)                         AS items,
+            COALESCE(SUM(i.qty), 0)             AS total_qty,
+            COALESCE(SUM(i.price_per_qty*i.qty),0) AS total_price,
+            COUNT(DISTINCT i.idol_id)           AS idols,
+            COUNT(DISTINCT i.type)              AS types
+        FROM events e
+        LEFT JOIN items i ON i.event_id = e.id
+        GROUP BY e.id
+        ORDER BY e.event_date DESC, e.name
+    ")->fetchAll();
+
+    $named = array_map(fn($r) => [
+        'event_id'    => (int) $r['event_id'],
+        'event_name'  => $r['event_name'],
+        'event_date'  => $r['event_date'],
+        'is_named'    => true,
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+        'idols'       => (int) $r['idols'],
+        'types'       => (int) $r['types'],
+    ], $named);
+
+    // Unlinked: items with event_date but no event_id (legacy / not yet assigned)
+    $unlinked = $pdo->query("
+        SELECT
+            event_date                          AS event_date,
             COUNT(*)                            AS items,
             SUM(qty)                            AS total_qty,
             SUM(price_per_qty * qty)            AS total_price,
@@ -919,20 +969,24 @@ function handleReportEvent(PDO $pdo): void
             COUNT(DISTINCT type)                AS types
         FROM items
         WHERE event_date IS NOT NULL AND event_date != ''
+          AND event_id IS NULL
         GROUP BY event_date
         ORDER BY event_date DESC
     ")->fetchAll();
 
-    $events = array_map(fn($r) => [
-        'event'       => $r['event'],
+    $unlinked = array_map(fn($r) => [
+        'event_id'    => null,
+        'event_name'  => null,
+        'event_date'  => $r['event_date'],
+        'is_named'    => false,
         'items'       => (int) $r['items'],
         'total_qty'   => (int) $r['total_qty'],
         'total_price' => (float) $r['total_price'],
         'idols'       => (int) $r['idols'],
         'types'       => (int) $r['types'],
-    ], $events);
+    ], $unlinked);
 
-    // Lead-time stats (days between ordering and the event), only rows with both dates.
+    // Lead-time stats across all items with both dates
     $lead = $pdo->query("
         SELECT
             COUNT(*)                                                       AS n,
@@ -944,13 +998,13 @@ function handleReportEvent(PDO $pdo): void
           AND order_date IS NOT NULL AND order_date != ''
     ")->fetch();
 
-    // How many items have no event_date at all (coverage indicator)
     $noEvent = (int) $pdo->query("
         SELECT COUNT(*) FROM items WHERE event_date IS NULL OR event_date = ''
     ")->fetchColumn();
 
     jsonResponse([
-        'data'      => $events,
+        'named'     => $named,
+        'unlinked'  => $unlinked,
         'lead_time' => [
             'n'        => (int) ($lead['n'] ?? 0),
             'avg_days' => $lead['avg_days'] !== null ? round((float) $lead['avg_days'], 1) : null,
@@ -1442,6 +1496,119 @@ function handleTypeDelete(PDO $pdo): void
     }
     $pdo->prepare("DELETE FROM type_categories WHERE id = :id")->execute([':id' => $id]);
     jsonResponse(['success' => true]);
+}
+
+// --- Events ---
+
+function handleEventList(PDO $pdo): void
+{
+    $events = $pdo->query("
+        SELECT e.*,
+               COUNT(i.id)                              AS items_count,
+               COALESCE(SUM(i.price_per_qty * i.qty), 0) AS total_price,
+               (SELECT COUNT(*) FROM items x
+                WHERE x.event_date = e.event_date
+                  AND x.event_id IS NULL) AS unassigned_same_date
+        FROM events e
+        LEFT JOIN items i ON i.event_id = e.id
+        GROUP BY e.id
+        ORDER BY e.event_date DESC, e.name
+    ")->fetchAll();
+
+    $events = array_map(fn($r) => [
+        'id'                   => (int) $r['id'],
+        'name'                 => $r['name'],
+        'event_date'           => $r['event_date'],
+        'description'          => $r['description'],
+        'created_at'           => $r['created_at'],
+        'items_count'          => (int) $r['items_count'],
+        'total_price'          => (float) $r['total_price'],
+        'unassigned_same_date' => (int) $r['unassigned_same_date'],
+    ], $events);
+
+    jsonResponse(['events' => $events]);
+}
+
+function handleEventSave(PDO $pdo): void
+{
+    $id          = (int) ($_POST['id'] ?? 0);
+    $name        = trim($_POST['name'] ?? '');
+    $eventDate   = trim($_POST['event_date'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+
+    if ($name === '') {
+        jsonResponse(['error' => 'Name is required'], 400);
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventDate)) {
+        jsonResponse(['error' => 'Invalid event_date format'], 400);
+    }
+
+    if ($id > 0) {
+        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, description = :desc WHERE id = :id")
+            ->execute([':name' => $name, ':date' => $eventDate, ':desc' => $description, ':id' => $id]);
+    } else {
+        $pdo->prepare("INSERT INTO events (name, event_date, description) VALUES (:name, :date, :desc)")
+            ->execute([':name' => $name, ':date' => $eventDate, ':desc' => $description]);
+        $id = (int) $pdo->lastInsertId();
+    }
+    jsonResponse(['success' => true, 'id' => $id]);
+}
+
+function handleEventDelete(PDO $pdo): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    if (!$id) {
+        jsonResponse(['error' => 'ID is required'], 400);
+    }
+    $pdo->prepare("DELETE FROM events WHERE id = :id")->execute([':id' => $id]);
+    jsonResponse(['success' => true]);
+}
+
+function handleEventBulkAssign(PDO $pdo): void
+{
+    $eventId = (int) ($_POST['event_id'] ?? 0);
+    $rawIds  = $_POST['ids'] ?? [];
+    if (is_string($rawIds)) {
+        $rawIds = array_filter(array_map('trim', explode(',', $rawIds)));
+    }
+    $ids = array_values(array_filter(array_map('intval', (array) $rawIds)));
+
+    if (!$ids) {
+        jsonResponse(['error' => 'No item IDs provided'], 400);
+    }
+
+    $ev = $pdo->prepare("SELECT id FROM events WHERE id = :id");
+    $ev->execute([':id' => $eventId]);
+    if (!$ev->fetchColumn()) {
+        jsonResponse(['error' => 'Event not found'], 404);
+    }
+
+    $phs  = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("UPDATE items SET event_id = ? WHERE id IN ($phs)");
+    $stmt->execute([$eventId, ...$ids]);
+    jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
+}
+
+function handleEventAutoAssign(PDO $pdo): void
+{
+    $eventId = (int) ($_POST['event_id'] ?? 0);
+    if (!$eventId) {
+        jsonResponse(['error' => 'event_id is required'], 400);
+    }
+
+    $ev = $pdo->prepare("SELECT event_date FROM events WHERE id = :id");
+    $ev->execute([':id' => $eventId]);
+    $row = $ev->fetch();
+    if (!$row) {
+        jsonResponse(['error' => 'Event not found'], 404);
+    }
+
+    $stmt = $pdo->prepare("
+        UPDATE items SET event_id = :eid
+        WHERE event_date = :date AND event_id IS NULL
+    ");
+    $stmt->execute([':eid' => $eventId, ':date' => $row['event_date']]);
+    jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
 }
 
 // --- Budgets / Spending Goals ---
@@ -2146,14 +2313,16 @@ function handleBackupDownload(): void
 
 function getInputData(): array
 {
+    $eventId = (isset($_POST['event_id']) && $_POST['event_id'] !== '') ? (int) $_POST['event_id'] : null;
     return [
-        ':order_date' => trim($_POST['order_date'] ?? ''),
-        ':event_date' => trim($_POST['event_date'] ?? ''),
-        ':title' => trim($_POST['title'] ?? ''),
-        ':idol' => trim($_POST['idol'] ?? ''),
-        ':type' => trim($_POST['type'] ?? ''),
+        ':order_date'    => trim($_POST['order_date'] ?? ''),
+        ':event_date'    => trim($_POST['event_date'] ?? ''),
+        ':event_id'      => $eventId,
+        ':title'         => trim($_POST['title'] ?? ''),
+        ':idol'          => trim($_POST['idol'] ?? ''),
+        ':type'          => trim($_POST['type'] ?? ''),
         ':price_per_qty' => (float) ($_POST['price_per_qty'] ?? 0),
-        ':qty' => (int) ($_POST['qty'] ?? 1),
+        ':qty'           => (int) ($_POST['qty'] ?? 1),
     ];
 }
 

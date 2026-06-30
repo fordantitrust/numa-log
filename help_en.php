@@ -71,10 +71,6 @@
         .help-table th { background: #f9fafb; font-size: 13px; }
         .help-table td { font-size: 13px; vertical-align: middle; }
         .nav-section { position: sticky; top: 1rem; }
-        .lang-switcher { font-size: 13px; }
-        .lang-switcher a { color: rgba(255,255,255,.7); text-decoration: none; padding: 2px 8px; border-radius: 4px; }
-        .lang-switcher a:hover { color: white; background: rgba(255,255,255,.15); }
-        .lang-switcher a.active { color: white; background: rgba(255,255,255,.25); font-weight: 600; }
         @media (max-width: 991px) {
             .nav-section { position: static; margin-bottom: 1rem; }
         }
@@ -82,57 +78,13 @@
 </head>
 <body>
 
-<nav class="navbar navbar-dark" style="background:var(--primary)">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-stars"></i> Numa Log <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-list-ul"></i> Items
-            </a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-bar-chart-line"></i> Report
-            </a>
-            <a href="budget.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-piggy-bank"></i> Budget
-            </a>
-            <?php $u = currentUser(); ?>
-            <?php if (AUTH_ENABLED && $u): ?>
-            <div class="btn-group">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($u['display_name']) ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> Users</a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> Backup</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php endif; ?>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                </ul>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php $navActive = 'help'; $navIcon = 'bi-stars'; $navTitle = 'Numa Log'; require __DIR__ . '/navbar.php'; ?>
 
 <!-- Hero Section -->
 <div class="help-hero">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h1><i class="bi bi-question-circle"></i> Help & Guide</h1>
-                <p>User guide for Numa Log &mdash; Idol merchandise purchase tracking and analytics</p>
-            </div>
-            <div class="lang-switcher">
-                <a href="help.php?lang=th">TH</a>
-                <a href="help_en.php?lang=en" class="active">EN</a>
-            </div>
-        </div>
+        <h1><i class="bi bi-question-circle"></i> Help & Guide</h1>
+        <p>User guide for Numa Log &mdash; Idol merchandise purchase tracking and analytics</p>
     </div>
 </div>
 
@@ -148,6 +100,7 @@
                     <a href="#items" class="toc-link"><i class="bi bi-list-ul"></i> Item Management</a>
                     <a href="#reports" class="toc-link"><i class="bi bi-bar-chart-line"></i> Reports</a>
                     <a href="#budget" class="toc-link"><i class="bi bi-piggy-bank"></i> Budgets</a>
+                    <a href="#events" class="toc-link"><i class="bi bi-calendar-event"></i> Event Management</a>
                     <a href="#idols" class="toc-link"><i class="bi bi-people"></i> Idol Management</a>
                     <a href="#types" class="toc-link"><i class="bi bi-tags"></i> Type Management</a>
                     <a href="#users" class="toc-link"><i class="bi bi-person-gear"></i> User Management</a>
@@ -228,11 +181,12 @@
                             <div id="itemAdd" class="accordion-collapse collapse show" data-bs-parent="#accItems">
                                 <div class="accordion-body">
                                     <ol>
-                                        <li>Click the <span class="shortcut-key">Add Item</span> button in the top bar</li>
+                                        <li>Click the <span class="shortcut-key">Add Item</span> button in the Filters card header <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.8</span></li>
                                         <li>Fill in the form:
                                             <table class="table table-sm help-table mt-2 mb-2">
                                                 <tr><th style="width:140px">Order Date</th><td>Purchase date</td></tr>
                                                 <tr><th>Event Date</th><td>Event date (if applicable)</td></tr>
+                                                <tr><th>Event</th><td>Pick a named event from the searchable dropdown &mdash; auto-fills Event Date <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.7</span> (see <a href="#events">Event Management</a>)</td></tr>
                                                 <tr><th>Title</th><td>Item name</td></tr>
                                                 <tr><th>Idol</th><td>Idol/group name &mdash; type to search from dropdown</td></tr>
                                                 <tr><th>Type</th><td>Item type &mdash; type to search from dropdown</td></tr>
@@ -394,8 +348,8 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
-                                <h6><i class="bi bi-calendar-event text-primary"></i> By Event <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
-                                <p class="small text-muted mb-0">Spending keyed by Event Date, with per-event totals and order-to-event <strong>lead-time stats</strong> (avg / min / max days)</p>
+                                <h6><i class="bi bi-calendar-event text-primary"></i> By Event <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.7</span></h6>
+                                <p class="small text-muted mb-0">Spending grouped by named events (see <a href="#events">Event Management</a>), linking to a pre-filtered Items list. Items not yet linked to a named event are grouped separately by Event Date below, plus order-to-event <strong>lead-time stats</strong> (avg / min / max days)</p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -496,6 +450,97 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#budgetMonthly">
+                                    <i class="bi bi-grid-3x3 me-2"></i> Monthly Grid <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.6</span>
+                                </button>
+                            </h2>
+                            <div id="budgetMonthly" class="accordion-collapse collapse" data-bs-parent="#accBudget">
+                                <div class="accordion-body">
+                                    <p>The <strong>Monthly</strong> tab shows a Scopes × Months grid &mdash; one row per budget scope, a <strong>Default</strong> column, then one column per month of the year. Use the ‹ Year › controls to switch years.</p>
+                                    <ul class="mb-0">
+                                        <li>Click the <strong>Default</strong> cell to edit the scope's recurring default</li>
+                                        <li>Click any month cell to <strong>set/override</strong> that month (prefilled from the existing override, else the default). Overridden months are highlighted, with a one-click reset back to the default</li>
+                                        <li>Footer rows total each month: <strong>Overall budget</strong>, <strong>Allocated</strong> to sub-budgets, and <strong>Unallocated</strong> remaining (red when over-allocated)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Management -->
+            <div class="card mb-3" id="events">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="feature-icon feature-icon-pink"><i class="bi bi-calendar-event"></i></div>
+                        <h4 class="mb-0">Event Management <span class="badge bg-info ms-1" style="font-size:.7rem">v1.9.7</span></h4>
+                    </div>
+                    <p class="text-muted">The <strong>Events</strong> page lets you name real events (concerts, fan meets, fan signs, etc.) and link purchased items to them, instead of just a free-floating event date.</p>
+
+                    <div class="accordion" id="accEvents">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#eventAdd">
+                                    <i class="bi bi-plus-circle me-2"></i> Creating an Event
+                                </button>
+                            </h2>
+                            <div id="eventAdd" class="accordion-collapse collapse show" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>Click <strong>Add Event</strong> and fill in:</p>
+                                    <table class="table table-sm help-table mt-2 mb-0">
+                                        <tr><th style="width:140px">Event Name</th><td>e.g. "TWICE 5th World Tour Bangkok" (the same name can be reused on a different date)</td></tr>
+                                        <tr><th>Event Date</th><td>The date the event takes place</td></tr>
+                                        <tr><th>Description</th><td>Optional extra details</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventLink">
+                                    <i class="bi bi-link-45deg me-2"></i> Linking Items to an Event
+                                </button>
+                            </h2>
+                            <div id="eventLink" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>The item add/edit form (Items page) has a searchable <strong>Event</strong> field &mdash; type the event name and pick it from the list. This <strong>auto-fills Event Date</strong> (still editable afterward). Linked items show an event-name badge in the items table.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventBulk">
+                                    <i class="bi bi-collection me-2"></i> Linking Existing Items in Bulk
+                                </button>
+                            </h2>
+                            <div id="eventBulk" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>For older items that already have an Event Date but aren't linked to a named event yet, there are two ways to catch up:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>Auto-assign</strong> &mdash; on the Events page, each row shows a button with the count of items sharing that date but not yet linked. One click assigns them all.</li>
+                                        <li><strong>Manual bulk assign</strong> &mdash; on the Items page, check the boxes (leftmost column) on the items you want, then click <strong>Assign to Event</strong> to pick the target event.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventFilter">
+                                    <i class="bi bi-funnel me-2"></i> Filtering Items by Event
+                                </button>
+                            </h2>
+                            <div id="eventFilter" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p class="mb-0">On the Items page, the <strong>Event</strong> filter lets you select multiple events at once (same style as the Idol/Type filters). Clicking the item count on the Events page also jumps to Items pre-filtered by that event.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tip-box mb-0">
+                        <i class="bi bi-info-circle"></i> Deleting an event only <strong>unlinks</strong> its items (their event_id is cleared) &mdash; it never deletes the items themselves.
                     </div>
                 </div>
             </div>

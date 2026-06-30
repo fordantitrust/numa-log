@@ -50,38 +50,7 @@
 window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts.body instanceof FormData) { const t = document.querySelector('meta[name="csrf-token"]')?.content; if (t && !opts.body.has('csrf_token')) opts.body.append('csrf_token', t); } if (!opts.cache) opts.cache = 'no-store'; return origFetch.call(this, url, opts); }; })(window.fetch);
 </script>
 
-<nav class="navbar navbar-dark" style="background:var(--primary)">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-piggy-bank"></i> <?= t('budget.title') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div class="d-flex align-items-center">
-            <?= langSwitcher() ?>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span></a>
-            <a href="items.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-list-ul"></i><span class="d-none d-sm-inline"> <?= t('nav.items') ?></span></a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span></a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span></a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span></a>
-            <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
-            <div class="btn-group">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i><span class="d-none d-sm-inline"> <?= htmlspecialchars($u['display_name']) ?></span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php endif; ?>
-                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
-                </ul>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php $navActive = 'budget'; $navIcon = 'bi-piggy-bank'; $navTitle = t('budget.title'); require __DIR__ . '/navbar.php'; ?>
 
 <div class="container-fluid py-3">
     <div class="mb-3">

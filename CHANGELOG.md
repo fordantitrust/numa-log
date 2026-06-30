@@ -4,6 +4,24 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.8 (2026-06-30)
+
+### Items / Navigation
+
+- **Responsive navbar** — converted to Bootstrap's `navbar-expand-lg` collapse pattern with a hamburger toggle below 992px width; menu labels are always shown in full (no more icon-only buttons on mobile). Every page now lists the full primary menu (Dashboard, Items, Report, Budget, Idols, Types, Events) in a fixed order — the current page is no longer omitted from its own navbar, and is instead highlighted with a solid "active" style. `users.php` and `backup.php` also gained the full menu for consistency.
+- **Items filter bar redesign** — reorganized into two rows (Search + date range on top; Idol / Type / Event / Clear below); **Export** and **Add Item** moved into the filter card's header so they stay in a fixed, always-visible position instead of the page navbar.
+- **Event filter** — items can now be filtered by one or more named Events directly from the Items list, using the same multi-select style as the Idol/Type filters. `api.php` (`handleList`) and `export.php` both accept repeated `event_id[]` parameters.
+
+---
+
+## v1.9.7 (2026-06-29)
+
+### Events
+
+- **New Events feature** — dedicated `events.php` management page, named event entities (new `events` table, schema v8), `event_id` FK on `items`. Item form gains a searchable Event dropdown that auto-fills Event Date; the item list shows a per-row event badge. Bulk-assign and auto-assign-by-date make it easy to link existing items that already have an Event Date to a named event. The "By Event" report tab now shows named events with clickable links, with unlinked items grouped separately by date.
+
+---
+
 ## v1.9.6 (2026-06-03)
 
 ### Budgets

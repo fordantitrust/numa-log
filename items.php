@@ -100,56 +100,16 @@ window.fetch = function(url, opts = {}) {
     </div>
 </div>
 
-<nav class="navbar navbar-dark" style="background:var(--primary)">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1"><i class="bi bi-list-ul"></i> <?= t('nav.items') ?> <span class="badge bg-light text-dark fw-normal" style="font-size:.6rem;vertical-align:middle">v<?= APP_VERSION ?></span></span>
-        <div class="d-flex align-items-center">
-            <?= langSwitcher() ?>
-            <a href="index.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-speedometer2"></i><span class="d-none d-sm-inline"> <?= t('nav.dashboard') ?></span>
-            </a>
-            <a href="report.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-bar-chart-line"></i><span class="d-none d-sm-inline"> <?= t('nav.report') ?></span>
-            </a>
-            <a href="budget.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-piggy-bank"></i><span class="d-none d-sm-inline"> <?= t('nav.budget') ?></span>
-            </a>
-            <a href="idols.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-people"></i><span class="d-none d-sm-inline"> <?= t('nav.idols') ?></span>
-            </a>
-            <a href="types.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-tags"></i><span class="d-none d-sm-inline"> <?= t('nav.types') ?></span>
-            </a>
-            <?php if (ALLOW_IMPORT): ?>
-            <button class="btn btn-outline-light btn-sm me-2" onclick="showImportModal()">
-                <i class="bi bi-file-earmark-arrow-up"></i><span class="d-none d-sm-inline"> <?= t('items.import_excel') ?></span>
-            </button>
-            <?php endif; ?>
-            <button class="btn btn-light btn-sm me-2" onclick="showFormModal()">
-                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> <?= t('items.add_item') ?></span>
-            </button>
-            <?php $u = currentUser(); if (AUTH_ENABLED && $u): ?>
-            <div class="btn-group">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i><span class="d-none d-sm-inline"> <?= htmlspecialchars($u['display_name']) ?></span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><span class="dropdown-item-text small text-muted"><?= htmlspecialchars($u['username']) ?> (<?= $u['role'] ?>)</span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php if ($u['role'] === 'admin'): ?>
-                    <li><a class="dropdown-item" href="users.php"><i class="bi bi-people-fill"></i> <?= t('nav.users') ?></a></li>
-                    <li><a class="dropdown-item" href="backup.php"><i class="bi bi-database"></i> <?= t('nav.backup') ?></a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <?php endif; ?>
-                    <li><a class="dropdown-item" href="<?= currentLang() === 'th' ? 'help.php' : 'help_en.php' ?>"><i class="bi bi-question-circle"></i> <?= t('nav.help') ?></a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="login.php?action=logout"><i class="bi bi-box-arrow-right"></i> <?= t('nav.logout') ?></a></li>
-                </ul>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php
+$navActive = 'items';
+$navIcon = 'bi-list-ul';
+$navTitle = t('nav.items');
+$navExtra = '';
+if (ALLOW_IMPORT) {
+    $navExtra = '<button class="btn btn-outline-light btn-sm me-2" onclick="showImportModal()"><i class="bi bi-file-earmark-arrow-up"></i><span> ' . t('items.import_excel') . '</span></button>';
+}
+require __DIR__ . '/navbar.php';
+?>
 
 <div class="container-fluid py-3">
     <!-- Pending resolution banner (v5) -->
@@ -192,13 +152,32 @@ window.fetch = function(url, opts = {}) {
 
     <!-- Filters -->
     <div class="card mb-3">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <strong><i class="bi bi-funnel"></i> <?= t('items.filters_title') ?></strong>
+            <div class="d-flex gap-1">
+                <button type="button" class="btn btn-primary btn-sm" onclick="showFormModal()">
+                    <i class="bi bi-plus-lg"></i> <?= t('items.add_item') ?>
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportExcel()">
+                    <i class="bi bi-file-earmark-arrow-down"></i> <?= t('items.export') ?>
+                </button>
+            </div>
+        </div>
         <div class="card-body py-2">
             <form id="filterForm" class="row g-2 align-items-end">
-                <div class="col-6 col-md-2">
+                <div class="col-12 col-md-6">
                     <label class="form-label small mb-0"><?= t('common.search') ?></label>
                     <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="<?= t('items.search_ph') ?>">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-3">
+                    <label class="form-label small mb-0"><?= t('items.from') ?></label>
+                    <input type="date" class="form-control form-control-sm" id="fDateFrom">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small mb-0"><?= t('items.to') ?></label>
+                    <input type="date" class="form-control form-control-sm" id="fDateTo">
+                </div>
+                <div class="col-6 col-md-3">
                     <label class="form-label small mb-0"><?= t('common.idol') ?></label>
                     <div class="ms-wrap" id="msIdol">
                         <div class="ms-box form-control form-control-sm"><span class="ms-ph"><?= t('common.all') ?></span></div>
@@ -208,7 +187,7 @@ window.fetch = function(url, opts = {}) {
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-3">
                     <label class="form-label small mb-0"><?= t('common.type') ?></label>
                     <div class="ms-wrap" id="msType">
                         <div class="ms-box form-control form-control-sm"><span class="ms-ph"><?= t('common.all') ?></span></div>
@@ -218,25 +197,33 @@ window.fetch = function(url, opts = {}) {
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0"><?= t('items.from') ?></label>
-                    <input type="date" class="form-control form-control-sm" id="fDateFrom">
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-0"><?= t('items.to') ?></label>
-                    <input type="date" class="form-control form-control-sm" id="fDateTo">
-                </div>
-                <div class="col-6 col-md-2">
-                    <div class="d-flex gap-1">
-                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="resetFilters()">
-                            <i class="bi bi-x-lg"></i> <?= t('items.clear') ?>
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm flex-fill" onclick="exportExcel()">
-                            <i class="bi bi-file-earmark-arrow-down"></i> <?= t('items.export') ?>
-                        </button>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small mb-0"><?= t('events.event_label') ?></label>
+                    <div class="ms-wrap" id="msEvent">
+                        <div class="ms-box form-control form-control-sm"><span class="ms-ph"><?= t('common.all') ?></span></div>
+                        <div class="ms-drop">
+                            <input type="text" class="ms-search" placeholder="<?= t('items.search_dots') ?>">
+                            <div class="ms-list"></div>
+                        </div>
                     </div>
                 </div>
+                <div class="col-6 col-md-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilters()">
+                        <i class="bi bi-x-lg"></i> <?= t('items.clear') ?>
+                    </button>
+                </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Bulk Action Bar -->
+    <div id="bulkBar" class="card mb-2 d-none">
+        <div class="card-body py-2 d-flex align-items-center gap-2">
+            <span id="bulkCount" class="small fw-semibold"></span>
+            <button class="btn btn-primary btn-sm" onclick="showBulkAssignModal()">
+                <i class="bi bi-link-45deg"></i> <?= t('events.assign_to_event') ?>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()"><?= t('common.cancel') ?></button>
         </div>
     </div>
 
@@ -246,6 +233,7 @@ window.fetch = function(url, opts = {}) {
             <table class="table table-hover table-sm mb-0">
                 <thead>
                     <tr>
+                        <th style="width:28px"><input type="checkbox" id="chkAll" title="<?= t('common.select_all') ?>"></th>
                         <th style="width:40px">#</th>
                         <th data-sort="order_date" class="sort-icon"><?= t('items.order_date') ?></th>
                         <th data-sort="event_date" class="sort-icon"><?= t('items.event_date') ?></th>
@@ -289,6 +277,14 @@ window.fetch = function(url, opts = {}) {
                         <div class="col-6">
                             <label class="form-label small"><?= t('items.event_date') ?></label>
                             <input type="date" class="form-control form-control-sm" id="itemEventDate">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small"><?= t('events.event_label') ?></label>
+                            <div class="sd-wrap">
+                                <input type="text" class="form-control form-control-sm" id="itemEventName" autocomplete="off" placeholder="<?= t('events.no_event_ph') ?>">
+                                <input type="hidden" id="itemEventId">
+                                <div class="sd-list" id="eventDropdown"></div>
+                            </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label small"><?= t('common.title') ?></label>
@@ -374,6 +370,32 @@ window.fetch = function(url, opts = {}) {
     </div>
 </div>
 
+<!-- Bulk Assign Modal -->
+<div class="modal fade" id="bulkAssignModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><?= t('events.assign_to_event') ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label small"><?= t('events.pick_event') ?></label>
+                <div class="sd-wrap">
+                    <input type="text" class="form-control form-control-sm" id="bulkEventName" autocomplete="off" placeholder="<?= t('events.pick_event') ?>">
+                    <input type="hidden" id="bulkEventId">
+                    <div class="sd-list" id="bulkEventDropdown"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="confirmBulkAssign()">
+                    <i class="bi bi-link-45deg"></i> <?= t('events.assign_to_event') ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js?v=<?= APP_VERSION ?>"></script>
@@ -384,7 +406,11 @@ let currentDir = 'desc';
 let currentPage = 1;
 let debounceTimer = null;
 let filtersData = { idols: [], types: [] };
-let msIdol, msType;
+let eventsData = [];
+let msIdol, msType, msEvent;
+let selectedIds = new Set();
+
+function eventDisplay(ev) { return `${ev.name} (${ev.event_date})`; }
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -392,6 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pDateFrom = urlParams.get('date_from');
     const pDateTo   = urlParams.get('date_to');
     const pIdol     = urlParams.get('idol');
+    const pEventId  = urlParams.get('event_id');
 
     if (pDateFrom) $('fDateFrom').value = pDateFrom;
     if (pDateTo)   $('fDateTo').value   = pDateTo;
@@ -399,6 +426,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadFilters();
 
     if (pIdol) msIdol.setSelected([pIdol]);
+    if (pEventId) {
+        const ev = eventsData.find(e => e.id == pEventId);
+        if (ev) msEvent.setSelected([eventDisplay(ev)]);
+    }
 
     loadData();
     setupSort();
@@ -438,11 +469,16 @@ async function api(url, opts = {}) {
 }
 
 async function loadFilters() {
-    filtersData = await api('api.php?action=filters');
+    [filtersData] = await Promise.all([api('api.php?action=filters')]);
+    const evRes = await api('api.php?action=event_list');
+    eventsData = evRes.events || [];
     msIdol = initMultiSelect('msIdol', () => filtersData.idols, () => { currentPage = 1; loadData(); });
     msType = initMultiSelect('msType', () => filtersData.types, () => { currentPage = 1; loadData(); });
+    msEvent = initMultiSelect('msEvent', () => eventsData.map(eventDisplay), () => { currentPage = 1; loadData(); });
     initSearchableDropdown('itemIdol', 'idolDropdown', () => filtersData.idols);
     initSearchableDropdown('itemType', 'typeDropdown', () => filtersData.types);
+    initEventDropdown('itemEventName', 'eventDropdown', 'itemEventId', 'itemEventDate', () => eventsData);
+    initEventDropdown('bulkEventName', 'bulkEventDropdown', 'bulkEventId', null, () => eventsData);
     refreshPendingBanner();
 }
 
@@ -605,6 +641,10 @@ async function loadData() {
     });
     if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
     if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
+    if (msEvent) msEvent.getSelected().forEach(disp => {
+        const ev = eventsData.find(e => eventDisplay(e) === disp);
+        if (ev) params.append('event_id[]', ev.id);
+    });
 
     const res = await api('api.php?' + params);
     renderTable(res);
@@ -626,18 +666,27 @@ function formatDate(d) {
     return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function renderEventCell(r) {
+    const date = r.event_date ? formatDate(r.event_date) : '';
+    if (r.event_name) {
+        return `${date}<br><span class="badge" style="background:#ede9fe;color:#5b21b6;font-size:10px;font-weight:500">${escHtml(r.event_name)}</span>`;
+    }
+    return date || '<span class="text-muted">-</span>';
+}
+
 function renderTable(res) {
     const tbody = $('tableBody');
     if (!res.data || res.data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">${t('items.no_data_found')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-muted">${t('items.no_data_found')}</td></tr>`;
         return;
     }
     const offset = (res.page - 1) * res.per_page;
     tbody.innerHTML = res.data.map((r, i) => `
         <tr>
+            <td><input type="checkbox" class="row-chk" data-id="${r.id}"></td>
             <td class="text-muted">${offset + i + 1}</td>
             <td>${formatDate(r.order_date)}</td>
-            <td>${formatDate(r.event_date)}</td>
+            <td>${renderEventCell(r)}</td>
             <td>${escHtml(r.title)}</td>
             <td><span class="badge badge-idol">${escHtml(r.idol)}</span></td>
             <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
@@ -657,6 +706,7 @@ function renderTable(res) {
             </td>
         </tr>
     `).join('');
+    attachCheckboxListeners();
 }
 
 function renderPagination(res) {
@@ -695,6 +745,8 @@ function goPage(p) { currentPage = p; loadData(); }
 function showFormModal(id = null) {
     $('itemId').value = '';
     $('itemIdolId').value = '';
+    $('itemEventId').value = '';
+    $('itemEventName').value = '';
     $('itemIdolHint').style.display = 'none';
     $('itemIdolHint').innerHTML = '';
     $('itemForm').reset();
@@ -709,6 +761,8 @@ async function editItem(id) {
     $('itemId').value = d.id;
     $('itemOrderDate').value = d.order_date || '';
     $('itemEventDate').value = d.event_date || '';
+    $('itemEventId').value = d.event_id || '';
+    $('itemEventName').value = d.event_id && d.event_name ? `${d.event_name} (${d.event_date})` : '';
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
     $('itemIdolId').value = d.idol_id || '';
@@ -728,6 +782,8 @@ async function cloneItem(id) {
     $('itemId').value = '';
     $('itemOrderDate').value = today;
     $('itemEventDate').value = today;
+    $('itemEventId').value = '';
+    $('itemEventName').value = '';
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
     $('itemIdolId').value = d.idol_id || '';
@@ -749,6 +805,8 @@ async function saveItem(explicitIdolId) {
     if (id) body.append('id', id);
     body.append('order_date', $('itemOrderDate').value);
     body.append('event_date', $('itemEventDate').value);
+    const eventId = $('itemEventId').value;
+    if (eventId) body.append('event_id', eventId);
     body.append('title', $('itemTitle').value);
     body.append('idol', $('itemIdol').value);
     const idolId = explicitIdolId ?? $('itemIdolId').value;
@@ -834,6 +892,7 @@ function resetFilters() {
     $('fDateTo').value = '';
     if (msIdol) msIdol.clear();
     if (msType) msType.clear();
+    if (msEvent) msEvent.clear();
     currentPage = 1;
     loadData();
 }
@@ -849,7 +908,125 @@ function exportExcel() {
     if (to)     params.set('date_to', to);
     if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
     if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
+    if (msEvent) msEvent.getSelected().forEach(disp => {
+        const ev = eventsData.find(e => eventDisplay(e) === disp);
+        if (ev) params.append('event_id[]', ev.id);
+    });
     window.location.href = 'export.php?' + params.toString();
+}
+
+// --- Event Dropdown ---
+function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems) {
+    const input  = document.getElementById(inputId);
+    const list   = document.getElementById(listId);
+    const hidden = document.getElementById(hiddenId);
+    if (!input || input._edInit) return;
+    input._edInit = true;
+
+    input.addEventListener('input', () => { if (hidden) hidden.value = ''; });
+
+    function render() {
+        const q = input.value.toLowerCase();
+        const items = getItems().filter(ev => !q || ev.name.toLowerCase().includes(q) || ev.event_date.includes(q));
+        const noEvHtml = `<div class="sd-item" data-val="" data-name="" data-date="" style="color:#9ca3af;font-style:italic">${t('events.no_event_ph')}</div>`;
+        if (items.length === 0 && q) {
+            list.innerHTML = noEvHtml + `<div class="sd-empty">${t('items.no_match')}</div>`;
+        } else {
+            list.innerHTML = noEvHtml + items.map(ev =>
+                `<div class="sd-item" data-val="${ev.id}" data-name="${escHtml(ev.name)}" data-date="${ev.event_date}">
+                    <strong>${escHtml(ev.name)}</strong>
+                    <span class="text-muted ms-2" style="font-size:12px">${ev.event_date}</span>
+                </div>`
+            ).join('');
+        }
+        list.classList.add('show');
+    }
+
+    list.addEventListener('mousedown', e => {
+        const item = e.target.closest('.sd-item');
+        if (!item) return;
+        e.preventDefault();
+        const val  = item.dataset.val;
+        const name = item.dataset.name || '';
+        const date = item.dataset.date || '';
+        if (hidden) hidden.value = val;
+        input.value = val ? `${name} (${date})` : '';
+        if (dateFillId && date) {
+            const df = document.getElementById(dateFillId);
+            if (df) df.value = date;
+        }
+        list.classList.remove('show');
+    });
+
+    input.addEventListener('focus', render);
+    input.addEventListener('input', render);
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('show');
+    });
+}
+
+// --- Checkbox / Bulk Select ---
+function attachCheckboxListeners() {
+    document.querySelectorAll('.row-chk').forEach(chk => {
+        chk.checked = selectedIds.has(parseInt(chk.dataset.id, 10));
+        chk.addEventListener('change', () => {
+            const id = parseInt(chk.dataset.id, 10);
+            chk.checked ? selectedIds.add(id) : selectedIds.delete(id);
+            updateBulkBar();
+        });
+    });
+    const chkAll = $('chkAll');
+    if (chkAll) {
+        chkAll.checked = false;
+        chkAll.onchange = () => {
+            document.querySelectorAll('.row-chk').forEach(c => {
+                const id = parseInt(c.dataset.id, 10);
+                if (chkAll.checked) { selectedIds.add(id); c.checked = true; }
+                else { selectedIds.delete(id); c.checked = false; }
+            });
+            updateBulkBar();
+        };
+    }
+}
+
+function updateBulkBar() {
+    const bar = $('bulkBar');
+    if (!bar) return;
+    if (selectedIds.size > 0) {
+        $('bulkCount').textContent = t('events.n_selected', { n: selectedIds.size });
+        bar.classList.remove('d-none');
+    } else {
+        bar.classList.add('d-none');
+    }
+}
+
+function clearSelection() {
+    selectedIds.clear();
+    document.querySelectorAll('.row-chk').forEach(c => c.checked = false);
+    const chkAll = $('chkAll');
+    if (chkAll) chkAll.checked = false;
+    updateBulkBar();
+}
+
+function showBulkAssignModal() {
+    $('bulkEventId').value = '';
+    $('bulkEventName').value = '';
+    new bootstrap.Modal($('bulkAssignModal')).show();
+}
+
+async function confirmBulkAssign() {
+    const eventId = $('bulkEventId').value;
+    if (!eventId) { alert(t('events.pick_event_required')); return; }
+    const ids = [...selectedIds];
+    const body = new FormData();
+    body.append('action', 'event_bulk_assign');
+    body.append('event_id', eventId);
+    ids.forEach(id => body.append('ids[]', id));
+    const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
+    if (res.error) { alert(res.error); return; }
+    bootstrap.Modal.getInstance($('bulkAssignModal')).hide();
+    clearSelection();
+    loadData();
 }
 
 // --- Helpers ---
