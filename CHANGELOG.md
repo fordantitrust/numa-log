@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.12 (2026-06-30)
+
+### Items / UX
+
+- **Live cross-tab data sync** — the **idol**, **type** and **event** dropdowns/filters on the Items page now refresh automatically when those entities change in another tab, so you no longer have to reload the page. Adding/editing/deleting a type (`types.php`), an idol entity or membership (`idols.php`), or an event (`events.php`) broadcasts a change signal; any open Items tab re-fetches its filter lists immediately (via `BroadcastChannel`, with a `localStorage` fallback) and also refreshes when you switch back to the tab. Currently-selected filters are preserved across the refresh. Implemented as a small shared helper, `assets/sync.js`.
+
+---
+
 ## v1.9.11 (2026-06-30)
 
 ### Events / Reports

@@ -866,6 +866,18 @@
                         </div>
                         <div class="accordion-item">
                             <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqSync">
+                                    <span class="badge bg-info me-2">v1.9.12</span> I added an idol/type/event in another tab &mdash; why doesn't the Items page show it?
+                                </button>
+                            </h2>
+                            <div id="faqSync" class="accordion-collapse collapse" data-bs-parent="#accFaq">
+                                <div class="accordion-body">
+                                    <p class="mb-0">As of v1.9.12 you no longer need to reload. When you add/edit/delete an <strong>idol</strong> (Idols page), a <strong>type</strong> (Types page) or an <strong>event</strong> (Events page) in another tab, the dropdowns and filters on the <strong>Items</strong> page update automatically &mdash; instantly if both tabs are open side by side, or at the latest when you switch back to the Items tab. Any filters you have selected are kept.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqMove">
                                     <span class="badge bg-info me-2">v1.5</span> A member moved groups &mdash; how do I keep old/new purchases attributed to the right group?
                                 </button>

@@ -271,6 +271,7 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js?v=<?= APP_VERSION ?>"></script>
+<script src="assets/sync.js?v=<?= APP_VERSION ?>"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -477,6 +478,7 @@ async function saveEntity() {
     if (res.error) { alert(res.error); return; }
     bootstrap.Modal.getInstance($('formModal')).hide();
     loadTree();
+    notifyDataChanged('idols');
 }
 
 function deleteEntity(id, name) {
@@ -492,6 +494,7 @@ async function confirmDelete() {
     await fetch('api.php', { method: 'POST', body });
     bootstrap.Modal.getInstance($('deleteModal')).hide();
     loadTree();
+    notifyDataChanged('idols');
 }
 
 async function seedData() {
@@ -501,6 +504,7 @@ async function seedData() {
     const res = await fetch('seed_idols.php', { method: 'POST', body }).then(r => r.json());
     alert(res.message);
     loadTree();
+    notifyDataChanged('idols');
 }
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
@@ -630,6 +634,7 @@ async function saveMembership() {
     bootstrap.Modal.getInstance($('membershipModal')).hide();
     loadMemberships(memberId);
     loadTree();
+    notifyDataChanged('idols');
 }
 
 async function deleteMembership(id) {
@@ -641,6 +646,7 @@ async function deleteMembership(id) {
     if (res.error) { alert(res.error); return; }
     loadMemberships($('mbMemberId').value || $('eId').value);
     loadTree();
+    notifyDataChanged('idols');
 }
 
 // ─── Ambiguous mappings ──────────────────────────────────────────────────────

@@ -405,6 +405,7 @@ require __DIR__ . '/navbar.php';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js?v=<?= APP_VERSION ?>"></script>
+<script src="assets/sync.js?v=<?= APP_VERSION ?>"></script>
 <script>
 const $ = id => document.getElementById(id);
 let currentSort = 'order_date';
@@ -441,6 +442,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadData();
     setupSort();
     setupFilterEvents();
+
+    // อัพเดทดรอปดาวน์เมื่อมีการเปลี่ยน idol/type/event จากแท็บอื่น
+    onDataChanged(() => { loadFilters(); });
+
+    // safety net: รีเฟรชเมื่อสลับกลับมาที่แท็บนี้ (กรณีพลาดสัญญาณ broadcast)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) loadFilters();
+    });
 });
 
 function setupSort() {

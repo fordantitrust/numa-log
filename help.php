@@ -866,6 +866,18 @@
                         </div>
                         <div class="accordion-item">
                             <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqSync">
+                                    <span class="badge bg-info me-2">v1.9.12</span> เพิ่มไอดอล/ประเภท/อีเวนต์ในอีกแท็บแล้ว ทำไมหน้ารายการไม่เห็นของใหม่?
+                                </button>
+                            </h2>
+                            <div id="faqSync" class="accordion-collapse collapse" data-bs-parent="#accFaq">
+                                <div class="accordion-body">
+                                    <p class="mb-0">ตั้งแต่ v1.9.12 ไม่ต้อง reload หน้าแล้ว เมื่อคุณเพิ่ม/แก้/ลบ <strong>ไอดอล</strong> (หน้า Idols), <strong>ประเภท</strong> (หน้า Types) หรือ <strong>อีเวนต์</strong> (หน้า Events) ในอีกแท็บ ดรอปดาวน์และตัวกรองในหน้า <strong>Items</strong> จะอัพเดทข้อมูลใหม่ให้อัตโนมัติ &mdash; ทันทีถ้าเปิดทั้งสองแท็บคู่กัน หรืออย่างช้าเมื่อสลับกลับมาที่แท็บ Items และตัวกรองที่คุณเลือกไว้จะไม่ถูกล้าง</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqMove">
                                     <span class="badge bg-info me-2">v1.5</span> ไอดอลย้ายวง ทำยังไงให้รายงานก่อน/หลังย้ายแยกกัน?
                                 </button>
