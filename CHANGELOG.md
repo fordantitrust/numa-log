@@ -4,6 +4,16 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.11 (2026-06-30)
+
+### Events / Reports
+
+- **Events list redesign** — the Events management table drops the running `#` column and leads with the **Start – End date range** as the primary column, sorted by start then end date (newest first).
+- **New "Event Summary" report tab** — a dedicated event-entity report (under **More**) showing, per named event, its date range, **duration in days**, **Upcoming / Ongoing / Past** status, linked-item count, qty, total spend and **average spend per event-day**. KPI cards summarise total events, multi-day events, total event-days and upcoming events. Backed by the new `report_event_summary` API action. Distinct from **By Event**, which aggregates item spending and order→event lead time.
+- **Equal-height report cards** — the KPI cards on the **By Event** and **Event Summary** tabs now stretch to a uniform height (`h-100`), so a card with an extra sub-label no longer looks taller than its neighbours.
+
+---
+
 ## v1.9.10 (2026-06-30)
 
 ### Events

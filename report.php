@@ -87,6 +87,7 @@
             </a>
             <ul class="dropdown-menu">
                 <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabEvent"><i class="bi bi-calendar-event me-1"></i> <?= t('report.tab_event') ?></button></li>
+                <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabEventSummary"><i class="bi bi-calendar-range me-1"></i> <?= t('report.tab_event_summary') ?></button></li>
                 <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabTopItems"><i class="bi bi-trophy me-1"></i> <?= t('report.tab_top') ?></button></li>
                 <li><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#tabInactive"><i class="bi bi-hourglass-split me-1"></i> <?= t('report.tab_inactive') ?></button></li>
             </ul>
@@ -840,26 +841,26 @@
         <div class="tab-pane fade" id="tabEvent">
             <div class="row g-3 mb-3">
                 <div class="col-6 col-lg-3">
-                    <div class="card p-3" style="background:#f5f3ff">
+                    <div class="card p-3 h-100" style="background:#f5f3ff">
                         <div class="small text-muted"><?= t('report.ev_count') ?></div>
                         <div class="fs-4 fw-bold" style="color:var(--primary)" id="evCount">0</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
-                    <div class="card p-3" style="background:#f0fdf4">
+                    <div class="card p-3 h-100" style="background:#f0fdf4">
                         <div class="small text-muted"><?= t('report.ev_lead') ?></div>
                         <div class="fs-4 fw-bold" style="color:#16a34a" id="evLead">-</div>
                         <div class="small text-muted" id="evLeadSub"><?= t('report.ev_lead_sub') ?></div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
-                    <div class="card p-3" style="background:#fffbeb">
+                    <div class="card p-3 h-100" style="background:#fffbeb">
                         <div class="small text-muted"><?= t('report.ev_lead_range') ?></div>
                         <div class="fs-6 fw-bold" style="color:#d97706" id="evLeadRange">-</div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
-                    <div class="card p-3" style="background:#fef2f2">
+                    <div class="card p-3 h-100" style="background:#fef2f2">
                         <div class="small text-muted"><?= t('report.ev_no_event') ?></div>
                         <div class="fs-4 fw-bold" style="color:#dc2626" id="evNoEvent">0</div>
                     </div>
@@ -891,6 +892,57 @@
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Summary Tab -->
+        <div class="tab-pane fade" id="tabEventSummary">
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3 h-100" style="background:#f5f3ff">
+                        <div class="small text-muted"><?= t('report.es_total') ?></div>
+                        <div class="fs-4 fw-bold" style="color:var(--primary)" id="esTotal">0</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3 h-100" style="background:#eff6ff">
+                        <div class="small text-muted"><?= t('report.es_multiday') ?></div>
+                        <div class="fs-4 fw-bold" style="color:#2563eb" id="esMultiday">0</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3 h-100" style="background:#f0fdf4">
+                        <div class="small text-muted"><?= t('report.es_total_days') ?></div>
+                        <div class="fs-4 fw-bold" style="color:#16a34a" id="esTotalDays">0</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card p-3 h-100" style="background:#fffbeb">
+                        <div class="small text-muted"><?= t('report.es_upcoming') ?></div>
+                        <div class="fs-4 fw-bold" style="color:#d97706" id="esUpcoming">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header py-2"><strong><?= t('report.tab_event_summary') ?></strong></div>
+                <div class="table-scroll">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th><?= t('report.es_range') ?></th>
+                                <th><?= t('report.ev_event_name') ?></th>
+                                <th class="text-center"><?= t('report.es_duration') ?></th>
+                                <th class="text-center"><?= t('report.es_status') ?></th>
+                                <th class="text-end"><?= t('common.items') ?></th>
+                                <th class="text-end"><?= t('common.qty') ?></th>
+                                <th class="text-end"><?= t('common.total_baht') ?></th>
+                                <th class="text-end"><?= t('report.es_avg_day') ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableEventSummary"></tbody>
+                        <tfoot id="footEventSummary" class="table-light fw-bold"></tfoot>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1032,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '#tabCompare': initCompare,
         '#tabUnit': loadUnit,
         '#tabEvent': loadEvent,
+        '#tabEventSummary': loadEventSummary,
         '#tabTopItems': loadTopItems,
         '#tabInactive': loadInactive,
     };
@@ -2324,6 +2377,53 @@ async function loadEvent() {
         <td></td>
         <td class="text-end">${fmtInt(tot.qty)}</td>
         <td class="text-end">${fmt(tot.price)}</td>
+    </tr>` : '';
+}
+
+// =====================================================================
+//  Event Summary (event-entity view: duration, status, avg spend/day)
+// =====================================================================
+function esRange(e) { return e.end_date && e.end_date !== e.start_date ? `${e.start_date} – ${e.end_date}` : e.start_date; }
+function esStatusBadge(s) {
+    const map = {
+        upcoming: ['bg-warning text-dark', t('report.es_status_upcoming')],
+        ongoing:  ['bg-success',           t('report.es_status_ongoing')],
+        past:     ['bg-secondary',         t('report.es_status_past')],
+    };
+    const [cls, label] = map[s] || map.past;
+    return `<span class="badge ${cls}">${label}</span>`;
+}
+async function loadEventSummary() {
+    const res = await fetch('api.php?action=report_event_summary').then(r => r.json());
+    const events = res.events || [];
+    const s = res.summary || {};
+
+    $('esTotal').textContent = fmtInt(s.total || 0);
+    $('esMultiday').textContent = fmtInt(s.multi_day || 0);
+    $('esTotalDays').textContent = fmtInt(s.total_days || 0);
+    $('esUpcoming').textContent = fmtInt(s.upcoming || 0);
+
+    $('tableEventSummary').innerHTML = events.map(e => `<tr>
+        <td class="text-nowrap">${esRange(e)}</td>
+        <td>${e.items > 0 ? `<a href="items.php?event_id=${e.id}" class="text-decoration-none">${escHtml(e.name)}</a>` : escHtml(e.name)}</td>
+        <td class="text-center">${fmtInt(e.days)}</td>
+        <td class="text-center">${esStatusBadge(e.status)}</td>
+        <td class="text-end">${fmtInt(e.items)}</td>
+        <td class="text-end">${fmtInt(e.total_qty)}</td>
+        <td class="text-end">${fmt(e.total_price)}</td>
+        <td class="text-end">${fmt(e.avg_per_day)}</td>
+    </tr>`).join('') || `<tr><td colspan="8" class="text-center text-muted py-3">${t('report.es_no_events')}</td></tr>`;
+
+    const tot = events.reduce((a, e) => { a.days += e.days; a.items += e.items; a.qty += e.total_qty; a.price += Number(e.total_price); return a; }, { days: 0, items: 0, qty: 0, price: 0 });
+    $('footEventSummary').innerHTML = events.length ? `<tr>
+        <td>${t('common.total')} (${events.length})</td>
+        <td></td>
+        <td class="text-center">${fmtInt(tot.days)}</td>
+        <td></td>
+        <td class="text-end">${fmtInt(tot.items)}</td>
+        <td class="text-end">${fmtInt(tot.qty)}</td>
+        <td class="text-end">${fmt(tot.price)}</td>
+        <td></td>
     </tr>` : '';
 }
 

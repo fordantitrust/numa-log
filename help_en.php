@@ -354,6 +354,12 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar-range text-primary"></i> Event Summary <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.11</span></h6>
+                                <p class="small text-muted mb-0">An event-entity view: each event shows its <strong>start–end date range</strong>, <strong>duration in days</strong>, <strong>Upcoming / Ongoing / Past</strong> status, item count, total spend and <strong>average spend per event-day</strong>, with summary cards (total events, multi-day events, total event-days, upcoming).</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
                                 <h6><i class="bi bi-trophy text-primary"></i> Top Items <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
                                 <p class="small text-muted mb-0">Top 20 most expensive purchases, top 20 most frequently bought titles, and avg / min / max unit price per type</p>
                             </div>

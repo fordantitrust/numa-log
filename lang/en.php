@@ -158,6 +158,7 @@ return [
     'report.tab_company'     => 'By Company',
     'report.tab_type'        => 'By Type',
     'report.tab_event'       => 'By Event',
+    'report.tab_event_summary' => 'Event Summary',
     'report.tab_top'         => 'Top Items',
     'report.tab_inactive'    => 'Inactive',
     'report.tab_budget'      => 'Budget',
@@ -264,6 +265,20 @@ return [
     'report.ev_unlinked_section'  => 'Items linked by date only (no named event)',
     'report.ev_event_name'        => 'Event Name',
 
+    // ── Event Summary report (event-entity view) ──────────────────────────
+    'report.es_total'             => 'Total Events',
+    'report.es_multiday'          => 'Multi-day Events',
+    'report.es_total_days'        => 'Total Event-Days',
+    'report.es_upcoming'          => 'Upcoming',
+    'report.es_range'             => 'Start – End',
+    'report.es_duration'          => 'Days',
+    'report.es_status'            => 'Status',
+    'report.es_avg_day'           => 'Avg / Day',
+    'report.es_status_upcoming'   => 'Upcoming',
+    'report.es_status_ongoing'    => 'Ongoing',
+    'report.es_status_past'       => 'Past',
+    'report.es_no_events'         => 'No events yet',
+
     // ── Events management (events.php) ────────────────────────────────────
     'events.title'                => 'Event Management',
     'events.add'                  => 'Add Event',
@@ -272,6 +287,7 @@ return [
     'events.event_date'           => 'Event Date',
     'events.start_date'           => 'Start Date',
     'events.end_date'             => 'End Date',
+    'events.date_range'           => 'Start – End',
     'events.end_date_hint'        => 'Leave the end date empty for a single-day event.',
     'events.description'          => 'Description',
     'events.items_count'          => 'Items',

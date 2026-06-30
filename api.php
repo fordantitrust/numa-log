@@ -33,6 +33,7 @@ try {
         'report_by_company' => handleReportByCompany($pdo),
         'report_by_unit' => handleReportByUnit($pdo),
         'report_event' => handleReportEvent($pdo),
+        'report_event_summary' => handleReportEventSummary($pdo),
         'report_top_items' => handleReportTopItems($pdo),
         'report_seasonality' => handleReportSeasonality($pdo),
         'report_inactive' => handleReportInactive($pdo),
@@ -1019,6 +1020,77 @@ function handleReportEvent(PDO $pdo): void
 }
 
 /**
+ * Event-entity report: one row per named event with its date range, duration
+ * (days), upcoming/ongoing/past status, linked-item totals and average spend
+ * per event-day. Distinct from handleReportEvent, which aggregates item
+ * spending and lead-time across events + unlinked dates.
+ */
+function handleReportEventSummary(PDO $pdo): void
+{
+    $today = date('Y-m-d');
+
+    $rows = $pdo->query("
+        SELECT
+            e.id, e.name,
+            e.event_date                           AS start_date,
+            e.end_date                             AS end_date,
+            COUNT(i.id)                            AS items,
+            COALESCE(SUM(i.qty), 0)                AS total_qty,
+            COALESCE(SUM(i.price_per_qty*i.qty),0) AS total_price
+        FROM events e
+        LEFT JOIN items i ON i.event_id = e.id
+        GROUP BY e.id
+        ORDER BY e.event_date DESC, COALESCE(e.end_date, e.event_date) DESC, e.name
+    ")->fetchAll();
+
+    $events = [];
+    $totalDays = 0;
+    $multiDay  = 0;
+    $upcoming  = 0;
+    $ongoing   = 0;
+
+    foreach ($rows as $r) {
+        $start = $r['start_date'];
+        $end   = ($r['end_date'] !== null && $r['end_date'] !== '') ? $r['end_date'] : $start;
+        $days  = (int) round((strtotime($end) - strtotime($start)) / 86400) + 1;
+        if ($days < 1) $days = 1;
+        $isMulti = ($r['end_date'] !== null && $r['end_date'] !== '' && $r['end_date'] !== $start);
+
+        if ($start > $today)    { $status = 'upcoming'; $upcoming++; }
+        elseif ($end < $today)  { $status = 'past'; }
+        else                    { $status = 'ongoing'; $ongoing++; }
+
+        if ($isMulti) $multiDay++;
+        $totalDays += $days;
+
+        $total = (float) $r['total_price'];
+        $events[] = [
+            'id'          => (int) $r['id'],
+            'name'        => $r['name'],
+            'start_date'  => $start,
+            'end_date'    => $r['end_date'],
+            'days'        => $days,
+            'status'      => $status,
+            'items'       => (int) $r['items'],
+            'total_qty'   => (int) $r['total_qty'],
+            'total_price' => $total,
+            'avg_per_day' => $days > 0 ? round($total / $days, 2) : $total,
+        ];
+    }
+
+    jsonResponse([
+        'events'  => $events,
+        'summary' => [
+            'total'      => count($events),
+            'multi_day'  => $multiDay,
+            'total_days' => $totalDays,
+            'upcoming'   => $upcoming,
+            'ongoing'    => $ongoing,
+        ],
+    ]);
+}
+
+/**
  * "Top / extremes" report: the most expensive single line items, the most
  * frequently bought titles, and average unit price per type.
  */
@@ -1515,7 +1587,7 @@ function handleEventList(PDO $pdo): void
         FROM events e
         LEFT JOIN items i ON i.event_id = e.id
         GROUP BY e.id
-        ORDER BY e.event_date DESC, e.name
+        ORDER BY e.event_date DESC, COALESCE(e.end_date, e.event_date) DESC, e.name
     ")->fetchAll();
 
     $events = array_map(fn($r) => [

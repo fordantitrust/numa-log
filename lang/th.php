@@ -152,6 +152,7 @@ return [
     'report.tab_company'     => 'ตามค่าย',
     'report.tab_type'        => 'ตามประเภท',
     'report.tab_event'       => 'ตามงาน',
+    'report.tab_event_summary' => 'สรุปอีเวนต์',
     'report.tab_top'         => 'รายการเด่น',
     'report.tab_inactive'    => 'ไม่เคลื่อนไหว',
     'report.tab_budget'      => 'งบประมาณ',
@@ -258,6 +259,20 @@ return [
     'report.ev_unlinked_section'  => 'รายการเชื่อมด้วยวันที่เท่านั้น (ไม่มีชื่ออีเวนต์)',
     'report.ev_event_name'        => 'ชื่ออีเวนต์',
 
+    // ── Event Summary report (event-entity view) ──────────────────────────
+    'report.es_total'             => 'อีเวนต์ทั้งหมด',
+    'report.es_multiday'          => 'อีเวนต์หลายวัน',
+    'report.es_total_days'        => 'รวมวัน-อีเวนต์',
+    'report.es_upcoming'          => 'กำลังจะถึง',
+    'report.es_range'             => 'วันเริ่ม–สิ้นสุด',
+    'report.es_duration'          => 'จำนวนวัน',
+    'report.es_status'            => 'สถานะ',
+    'report.es_avg_day'           => 'เฉลี่ย/วัน',
+    'report.es_status_upcoming'   => 'กำลังจะถึง',
+    'report.es_status_ongoing'    => 'กำลังจัด',
+    'report.es_status_past'       => 'ผ่านแล้ว',
+    'report.es_no_events'         => 'ยังไม่มีอีเวนต์',
+
     // ── Events management (events.php) ────────────────────────────────────
     'events.title'                => 'จัดการอีเวนต์',
     'events.add'                  => 'เพิ่มอีเวนต์',
@@ -266,6 +281,7 @@ return [
     'events.event_date'           => 'วันที่อีเวนต์',
     'events.start_date'           => 'วันเริ่ม',
     'events.end_date'             => 'วันสิ้นสุด',
+    'events.date_range'           => 'วันเริ่ม–สิ้นสุด',
     'events.end_date_hint'        => 'เว้นว่างวันสิ้นสุดไว้หากเป็นอีเวนต์วันเดียว',
     'events.description'          => 'รายละเอียด',
     'events.items_count'          => 'รายการ',

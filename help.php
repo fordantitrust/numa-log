@@ -354,6 +354,12 @@
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
+                                <h6><i class="bi bi-calendar-range text-primary"></i> Event Summary (สรุปอีเวนต์) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.11</span></h6>
+                                <p class="small text-muted mb-0">มุมมองระดับตัวอีเวนต์: แต่ละงานแสดง <strong>ช่วงวันเริ่ม–สิ้นสุด</strong>, <strong>จำนวนวัน</strong>, สถานะ <strong>กำลังจะถึง / กำลังจัด / ผ่านแล้ว</strong>, จำนวนรายการ, ยอดรวม และ <strong>ยอดเฉลี่ยต่อวัน</strong> พร้อมการ์ดสรุป (อีเวนต์ทั้งหมด, อีเวนต์หลายวัน, รวมวัน-อีเวนต์, ที่กำลังจะถึง)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
                                 <h6><i class="bi bi-trophy text-primary"></i> Top Items (รายการเด่น) <span class="badge bg-info ms-1" style="font-size:.65rem">v1.6.1</span></h6>
                                 <p class="small text-muted mb-0">20 รายการที่แพงที่สุด, 20 รายการที่ซื้อบ่อยที่สุด และราคาเฉลี่ย/min/max ต่อประเภท</p>
                             </div>

@@ -47,16 +47,15 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th style="width:40px">#</th>
+                                <th style="width:150px"><?= t('events.date_range') ?></th>
                                 <th><?= t('events.name') ?></th>
-                                <th style="width:110px"><?= t('events.event_date') ?></th>
                                 <th class="text-center" style="width:70px"><?= t('events.items_count') ?></th>
                                 <th class="text-end" style="width:120px"><?= t('events.total_spent') ?></th>
                                 <th style="width:110px"></th>
                             </tr>
                         </thead>
                         <tbody id="eventList">
-                            <tr><td colspan="6" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
+                            <tr><td colspan="5" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -158,22 +157,21 @@ async function loadEvents() {
 
 function renderTable() {
     if (allEvents.length === 0) {
-        $('eventList').innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">${t('events.none')}</td></tr>`;
+        $('eventList').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${t('events.none')}</td></tr>`;
         return;
     }
 
-    $('eventList').innerHTML = allEvents.map((ev, i) => {
+    $('eventList').innerHTML = allEvents.map(ev => {
         const autoBtn = ev.unassigned_same_date > 0
             ? `<button class="btn btn-outline-secondary btn-sm px-1 py-0 ms-1" onclick="autoAssign(${ev.id}, ${ev.unassigned_same_date}, '${escJs(dateRange(ev))}')"
                 title="${t('events.auto_assign')}"><i class="bi bi-link-45deg"></i> ${ev.unassigned_same_date}</button>`
             : '';
         return `<tr>
-            <td class="text-muted">${i + 1}</td>
+            <td class="text-nowrap">${dateRange(ev)}${autoBtn}</td>
             <td>
                 <strong>${escHtml(ev.name)}</strong>
                 ${ev.description ? `<div class="stat-muted">${escHtml(ev.description)}</div>` : ''}
             </td>
-            <td>${dateRange(ev)}${autoBtn}</td>
             <td class="text-center">
                 ${ev.items_count > 0
                     ? `<a href="items.php?event_id=${ev.id}" class="text-decoration-none">${ev.items_count}</a>`

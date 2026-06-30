@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.10 — Un-assign events: items can be unlinked from an event without deleting anything — a one-click ✕ clear button next to the Event field on the item form (keeps the item's own Event Date), and an **Unassign** button in the Items bulk action bar to clear the event link on many selected items at once.
+**Latest:** v1.9.11 — Event reports & list: the Events management table now leads with the **Start – End date range** (no more `#` column), and a new **Event Summary** report tab shows each event's date range, **duration in days**, Upcoming/Ongoing/Past status, spend and average per event-day, with summary KPI cards. Report KPI cards on the event tabs were also evened out to a uniform height.
+
+**v1.9.10** — Un-assign events: items can be unlinked from an event without deleting anything — a one-click ✕ clear button next to the Event field on the item form (keeps the item's own Event Date), and an **Unassign** button in the Items bulk action bar to clear the event link on many selected items at once.
 
 **v1.9.9** — Multi-day events: events now have an optional **end date** (`events.end_date`, schema v9), so a single event can span several days (e.g. a two-day concert). Leave the end date empty for a single-day event. The event list, item dropdown, and "By Event" report show the full date range, and auto-assign-by-date links unlinked items whose event date falls anywhere within the range.
 
