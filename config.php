@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.9.8');
-const DB_SCHEMA_VERSION = 8;
+define('APP_VERSION', '1.9.9');
+const DB_SCHEMA_VERSION = 9;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -130,6 +130,11 @@ function initDB(): void
     if ($currentVer < 8) {
         require_once __DIR__ . '/migrations/v8_events.php';
         runMigrationV8($pdo);
+        $currentVer = 8;
+    }
+    if ($currentVer < 9) {
+        require_once __DIR__ . '/migrations/v9_event_end_date.php';
+        runMigrationV9($pdo);
     }
 }
 

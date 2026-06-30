@@ -935,6 +935,7 @@ function handleReportEvent(PDO $pdo): void
             e.id                                AS event_id,
             e.name                              AS event_name,
             e.event_date                        AS event_date,
+            e.end_date                          AS end_date,
             COUNT(i.id)                         AS items,
             COALESCE(SUM(i.qty), 0)             AS total_qty,
             COALESCE(SUM(i.price_per_qty*i.qty),0) AS total_price,
@@ -950,6 +951,7 @@ function handleReportEvent(PDO $pdo): void
         'event_id'    => (int) $r['event_id'],
         'event_name'  => $r['event_name'],
         'event_date'  => $r['event_date'],
+        'end_date'    => $r['end_date'],
         'is_named'    => true,
         'items'       => (int) $r['items'],
         'total_qty'   => (int) $r['total_qty'],
@@ -978,6 +980,7 @@ function handleReportEvent(PDO $pdo): void
         'event_id'    => null,
         'event_name'  => null,
         'event_date'  => $r['event_date'],
+        'end_date'    => null,
         'is_named'    => false,
         'items'       => (int) $r['items'],
         'total_qty'   => (int) $r['total_qty'],
@@ -1507,7 +1510,7 @@ function handleEventList(PDO $pdo): void
                COUNT(i.id)                              AS items_count,
                COALESCE(SUM(i.price_per_qty * i.qty), 0) AS total_price,
                (SELECT COUNT(*) FROM items x
-                WHERE x.event_date = e.event_date
+                WHERE x.event_date BETWEEN e.event_date AND COALESCE(e.end_date, e.event_date)
                   AND x.event_id IS NULL) AS unassigned_same_date
         FROM events e
         LEFT JOIN items i ON i.event_id = e.id
@@ -1519,6 +1522,7 @@ function handleEventList(PDO $pdo): void
         'id'                   => (int) $r['id'],
         'name'                 => $r['name'],
         'event_date'           => $r['event_date'],
+        'end_date'             => $r['end_date'],
         'description'          => $r['description'],
         'created_at'           => $r['created_at'],
         'items_count'          => (int) $r['items_count'],
@@ -1534,6 +1538,7 @@ function handleEventSave(PDO $pdo): void
     $id          = (int) ($_POST['id'] ?? 0);
     $name        = trim($_POST['name'] ?? '');
     $eventDate   = trim($_POST['event_date'] ?? '');
+    $endDate     = trim($_POST['end_date'] ?? '');
     $description = trim($_POST['description'] ?? '');
 
     if ($name === '') {
@@ -1542,13 +1547,21 @@ function handleEventSave(PDO $pdo): void
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventDate)) {
         jsonResponse(['error' => 'Invalid event_date format'], 400);
     }
+    // end_date is optional; NULL (or equal to start) means a single-day event.
+    if ($endDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+        jsonResponse(['error' => 'Invalid end_date format'], 400);
+    }
+    if ($endDate !== '' && $endDate < $eventDate) {
+        jsonResponse(['error' => 'End date must be on or after the start date'], 400);
+    }
+    $endDateVal = ($endDate === '' || $endDate === $eventDate) ? null : $endDate;
 
     if ($id > 0) {
-        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, description = :desc WHERE id = :id")
-            ->execute([':name' => $name, ':date' => $eventDate, ':desc' => $description, ':id' => $id]);
+        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, end_date = :end, description = :desc WHERE id = :id")
+            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':id' => $id]);
     } else {
-        $pdo->prepare("INSERT INTO events (name, event_date, description) VALUES (:name, :date, :desc)")
-            ->execute([':name' => $name, ':date' => $eventDate, ':desc' => $description]);
+        $pdo->prepare("INSERT INTO events (name, event_date, end_date, description) VALUES (:name, :date, :end, :desc)")
+            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description]);
         $id = (int) $pdo->lastInsertId();
     }
     jsonResponse(['success' => true, 'id' => $id]);
@@ -1596,18 +1609,24 @@ function handleEventAutoAssign(PDO $pdo): void
         jsonResponse(['error' => 'event_id is required'], 400);
     }
 
-    $ev = $pdo->prepare("SELECT event_date FROM events WHERE id = :id");
+    $ev = $pdo->prepare("SELECT event_date, end_date FROM events WHERE id = :id");
     $ev->execute([':id' => $eventId]);
     $row = $ev->fetch();
     if (!$row) {
         jsonResponse(['error' => 'Event not found'], 404);
     }
 
+    // Match unlinked items whose event_date falls within the event's date range
+    // (single-day events have end_date NULL, so the range collapses to one day).
     $stmt = $pdo->prepare("
         UPDATE items SET event_id = :eid
-        WHERE event_date = :date AND event_id IS NULL
+        WHERE event_date BETWEEN :start AND :end AND event_id IS NULL
     ");
-    $stmt->execute([':eid' => $eventId, ':date' => $row['event_date']]);
+    $stmt->execute([
+        ':eid'   => $eventId,
+        ':start' => $row['event_date'],
+        ':end'   => $row['end_date'] ?? $row['event_date'],
+    ]);
     jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
 }
 

@@ -410,7 +410,8 @@ let eventsData = [];
 let msIdol, msType, msEvent;
 let selectedIds = new Set();
 
-function eventDisplay(ev) { return `${ev.name} (${ev.event_date})`; }
+function eventDateRange(ev) { return ev.end_date && ev.end_date !== ev.event_date ? `${ev.event_date} – ${ev.end_date}` : ev.event_date; }
+function eventDisplay(ev) { return `${ev.name} (${eventDateRange(ev)})`; }
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -927,7 +928,7 @@ function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems) {
 
     function render() {
         const q = input.value.toLowerCase();
-        const items = getItems().filter(ev => !q || ev.name.toLowerCase().includes(q) || ev.event_date.includes(q));
+        const items = getItems().filter(ev => !q || ev.name.toLowerCase().includes(q) || ev.event_date.includes(q) || (ev.end_date || '').includes(q));
         const noEvHtml = `<div class="sd-item" data-val="" data-name="" data-date="" style="color:#9ca3af;font-style:italic">${t('events.no_event_ph')}</div>`;
         if (items.length === 0 && q) {
             list.innerHTML = noEvHtml + `<div class="sd-empty">${t('items.no_match')}</div>`;
@@ -935,7 +936,7 @@ function initEventDropdown(inputId, listId, hiddenId, dateFillId, getItems) {
             list.innerHTML = noEvHtml + items.map(ev =>
                 `<div class="sd-item" data-val="${ev.id}" data-name="${escHtml(ev.name)}" data-date="${ev.event_date}">
                     <strong>${escHtml(ev.name)}</strong>
-                    <span class="text-muted ms-2" style="font-size:12px">${ev.event_date}</span>
+                    <span class="text-muted ms-2" style="font-size:12px">${eventDateRange(ev)}</span>
                 </div>`
             ).join('');
         }

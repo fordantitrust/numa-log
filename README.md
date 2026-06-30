@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.8 — Navigation & Items UI: navbar now uses a responsive Bootstrap hamburger menu (`navbar-expand-lg`) with the full menu always shown in a fixed order and the current page highlighted instead of hidden; the Items filter bar was reorganized into two rows with an Event multi-select filter, and **Export**/**Add Item** moved into the filter card's header for a consistent, always-visible position.
+**Latest:** v1.9.9 — Multi-day events: events now have an optional **end date** (`events.end_date`, schema v9), so a single event can span several days (e.g. a two-day concert). Leave the end date empty for a single-day event. The event list, item dropdown, and "By Event" report show the full date range, and auto-assign-by-date links unlinked items whose event date falls anywhere within the range.
+
+**v1.9.8** — Navigation & Items UI: navbar now uses a responsive Bootstrap hamburger menu (`navbar-expand-lg`) with the full menu always shown in a fixed order and the current page highlighted instead of hidden; the Items filter bar was reorganized into two rows with an Event multi-select filter, and **Export**/**Add Item** moved into the filter card's header for a consistent, always-visible position.
 
 **v1.9.7** — Events: new **Events** feature with dedicated `events.php` management page, named event entities (`events` table, schema v8), `event_id` FK on items, searchable event dropdown in item form (auto-fills Event Date), per-row event badge in item list, bulk-assign and auto-assign by date for migrating old data, and an upgraded "By Event" report tab showing named events with clickable links.
 

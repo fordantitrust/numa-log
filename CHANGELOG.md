@@ -4,6 +4,16 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.9 (2026-06-30)
+
+### Events
+
+- **Multi-day events** — events gain an optional **end date** (`events.end_date`, schema **v9**). An event can now span several days (e.g. a two-day concert or a fanmeet weekend); leave the end date empty for a single-day event, so all existing events keep working unchanged. The event form has separate **Start Date** / **End Date** fields, and the event list, item event-dropdown, and the **By Event** report all display the full date range (`start – end`).
+- **Range-aware auto-assign** — auto-assign-by-date now links unlinked items whose `event_date` falls anywhere within `event_date … COALESCE(end_date, event_date)`, not just on the exact start date. The "unassigned" badge count on the events page uses the same range.
+- **API** — `event_save` accepts an `end_date` parameter (validated as `YYYY-MM-DD`, must be ≥ start date; stored as `NULL` when empty or equal to the start). `event_list` and `report_event` now return `end_date`.
+
+---
+
 ## v1.9.8 (2026-06-30)
 
 ### Items / Navigation

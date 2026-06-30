@@ -5,7 +5,8 @@
 |--------|------|-------------|
 | id | INTEGER PK | Auto-increment ID |
 | order_date | TEXT | Purchase date (YYYY-MM-DD) |
-| event_date | TEXT | Event date (YYYY-MM-DD) |
+| event_date | TEXT | Event date (YYYY-MM-DD) — the item's own day; for multi-day events it falls within the event's date range |
+| event_id | INTEGER FK | Reference to `events.id` (nullable; `ON DELETE SET NULL`) — links the item to a named event |
 | title | TEXT | Item name |
 | idol | TEXT | Idol / group name — immutable snapshot of the name at purchase time |
 | idol_id | INTEGER FK | Reference to `idol_entities.id` — canonical relation used by reports (nullable; `ON DELETE SET NULL`) |
@@ -14,6 +15,19 @@
 | qty | INTEGER | Quantity |
 | created_at | TEXT | Record creation timestamp |
 | updated_at | TEXT | Last update timestamp |
+
+### `events` (v8, +`end_date` in v9)
+Named events (concerts, fanmeets, etc.) that items can be linked to via `items.event_id`.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER PK | Auto-increment ID |
+| name | TEXT | Event name |
+| event_date | TEXT | Start date (YYYY-MM-DD) |
+| end_date | TEXT | (v9) End date (YYYY-MM-DD), nullable — `NULL` (or equal to `event_date`) means a single-day event; otherwise the event spans `event_date`…`end_date` |
+| description | TEXT | Optional description |
+| created_at | TEXT | Record creation timestamp |
+
+> **v9 note:** auto-assign-by-date links unlinked items whose `event_date` falls within `event_date`…`COALESCE(end_date, event_date)`.
 
 ### `idol_entities`
 | Column | Type | Description |

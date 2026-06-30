@@ -88,10 +88,17 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <label class="form-label small"><?= t('events.name') ?> *</label>
                         <input type="text" class="form-control form-control-sm" id="eName" required>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label small"><?= t('events.event_date') ?> *</label>
-                        <input type="date" class="form-control form-control-sm" id="eDate" required>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small"><?= t('events.start_date') ?> *</label>
+                            <input type="date" class="form-control form-control-sm" id="eDate" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small"><?= t('events.end_date') ?></label>
+                            <input type="date" class="form-control form-control-sm" id="eEnd">
+                        </div>
                     </div>
+                    <div class="form-text small mb-2"><?= t('events.end_date_hint') ?></div>
                     <div class="mb-2">
                         <label class="form-label small"><?= t('events.description') ?></label>
                         <input type="text" class="form-control form-control-sm" id="eDesc">
@@ -135,6 +142,9 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+// Date label: single day, or "start – end" for multi-day events.
+const dateRange = ev => ev.end_date && ev.end_date !== ev.event_date
+    ? `${ev.event_date} – ${ev.end_date}` : ev.event_date;
 let allEvents = [];
 
 document.addEventListener('DOMContentLoaded', loadEvents);
@@ -154,7 +164,7 @@ function renderTable() {
 
     $('eventList').innerHTML = allEvents.map((ev, i) => {
         const autoBtn = ev.unassigned_same_date > 0
-            ? `<button class="btn btn-outline-secondary btn-sm px-1 py-0 ms-1" onclick="autoAssign(${ev.id}, ${ev.unassigned_same_date}, '${escJs(ev.event_date)}')"
+            ? `<button class="btn btn-outline-secondary btn-sm px-1 py-0 ms-1" onclick="autoAssign(${ev.id}, ${ev.unassigned_same_date}, '${escJs(dateRange(ev))}')"
                 title="${t('events.auto_assign')}"><i class="bi bi-link-45deg"></i> ${ev.unassigned_same_date}</button>`
             : '';
         return `<tr>
@@ -163,7 +173,7 @@ function renderTable() {
                 <strong>${escHtml(ev.name)}</strong>
                 ${ev.description ? `<div class="stat-muted">${escHtml(ev.description)}</div>` : ''}
             </td>
-            <td>${ev.event_date}${autoBtn}</td>
+            <td>${dateRange(ev)}${autoBtn}</td>
             <td class="text-center">
                 ${ev.items_count > 0
                     ? `<a href="items.php?event_id=${ev.id}" class="text-decoration-none">${ev.items_count}</a>`
@@ -203,6 +213,7 @@ function editEvent(id) {
     $('eId').value = ev.id;
     $('eName').value = ev.name;
     $('eDate').value = ev.event_date;
+    $('eEnd').value = ev.end_date || '';
     $('eDesc').value = ev.description || '';
     $('formTitle').textContent = t('events.edit_prefix', { name: ev.name });
     new bootstrap.Modal($('formModal')).show();
@@ -218,6 +229,7 @@ async function saveEvent() {
     if (id) body.append('id', id);
     body.append('name', $('eName').value);
     body.append('event_date', $('eDate').value);
+    body.append('end_date', $('eEnd').value);
     body.append('description', $('eDesc').value);
 
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());

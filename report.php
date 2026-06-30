@@ -2267,6 +2267,7 @@ async function loadUnit() {
 // =====================================================================
 //  #2 By Event (event_date + lead time)
 // =====================================================================
+function evDateRange(r) { return r.end_date && r.end_date !== r.event_date ? `${r.event_date} – ${r.end_date}` : r.event_date; }
 async function loadEvent() {
     const res = await fetch('api.php?action=report_event').then(r => r.json());
     const named   = res.named   || [];
@@ -2284,7 +2285,7 @@ async function loadEvent() {
     chartEvent = new Chart($('chartEvent').getContext('2d'), {
         type: 'bar',
         data: {
-            labels: chron.map(r => r.event_name ? `${r.event_name} (${r.event_date})` : r.event_date),
+            labels: chron.map(r => r.event_name ? `${r.event_name} (${evDateRange(r)})` : evDateRange(r)),
             datasets: [{ data: chron.map(r => Number(r.total_price)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 4 }]
         },
         options: barOptsBaht()
@@ -2293,7 +2294,7 @@ async function loadEvent() {
     const namedRows = named.map(r => `<tr>
         <td>
             <a href="items.php?event_id=${r.event_id}" class="text-decoration-none fw-semibold">${escHtml(r.event_name)}</a>
-            <div class="text-muted" style="font-size:11px">${r.event_date}</div>
+            <div class="text-muted" style="font-size:11px">${evDateRange(r)}</div>
         </td>
         <td class="text-end">${fmtInt(r.items)}</td>
         <td class="text-end">${fmtInt(r.idols)}</td>
