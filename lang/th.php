@@ -312,10 +312,13 @@ return [
     'events.bulk_unassign_confirm' => 'ปลดลิงก์อีเวนต์ออกจาก {n} รายการ? (ไม่ลบรายการ)',
     'events.is_free_entry'        => 'เข้าฟรี (ไม่ต้องใช้ตั๋ว)',
     'events.free_entry_hint'      => 'ติ๊กหากอีเวนต์นี้ไม่มีตั๋วเข้างาน เพื่อไม่ให้ขึ้นแจ้งเตือน "ยังไม่มี ticket"',
+    'events.is_not_attended'      => 'ไม่ได้ไปงานนี้ (สั่งแต่สินค้า)',
+    'events.not_attended_hint'    => 'ติ๊กหากไม่ได้ไปงานนี้แต่มีการสั่งของที่เกี่ยวข้องไว้ เพื่อไม่ให้ขึ้นแจ้งเตือน "ยังไม่มี ticket"',
     'events.ticket_status'        => 'Ticket',
     'events.ticket_ok'            => 'มี ticket แล้ว',
     'events.ticket_missing'       => 'ยังไม่มี ticket',
     'events.ticket_free'          => 'เข้าฟรี',
+    'events.ticket_not_attended'  => 'ไม่ได้ไป',
     'events.ticket_setup_hint'    => 'ยังไม่ได้ตั้งค่าประเภทไหนเป็น Ticket จึงตรวจสอบสถานะ ticket ไม่ได้ กรุณาตั้งค่าใน',
     'events.stat_no_ticket'       => 'ยังไม่มี ticket',
 

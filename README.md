@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.15 — The Events page now detects missing tickets: mark a type as "Is Ticket Type" in Manage Types and mark free-entry events, and each event shows a Ticket recorded / No ticket / Free entry badge.
+**Latest:** v1.9.16 — Events can now also be marked "Did not attend (ordered items only)", alongside Free entry, to exclude them from the missing-ticket warning.
+
+**v1.9.15** — The Events page now detects missing tickets: mark a type as "Is Ticket Type" in Manage Types and mark free-entry events, and each event shows a Ticket recorded / No ticket / Free entry badge.
 
 **v1.9.11** — Event reports & list: the Events management table now leads with the **Start – End date range** (no more `#` column), and a new **Event Summary** report tab shows each event's date range, **duration in days**, Upcoming/Ongoing/Past status, spend and average per event-day, with summary KPI cards. Report KPI cards on the event tabs were also evened out to a uniform height.
 

@@ -16,7 +16,7 @@
 | created_at | TEXT | Record creation timestamp |
 | updated_at | TEXT | Last update timestamp |
 
-### `events` (v8, +`end_date` in v9, +`is_free_entry` in v10)
+### `events` (v8, +`end_date` in v9, +`is_free_entry` in v10, +`is_not_attended` in v11)
 Named events (concerts, fanmeets, etc.) that items can be linked to via `items.event_id`.
 | Column | Type | Description |
 |--------|------|-------------|
@@ -27,9 +27,11 @@ Named events (concerts, fanmeets, etc.) that items can be linked to via `items.e
 | description | TEXT | Optional description |
 | created_at | TEXT | Record creation timestamp |
 | is_free_entry | INTEGER | (v10) `1` = free entry, no ticket expected — excluded from the "missing ticket" detection on the Events page |
+| is_not_attended | INTEGER | (v11) `1` = did not attend the event (items were still ordered for it) — also excluded from "missing ticket" detection; mutually exclusive with `is_free_entry` in the UI |
 
 > **v9 note:** auto-assign-by-date links unlinked items whose `event_date` falls within `event_date`…`COALESCE(end_date, event_date)`.
 > **v10 note:** ticket detection works by flagging one or more `type_categories` rows with `is_ticket = 1`; an event "has a ticket" if any linked item's `type` matches a ticket-flagged type category. See `type_categories` below.
+> **v11 note:** `is_free_entry` and `is_not_attended` are mutually exclusive — saving with both `1` clears `is_free_entry` server-side.
 
 ### `idol_entities`
 | Column | Type | Description |

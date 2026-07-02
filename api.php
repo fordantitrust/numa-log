@@ -1607,6 +1607,7 @@ function handleEventList(PDO $pdo): void
         'description'          => $r['description'],
         'created_at'           => $r['created_at'],
         'is_free_entry'        => (int) $r['is_free_entry'],
+        'is_not_attended'      => (int) $r['is_not_attended'],
         'items_count'          => (int) $r['items_count'],
         'total_price'          => (float) $r['total_price'],
         'unassigned_same_date' => (int) $r['unassigned_same_date'],
@@ -1626,6 +1627,10 @@ function handleEventSave(PDO $pdo): void
     $endDate     = trim($_POST['end_date'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $isFreeEntry = !empty($_POST['is_free_entry']) ? 1 : 0;
+    $isNotAttended = !empty($_POST['is_not_attended']) ? 1 : 0;
+    if ($isNotAttended) {
+        $isFreeEntry = 0; // mutually exclusive: not attending implies free entry is moot
+    }
 
     if ($name === '') {
         jsonResponse(['error' => 'Name is required'], 400);
@@ -1643,11 +1648,11 @@ function handleEventSave(PDO $pdo): void
     $endDateVal = ($endDate === '' || $endDate === $eventDate) ? null : $endDate;
 
     if ($id > 0) {
-        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, end_date = :end, description = :desc, is_free_entry = :free WHERE id = :id")
-            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':free' => $isFreeEntry, ':id' => $id]);
+        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, end_date = :end, description = :desc, is_free_entry = :free, is_not_attended = :notatt WHERE id = :id")
+            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':free' => $isFreeEntry, ':notatt' => $isNotAttended, ':id' => $id]);
     } else {
-        $pdo->prepare("INSERT INTO events (name, event_date, end_date, description, is_free_entry) VALUES (:name, :date, :end, :desc, :free)")
-            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':free' => $isFreeEntry]);
+        $pdo->prepare("INSERT INTO events (name, event_date, end_date, description, is_free_entry, is_not_attended) VALUES (:name, :date, :end, :desc, :free, :notatt)")
+            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':free' => $isFreeEntry, ':notatt' => $isNotAttended]);
         $id = (int) $pdo->lastInsertId();
     }
     jsonResponse(['success' => true, 'id' => $id]);

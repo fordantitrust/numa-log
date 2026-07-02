@@ -579,6 +579,7 @@
                                         <tr><th style="width:160px"><span class="badge bg-success">Ticket recorded</span></th><td>At least one linked item uses a type flagged as a ticket type (see <a href="#types">Type Management</a>)</td></tr>
                                         <tr><th><span class="badge bg-warning text-dark">No ticket</span></th><td>No linked item matches a ticket type yet &mdash; the purchase may be missing from the log</td></tr>
                                         <tr><th><span class="badge bg-secondary">Free entry</span></th><td>The event is marked <strong>Free entry (no ticket required)</strong> in its edit form, so it's excluded from the warning</td></tr>
+                                        <tr><th><span class="badge bg-secondary">Did not attend</span></th><td>The event is marked <strong>Did not attend (ordered items only)</strong> in its edit form &mdash; you didn't go, but items were still ordered for it, so it's excluded from the warning too <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.16</span></td></tr>
                                     </table>
                                     <p class="mb-0">This needs at least one type marked <strong>Is Ticket Type</strong> in <a href="#types">Type Management</a> first &mdash; until then, the Events page shows a setup reminder instead of status badges. The sidebar also shows a running count of events still missing a ticket.</p>
                                 </div>

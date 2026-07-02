@@ -579,6 +579,7 @@
                                         <tr><th style="width:160px"><span class="badge bg-success">มี ticket แล้ว</span></th><td>มีรายการที่เชื่อมกับอีเวนต์นี้อย่างน้อย 1 รายการที่ใช้ประเภทซึ่งตั้งค่าเป็น Ticket ไว้ (ดู <a href="#types">จัดการประเภทสินค้า</a>)</td></tr>
                                         <tr><th><span class="badge bg-warning text-dark">ยังไม่มี ticket</span></th><td>ยังไม่มีรายการที่ตรงกับประเภท Ticket &mdash; อาจยังไม่ได้บันทึกการซื้อตั๋ว</td></tr>
                                         <tr><th><span class="badge bg-secondary">เข้าฟรี</span></th><td>อีเวนต์นี้ถูกตั้งค่าเป็น <strong>เข้าฟรี (ไม่ต้องใช้ตั๋ว)</strong> ในฟอร์มแก้ไข จึงไม่ถูกนับเป็นการแจ้งเตือน</td></tr>
+                                        <tr><th><span class="badge bg-secondary">ไม่ได้ไป</span></th><td>อีเวนต์นี้ถูกตั้งค่าเป็น <strong>ไม่ได้ไปงานนี้ (สั่งแต่สินค้า)</strong> ในฟอร์มแก้ไข &mdash; ไม่ได้ไปงาน แต่มีการสั่งของที่เกี่ยวข้องไว้ จึงไม่ถูกนับเป็นการแจ้งเตือนเช่นกัน <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.16</span></td></tr>
                                     </table>
                                     <p class="mb-0">ต้องตั้งค่าอย่างน้อย 1 ประเภทเป็น <strong>เป็นประเภท Ticket</strong> ในหน้า <a href="#types">จัดการประเภทสินค้า</a> ก่อน มิฉะนั้นหน้า Events จะแสดงข้อความแนะนำการตั้งค่าแทน badge สถานะ และแถบด้านข้างจะแสดงจำนวนอีเวนต์ที่ยังไม่มี ticket ด้วย</p>
                                 </div>

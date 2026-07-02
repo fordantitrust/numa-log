@@ -4,6 +4,15 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.16 (2026-07-02)
+
+### Events
+
+- **"Did not attend" option** — events can now be marked as **Did not attend (ordered items only)** in addition to Free entry. Like Free entry, it excludes the event from the missing-ticket warning; the two options are mutually exclusive. The Events page badge now shows **Did not attend** (gray) when set.
+- Schema: `events.is_not_attended` (migration v11).
+
+---
+
 ## v1.9.15 (2026-07-02)
 
 ### Events / Types

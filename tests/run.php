@@ -1462,10 +1462,28 @@ assertJson('event_list: free-entry flag persisted', apiGet($BASE_URL, 'event_lis
     return 'Event not found in list';
 });
 
-// 9e. Cleanup
+// 9e. Not-attended event is reported regardless of linked items, and clears is_free_entry
+$notAttendedRes = apiPost($BASE_URL, 'event_save', [
+    'name' => 'Skipped Fan Meeting', 'event_date' => '2025-09-06', 'end_date' => '', 'description' => '',
+    'is_free_entry' => '1', 'is_not_attended' => '1',
+], $CSRF, $COOKIE_FILE);
+$notAttendedEventId = (int) (json_decode($notAttendedRes['body'], true)['id'] ?? 0);
+
+assertJson('event_list: not-attended flag persisted and free entry cleared', apiGet($BASE_URL, 'event_list', [], $COOKIE_FILE), 200, function ($d) use ($notAttendedEventId) {
+    foreach ($d['events'] as $ev) {
+        if ((int) $ev['id'] === $notAttendedEventId) {
+            if ((int) $ev['is_not_attended'] !== 1) return 'Expected is_not_attended=1';
+            return ((int) $ev['is_free_entry'] === 0) ? null : 'Expected is_free_entry=0 when is_not_attended=1';
+        }
+    }
+    return 'Event not found in list';
+});
+
+// 9f. Cleanup
 apiPost($BASE_URL, 'delete', ['id' => $ticketItemId], $CSRF, $COOKIE_FILE);
 apiPost($BASE_URL, 'event_delete', ['id' => $ticketEventId], $CSRF, $COOKIE_FILE);
 apiPost($BASE_URL, 'event_delete', ['id' => $freeEventId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'event_delete', ['id' => $notAttendedEventId], $CSRF, $COOKIE_FILE);
 apiPost($BASE_URL, 'type_delete', ['id' => $ticketTypeId], $CSRF, $COOKIE_FILE);
 
 // ─────────────────────────────────────────────────────────────────────────────

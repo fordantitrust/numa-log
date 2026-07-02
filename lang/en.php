@@ -318,10 +318,13 @@ return [
     'events.bulk_unassign_confirm' => 'Remove the event link from {n} item(s)? (Items are not deleted.)',
     'events.is_free_entry'        => 'Free entry (no ticket required)',
     'events.free_entry_hint'      => 'Check this if the event has no admission ticket, so it is excluded from the missing-ticket warning.',
+    'events.is_not_attended'      => 'Did not attend (ordered items only)',
+    'events.not_attended_hint'    => 'Check this if you did not go to the event but still ordered related items, so it is excluded from the missing-ticket warning.',
     'events.ticket_status'        => 'Ticket',
     'events.ticket_ok'            => 'Ticket recorded',
     'events.ticket_missing'       => 'No ticket',
     'events.ticket_free'          => 'Free entry',
+    'events.ticket_not_attended'  => 'Did not attend',
     'events.ticket_setup_hint'    => 'No type is marked as a Ticket type yet, so ticket status cannot be detected. Mark one in',
     'events.stat_no_ticket'       => 'Missing ticket',
 

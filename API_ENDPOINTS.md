@@ -467,7 +467,7 @@ List all events with linked-item stats and ticket-detection fields.
   "events": [
     {
       "id": 1, "name": "TWICE World Tour Bangkok", "event_date": "2025-09-01", "end_date": null,
-      "description": "", "created_at": "2025-08-01 10:00:00", "is_free_entry": 0,
+      "description": "", "created_at": "2025-08-01 10:00:00", "is_free_entry": 0, "is_not_attended": 0,
       "items_count": 3, "total_price": 5500.0, "unassigned_same_date": 0, "ticket_items_count": 1
     }
   ],
@@ -475,8 +475,9 @@ List all events with linked-item stats and ticket-detection fields.
 }
 ```
 
-`is_free_entry`, `ticket_items_count`, and the top-level `ticket_types_count` were added in v1.9.15. An
-event's ticket status (used by the Events page badge) is derived client-side: `is_free_entry=1` → **Free
+`is_free_entry`, `ticket_items_count`, and the top-level `ticket_types_count` were added in v1.9.15;
+`is_not_attended` was added in v1.9.16. An event's ticket status (used by the Events page badge) is
+derived client-side: `is_not_attended=1` → **Did not attend**; else `is_free_entry=1` → **Free
 entry**; else `ticket_items_count > 0` → **Ticket recorded**; else → **No ticket**. `ticket_types_count`
 is the number of `type_categories` rows flagged `is_ticket=1` — when `0`, no type has been configured yet
 and the UI shows a setup hint instead of status badges.
@@ -497,6 +498,7 @@ Create or update a named event.
 | `end_date` | string | End date, `YYYY-MM-DD`; blank or equal to `event_date` means a single-day event |
 | `description` | string | Optional description |
 | `is_free_entry` | bool | (v1.9.15) `1` marks the event as free entry (excluded from missing-ticket detection) |
+| `is_not_attended` | bool | (v1.9.16) `1` marks the event as not attended (excluded from missing-ticket detection); clears `is_free_entry` server-side if both are sent |
 | `csrf_token` | string | CSRF token |
 
 **Response:**

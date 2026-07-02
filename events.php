@@ -111,6 +111,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <label class="form-check-label small" for="eFree"><?= t('events.is_free_entry') ?></label>
                         <div class="form-text small"><?= t('events.free_entry_hint') ?></div>
                     </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="eNotAttended">
+                        <label class="form-check-label small" for="eNotAttended"><?= t('events.is_not_attended') ?></label>
+                        <div class="form-text small"><?= t('events.not_attended_hint') ?></div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -157,10 +162,12 @@ const dateRange = ev => ev.end_date && ev.end_date !== ev.event_date
 let allEvents = [];
 let ticketTypesCount = 0;
 
-// Ticket status per event: 'free' (free entry), 'ok' (ticket item linked), or 'missing'.
-const ticketStatus = ev => ev.is_free_entry == 1 ? 'free' : (ev.ticket_items_count > 0 ? 'ok' : 'missing');
+// Ticket status per event: 'not_attended' (didn't go), 'free' (free entry), 'ok' (ticket item linked), or 'missing'.
+const ticketStatus = ev => ev.is_not_attended == 1 ? 'not_attended' : (ev.is_free_entry == 1 ? 'free' : (ev.ticket_items_count > 0 ? 'ok' : 'missing'));
 
 document.addEventListener('DOMContentLoaded', loadEvents);
+$('eFree').addEventListener('change', () => { if ($('eFree').checked) $('eNotAttended').checked = false; });
+$('eNotAttended').addEventListener('change', () => { if ($('eNotAttended').checked) $('eFree').checked = false; });
 
 async function loadEvents() {
     const res = await fetch('api.php?action=event_list').then(r => r.json());
@@ -176,6 +183,9 @@ function ticketBadge(ev) {
         return `<span class="text-muted">-</span>`;
     }
     const status = ticketStatus(ev);
+    if (status === 'not_attended') {
+        return `<span class="badge bg-secondary"><i class="bi bi-slash-circle"></i> ${t('events.ticket_not_attended')}</span>`;
+    }
     if (status === 'free') {
         return `<span class="badge bg-secondary"><i class="bi bi-door-open"></i> ${t('events.ticket_free')}</span>`;
     }
@@ -247,6 +257,7 @@ function editEvent(id) {
     $('eEnd').value = ev.end_date || '';
     $('eDesc').value = ev.description || '';
     $('eFree').checked = ev.is_free_entry == 1;
+    $('eNotAttended').checked = ev.is_not_attended == 1;
     $('formTitle').textContent = t('events.edit_prefix', { name: ev.name });
     new bootstrap.Modal($('formModal')).show();
 }
@@ -264,6 +275,7 @@ async function saveEvent() {
     body.append('end_date', $('eEnd').value);
     body.append('description', $('eDesc').value);
     body.append('is_free_entry', $('eFree').checked ? '1' : '0');
+    body.append('is_not_attended', $('eNotAttended').checked ? '1' : '0');
 
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }

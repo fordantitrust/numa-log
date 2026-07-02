@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.9.15');
-const DB_SCHEMA_VERSION = 10;
+define('APP_VERSION', '1.9.16');
+const DB_SCHEMA_VERSION = 11;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -140,6 +140,11 @@ function initDB(): void
     if ($currentVer < 10) {
         require_once __DIR__ . '/migrations/v10_ticket_tracking.php';
         runMigrationV10($pdo);
+        $currentVer = 10;
+    }
+    if ($currentVer < 11) {
+        require_once __DIR__ . '/migrations/v11_event_not_attended.php';
+        runMigrationV11($pdo);
     }
 }
 
