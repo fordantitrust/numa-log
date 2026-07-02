@@ -88,8 +88,13 @@ function jsonResponse(array $data, int $code = 200): void
 function handleList(PDO $pdo): void
 {
     $page = max(1, (int) ($_GET['page'] ?? 1));
-    $perPage = max(1, min(100, (int) ($_GET['per_page'] ?? 20)));
+    $perPage = max(1, min(200, (int) ($_GET['per_page'] ?? 20)));
     $offset = ($page - 1) * $perPage;
+
+    $dateField = $_GET['date_field'] ?? 'order_date';
+    if (!in_array($dateField, ['order_date', 'event_date'], true)) {
+        $dateField = 'order_date';
+    }
 
     $where = [];
     $params = [];
@@ -114,14 +119,14 @@ function handleList(PDO $pdo): void
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_from'])) {
             jsonResponse(['error' => 'Invalid date_from format'], 400);
         }
-        $where[] = 'order_date >= :date_from';
+        $where[] = "i.{$dateField} >= :date_from";
         $params[':date_from'] = $_GET['date_from'];
     }
     if (!empty($_GET['date_to'])) {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_to'])) {
             jsonResponse(['error' => 'Invalid date_to format'], 400);
         }
-        $where[] = 'order_date <= :date_to';
+        $where[] = "i.{$dateField} <= :date_to";
         $params[':date_to'] = $_GET['date_to'];
     }
     $eventIds = array_values(array_filter(array_map('intval', (array) ($_GET['event_id'] ?? []))));

@@ -220,7 +220,7 @@
                                         </tr>
                                         <tr>
                                             <th><i class="bi bi-copy text-success"></i> Clone</th>
-                                            <td>กดไอคอน copy เพื่อทำซ้ำรายการ ระบบจะสร้างรายการใหม่ที่มีข้อมูลเหมือนเดิม พร้อมเปิดฟอร์มให้แก้ไขก่อน Save</td>
+                                            <td>กดไอคอน copy เพื่อทำซ้ำรายการ ระบบจะสร้างรายการใหม่ที่มีข้อมูลเหมือนเดิม รวมถึงอีเวนต์ที่ผูกไว้ <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.13</span> พร้อมเปิดฟอร์มให้แก้ไขก่อน Save &mdash; ถ้ามีตัวกรองวันที่ "From" อยู่ วันที่สั่ง/วันที่งานของรายการใหม่จะถูกเติมให้อัตโนมัติตามฟิลด์ที่เลือกใน "Filter by" <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.13</span></td>
                                         </tr>
                                         <tr>
                                             <th><i class="bi bi-trash text-danger"></i> ลบ</th>
@@ -240,13 +240,19 @@
                                 <div class="accordion-body">
                                     <h6>ตัวกรอง</h6>
                                     <table class="table table-sm help-table mb-3">
-                                        <tr><th style="width:120px">Idol</th><td>กรองเฉพาะไอดอล/กลุ่มที่เลือก</td></tr>
-                                        <tr><th>Type</th><td>กรองเฉพาะประเภทสินค้าที่เลือก</td></tr>
-                                        <tr><th>Date Range</th><td>กรองตามช่วงวันที่สั่งซื้อ</td></tr>
+                                        <tr><th style="width:120px">Idol</th><td>กรองเฉพาะไอดอล/กลุ่มที่เลือก (เลือกได้หลายค่า)</td></tr>
+                                        <tr><th>Type</th><td>กรองเฉพาะประเภทสินค้าที่เลือก (เลือกได้หลายค่า)</td></tr>
+                                        <tr><th>Event</th><td>กรองเฉพาะอีเวนต์ที่เลือก (เลือกได้หลายค่า)</td></tr>
+                                        <tr><th>Filter by <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.14</span></th><td>เลือกว่าช่วงวันที่ด้านล่างจะกรองตาม <strong>วันที่สั่ง</strong> หรือ <strong>วันที่งาน</strong></td></tr>
+                                        <tr><th>From / To</th><td>กรองตามช่วงวันที่ (ตามฟิลด์ที่เลือกใน "Filter by")</td></tr>
                                         <tr><th>Search</th><td>ค้นหาจากชื่อสินค้า (Title)</td></tr>
                                     </table>
+                                    <h6>คลิกในตารางเพื่อกรองอย่างรวดเร็ว <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.14</span></h6>
+                                    <p>ในตารางรายการ คลิกที่ <strong>วันที่สั่ง</strong> หรือ <strong>วันที่งาน</strong> ของแถวใดก็ได้ เพื่อตั้งตัวกรอง "From" เป็นวันที่นั้นทันที (พร้อมสลับ "Filter by" ให้ตรงกับคอลัมน์ที่คลิก) และคลิกที่ป้าย <strong>Idol</strong>, <strong>Type</strong> หรือ <strong>Event</strong> เพื่อเพิ่มค่านั้นเข้าตัวกรองที่เกี่ยวข้อง &mdash; คลิกค่าอื่นในแถวอื่นต่อได้เรื่อย ๆ เพื่อเพิ่มเข้าไปในตัวกรองแบบหลายค่า</p>
                                     <h6>การเรียงลำดับ</h6>
                                     <p>คลิกที่หัวคอลัมน์ในตารางเพื่อเรียงลำดับ คลิกซ้ำเพื่อสลับระหว่าง <i class="bi bi-sort-up"></i> น้อย &rarr; มาก และ <i class="bi bi-sort-down"></i> มาก &rarr; น้อย</p>
+                                    <h6>จำนวนรายการต่อหน้า <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.14</span></h6>
+                                    <p>มุมล่างซ้ายของตารางมีตัวเลือกจำนวนแถวต่อหน้า (20 ค่าเริ่มต้น / 50 / 100 / 200)</p>
                                     <h6>Summary Cards</h6>
                                     <p>ด้านบนตารางแสดงสรุป 3 ค่า (เปลี่ยนตามตัวกรองที่ใช้):</p>
                                     <ul class="mb-0">

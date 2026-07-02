@@ -28,6 +28,10 @@
         .summary-card .display-6 { font-weight: 700; }
         .badge-idol { background: #ddd6fe; color: #5b21b6; }
         .badge-type { background: #fce7f3; color: #9d174d; }
+        .date-filter-link { cursor: pointer; border-bottom: 1px dashed #9ca3af; }
+        .date-filter-link:hover { color: var(--primary); border-bottom-color: var(--primary); }
+        .filter-clickable { cursor: pointer; }
+        .filter-clickable:hover { filter: brightness(0.92); }
         .table-responsive { max-height: 65vh; overflow-y: auto; }
         .page-link { color: var(--primary); }
         .page-link.active, .active > .page-link { background: var(--primary); border-color: var(--primary); }
@@ -171,11 +175,18 @@ require __DIR__ . '/navbar.php';
                     <label class="form-label small mb-0"><?= t('common.search') ?></label>
                     <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="<?= t('items.search_ph') ?>">
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-0"><?= t('items.date_field') ?></label>
+                    <select class="form-select form-select-sm" id="fDateField">
+                        <option value="order_date"><?= t('items.order_date') ?></option>
+                        <option value="event_date"><?= t('items.event_date') ?></option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0"><?= t('items.from') ?></label>
                     <input type="date" class="form-control form-control-sm" id="fDateFrom">
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-2">
                     <label class="form-label small mb-0"><?= t('items.to') ?></label>
                     <input type="date" class="form-control form-control-sm" id="fDateTo">
                 </div>
@@ -256,8 +267,17 @@ require __DIR__ . '/navbar.php';
                 </tbody>
             </table>
         </div>
-        <div class="card-footer d-flex justify-content-between align-items-center py-2">
-            <div class="small text-muted" id="pageInfo">-</div>
+        <div class="card-footer d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="small text-muted" id="pageInfo">-</div>
+                <label class="small text-muted mb-0 ms-2" for="fPerPage"><?= t('items.per_page') ?></label>
+                <select class="form-select form-select-sm" id="fPerPage" style="width:auto">
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                </select>
+            </div>
             <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
         </div>
     </div>
@@ -473,9 +493,10 @@ function setupSort() {
 
 function setupFilterEvents() {
     $('fSearch').addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { currentPage = 1; loadData(); }, 300); });
-    ['fDateFrom', 'fDateTo'].forEach(id => {
+    ['fDateField', 'fDateFrom', 'fDateTo'].forEach(id => {
         $(id).addEventListener('change', () => { currentPage = 1; loadData(); });
     });
+    $('fPerPage').addEventListener('change', () => { currentPage = 1; loadData(); });
 }
 
 // --- API ---
@@ -640,6 +661,11 @@ function initMultiSelect(wrapId, getItems, onChange) {
         getSelected: () => [...selected],
         clear()            { selected = []; renderBox(); },
         setSelected(arr)   { selected = [...arr]; renderBox(); },
+        addSelected(val)   {
+            if (selected.includes(val)) return;
+            selected = [...selected, val];
+            renderBox(); renderList(); onChange(selected);
+        },
     };
     return wrap._msInst;
 }
@@ -648,10 +674,11 @@ async function loadData() {
     const params = new URLSearchParams({
         action: 'list',
         page: currentPage,
-        per_page: 20,
+        per_page: $('fPerPage').value,
         sort: currentSort,
         dir: currentDir,
         search: $('fSearch').value,
+        date_field: $('fDateField').value,
         date_from: $('fDateFrom').value,
         date_to: $('fDateTo').value,
     });
@@ -682,12 +709,43 @@ function formatDate(d) {
     return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function dateCell(raw, field) {
+    if (!raw) return '<span class="text-muted">-</span>';
+    return `<span class="date-filter-link" title="${t('items.filter_by_this_date')}" onclick="filterByDate('${field}','${raw}')">${formatDate(raw)}</span>`;
+}
+
+function filterByDate(field, date) {
+    $('fDateField').value = field;
+    $('fDateFrom').value = date;
+    currentPage = 1;
+    loadData();
+}
+
+function filterByIdol(val) {
+    if (msIdol) msIdol.addSelected(val);
+    currentPage = 1;
+    loadData();
+}
+
+function filterByType(val) {
+    if (msType) msType.addSelected(val);
+    currentPage = 1;
+    loadData();
+}
+
+function filterByEvent(eventId) {
+    const ev = eventsData.find(e => e.id == eventId);
+    if (ev && msEvent) msEvent.addSelected(eventDisplay(ev));
+    currentPage = 1;
+    loadData();
+}
+
 function renderEventCell(r) {
-    const date = r.event_date ? formatDate(r.event_date) : '';
+    const date = dateCell(r.event_date, 'event_date');
     if (r.event_name) {
-        return `${date}<br><span class="badge" style="background:#ede9fe;color:#5b21b6;font-size:10px;font-weight:500">${escHtml(r.event_name)}</span>`;
+        return `${date}<br><span class="badge filter-clickable" title="${t('items.filter_by_this_value')}" style="background:#ede9fe;color:#5b21b6;font-size:10px;font-weight:500" onclick="filterByEvent(${r.event_id})">${escHtml(r.event_name)}</span>`;
     }
-    return date || '<span class="text-muted">-</span>';
+    return date;
 }
 
 function renderTable(res) {
@@ -701,11 +759,11 @@ function renderTable(res) {
         <tr>
             <td><input type="checkbox" class="row-chk" data-id="${r.id}"></td>
             <td class="text-muted">${offset + i + 1}</td>
-            <td>${formatDate(r.order_date)}</td>
+            <td>${dateCell(r.order_date, 'order_date')}</td>
             <td>${renderEventCell(r)}</td>
             <td>${escHtml(r.title)}</td>
-            <td><span class="badge badge-idol">${escHtml(r.idol)}</span></td>
-            <td><span class="badge badge-type">${escHtml(r.type)}</span></td>
+            <td><span class="badge badge-idol filter-clickable" title="${t('items.filter_by_this_value')}" onclick="filterByIdol('${escJs(r.idol)}')">${escHtml(r.idol)}</span></td>
+            <td><span class="badge badge-type filter-clickable" title="${t('items.filter_by_this_value')}" onclick="filterByType('${escJs(r.type)}')">${escHtml(r.type)}</span></td>
             <td class="text-end">${formatNumber(r.price_per_qty)}</td>
             <td class="text-end">${r.qty}</td>
             <td class="text-end fw-semibold">${formatNumber(r.total_price)}</td>
@@ -769,8 +827,11 @@ function showFormModal(id = null) {
     $('itemForm').reset();
     const filterFrom = $('fDateFrom').value;
     if (filterFrom) {
-        $('itemOrderDate').value = filterFrom;
-        $('itemEventDate').value = filterFrom;
+        if ($('fDateField').value === 'event_date') {
+            $('itemEventDate').value = filterFrom;
+        } else {
+            $('itemOrderDate').value = filterFrom;
+        }
     }
     $('formTitle').textContent = id ? t('items.edit_item') : t('items.add_item');
     new bootstrap.Modal($('formModal')).show();
@@ -802,12 +863,15 @@ async function cloneItem(id) {
     if (res.error) { alert(res.error); return; }
     const d = res.data;
     const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-    const defaultDate = $('fDateFrom').value || today;
+    const filterFrom = $('fDateFrom').value;
+    const dateField = $('fDateField').value;
+    const orderDate = (filterFrom && dateField === 'order_date') ? filterFrom : today;
+    const eventDate = (filterFrom && dateField === 'event_date') ? filterFrom : today;
     $('itemId').value = '';
-    $('itemOrderDate').value = defaultDate;
-    $('itemEventDate').value = defaultDate;
+    $('itemOrderDate').value = orderDate;
+    $('itemEventDate').value = eventDate;
     $('itemEventId').value = d.event_id || '';
-    $('itemEventName').value = d.event_id && d.event_name ? `${d.event_name} (${defaultDate})` : '';
+    $('itemEventName').value = d.event_id && d.event_name ? `${d.event_name} (${eventDate})` : '';
     $('itemEventClear').classList.toggle('d-none', !d.event_id);
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
@@ -913,6 +977,7 @@ async function doImport() {
 
 function resetFilters() {
     $('fSearch').value = '';
+    $('fDateField').value = 'order_date';
     $('fDateFrom').value = '';
     $('fDateTo').value = '';
     if (msIdol) msIdol.clear();

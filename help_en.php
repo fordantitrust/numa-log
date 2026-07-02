@@ -220,7 +220,7 @@
                                         </tr>
                                         <tr>
                                             <th><i class="bi bi-copy text-success"></i> Clone</th>
-                                            <td>Click the copy icon to duplicate an item. A new item with the same data will be created, and the form will open for editing before saving</td>
+                                            <td>Click the copy icon to duplicate an item. A new item with the same data will be created, including its linked event <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.13</span>, and the form will open for editing before saving &mdash; if a "From" date filter is active, the new item's Order Date/Event Date is pre-filled from it, matching whichever field is selected in "Filter by" <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.13</span></td>
                                         </tr>
                                         <tr>
                                             <th><i class="bi bi-trash text-danger"></i> Delete</th>
@@ -240,13 +240,19 @@
                                 <div class="accordion-body">
                                     <h6>Filters</h6>
                                     <table class="table table-sm help-table mb-3">
-                                        <tr><th style="width:120px">Idol</th><td>Filter by specific idol/group</td></tr>
-                                        <tr><th>Type</th><td>Filter by specific item type</td></tr>
-                                        <tr><th>Date Range</th><td>Filter by order date range</td></tr>
+                                        <tr><th style="width:120px">Idol</th><td>Filter by one or more idols/groups</td></tr>
+                                        <tr><th>Type</th><td>Filter by one or more item types</td></tr>
+                                        <tr><th>Event</th><td>Filter by one or more events</td></tr>
+                                        <tr><th>Filter by <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.14</span></th><td>Choose whether the date range below filters by <strong>Order Date</strong> or <strong>Event Date</strong></td></tr>
+                                        <tr><th>From / To</th><td>Filter by date range (on whichever field is selected in "Filter by")</td></tr>
                                         <tr><th>Search</th><td>Search by item title</td></tr>
                                     </table>
+                                    <h6>Click a row to filter quickly <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.14</span></h6>
+                                    <p>In the item table, click a row's <strong>Order Date</strong> or <strong>Event Date</strong> to instantly set the "From" filter to that date (and switch "Filter by" to match the column you clicked). Click an <strong>Idol</strong>, <strong>Type</strong>, or <strong>Event</strong> badge to add that value to the matching filter &mdash; keep clicking different values on other rows to add more, since these filters accept multiple values.</p>
                                     <h6>Sorting</h6>
                                     <p>Click on any column header to sort. Click again to toggle between <i class="bi bi-sort-up"></i> ascending and <i class="bi bi-sort-down"></i> descending order.</p>
+                                    <h6>Rows per page <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.14</span></h6>
+                                    <p>The bottom-left of the table has a page-size selector (20 default / 50 / 100 / 200).</p>
                                     <h6>Summary Cards</h6>
                                     <p>The top of the table shows 3 summary values (changes based on active filters):</p>
                                     <ul class="mb-0">

@@ -38,12 +38,14 @@ List items with pagination, filters, and sorting.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `page` | int | 1 | Page number |
-| `per_page` | int | 20 | Items per page (max 100) |
+| `per_page` | int | 20 | Items per page (max 200) |
 | `idol[]` | string[] | — | Filter by one or more idol names |
 | `type[]` | string[] | — | Filter by one or more type names |
+| `event_id[]` | int[] | — | Filter by one or more event IDs |
 | `search` | string | — | Full-text search on `title` |
-| `date_from` | YYYY-MM-DD | — | Order date range start |
-| `date_to` | YYYY-MM-DD | — | Order date range end |
+| `date_field` | `order_date`\|`event_date` | `order_date` | Which column `date_from`/`date_to` apply to |
+| `date_from` | YYYY-MM-DD | — | Date range start (on `date_field`) |
+| `date_to` | YYYY-MM-DD | — | Date range end (on `date_field`) |
 | `sort` | string | `order_date` | Sort column: `order_date`, `event_date`, `title`, `idol`, `type`, `price_per_qty`, `qty`, `id` |
 | `dir` | `asc`\|`desc` | `desc` | Sort direction |
 

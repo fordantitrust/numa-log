@@ -139,6 +139,10 @@ return [
     'items.showing'              => 'แสดง {from}-{to} จาก {total} รายการ',
     'items.idol_picker'          => 'มี "{name}" หลายรายการ — เลือกหนึ่ง:',
     'items.linked_to'            => 'เชื่อมกับ:',
+    'items.date_field'           => 'กรองตาม',
+    'items.per_page'             => 'แสดงต่อหน้า',
+    'items.filter_by_this_date'  => 'กรองรายการตั้งแต่วันที่นี้',
+    'items.filter_by_this_value' => 'เพิ่มลงตัวกรอง',
 
     // ── Report (report.php) ────────────────────────────────────────────────
     'report.tab_overview'    => 'ภาพรวม',

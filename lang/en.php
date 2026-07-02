@@ -145,6 +145,10 @@ return [
     'items.showing'              => 'Showing {from}-{to} of {total} items',
     'items.idol_picker'          => 'Multiple "{name}" exist — pick one:',
     'items.linked_to'            => 'Linked to:',
+    'items.date_field'           => 'Filter by',
+    'items.per_page'             => 'Rows per page',
+    'items.filter_by_this_date'  => 'Filter list from this date',
+    'items.filter_by_this_value' => 'Add to filter',
 
     // ── Report (report.php) ────────────────────────────────────────────────
     'report.tab_overview'    => 'Overview',

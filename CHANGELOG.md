@@ -4,6 +4,18 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.14 (2026-07-02)
+
+### Items / UX
+
+- **"Filter by" date-field selector** — the Items list date filter can now target either **Order Date** or **Event Date** (previously it always filtered on Order Date). The `list` API accepts a new `date_field` parameter (`order_date` | `event_date`).
+- **Rows-per-page selector** — the Items table footer gains a page-size selector (**20 / 50 / 100 / 200**, default 20); the `list` API's `per_page` cap was raised from 100 to 200 to support it.
+- **Click a row's date to filter** — clicking the Order Date or Event Date cell in any row sets the filter's date field and "From" date to that value and reloads the list.
+- **Click a row's idol/type/event to filter** — clicking the Idol, Type, or Event badge in any row adds that value to the corresponding filter (idol/type/event are multi-select, so clicking different values across rows appends to the selection instead of replacing it).
+- Add/Clone date pre-fill (added in v1.9.13) now respects the selected date field: it only pre-fills Order Date or Event Date — whichever the active filter targets — instead of always filling both.
+
+---
+
 ## v1.9.13 (2026-07-02)
 
 ### Items / UX
