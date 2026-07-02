@@ -4,6 +4,15 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.13 (2026-07-02)
+
+### Items / UX
+
+- **Clone now carries over the event link** — copying an item (`cloneItem`) previously dropped its event assignment; the cloned item now keeps the source item's linked event.
+- **Filter start date pre-fills new/cloned items** — when the Items list has a "From" date filter active, adding a new item or cloning an existing one now defaults both the **Order Date** and **Event Date** fields to that filter date instead of blank/today.
+
+---
+
 ## v1.9.12 (2026-06-30)
 
 ### Items / UX

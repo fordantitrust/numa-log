@@ -767,6 +767,11 @@ function showFormModal(id = null) {
     $('itemIdolHint').style.display = 'none';
     $('itemIdolHint').innerHTML = '';
     $('itemForm').reset();
+    const filterFrom = $('fDateFrom').value;
+    if (filterFrom) {
+        $('itemOrderDate').value = filterFrom;
+        $('itemEventDate').value = filterFrom;
+    }
     $('formTitle').textContent = id ? t('items.edit_item') : t('items.add_item');
     new bootstrap.Modal($('formModal')).show();
 }
@@ -797,12 +802,13 @@ async function cloneItem(id) {
     if (res.error) { alert(res.error); return; }
     const d = res.data;
     const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const defaultDate = $('fDateFrom').value || today;
     $('itemId').value = '';
-    $('itemOrderDate').value = today;
-    $('itemEventDate').value = today;
-    $('itemEventId').value = '';
-    $('itemEventName').value = '';
-    $('itemEventClear').classList.add('d-none');
+    $('itemOrderDate').value = defaultDate;
+    $('itemEventDate').value = defaultDate;
+    $('itemEventId').value = d.event_id || '';
+    $('itemEventName').value = d.event_id && d.event_name ? `${d.event_name} (${defaultDate})` : '';
+    $('itemEventClear').classList.toggle('d-none', !d.event_id);
     $('itemTitle').value = d.title;
     $('itemIdol').value = d.idol;
     $('itemIdolId').value = d.idol_id || '';

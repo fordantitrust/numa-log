@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.12 — Live cross-tab data sync: the **idol**, **type** and **event** dropdowns/filters on the Items page now update automatically when those entities are added, edited or deleted in another browser tab — no more reloading the page. Changes broadcast via `BroadcastChannel` (with a `localStorage` fallback) and the Items page also refreshes its lists when you switch back to it, while preserving any filters you have selected.
+**Latest:** v1.9.13 — Cloning an item now keeps its linked event instead of dropping it, and adding/cloning items while a "From" date filter is active pre-fills the Order Date and Event Date with that filter date.
 
 **v1.9.11** — Event reports & list: the Events management table now leads with the **Start – End date range** (no more `#` column), and a new **Event Summary** report tab shows each event's date range, **duration in days**, Upcoming/Ongoing/Past status, spend and average per event-day, with summary KPI cards. Report KPI cards on the event tabs were also evened out to a uniform height.
 
