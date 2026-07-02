@@ -310,6 +310,14 @@ return [
     'events.clear_event'          => 'ล้างอีเวนต์',
     'events.unassign_from_event'  => 'ปลดอีเวนต์',
     'events.bulk_unassign_confirm' => 'ปลดลิงก์อีเวนต์ออกจาก {n} รายการ? (ไม่ลบรายการ)',
+    'events.is_free_entry'        => 'เข้าฟรี (ไม่ต้องใช้ตั๋ว)',
+    'events.free_entry_hint'      => 'ติ๊กหากอีเวนต์นี้ไม่มีตั๋วเข้างาน เพื่อไม่ให้ขึ้นแจ้งเตือน "ยังไม่มี ticket"',
+    'events.ticket_status'        => 'Ticket',
+    'events.ticket_ok'            => 'มี ticket แล้ว',
+    'events.ticket_missing'       => 'ยังไม่มี ticket',
+    'events.ticket_free'          => 'เข้าฟรี',
+    'events.ticket_setup_hint'    => 'ยังไม่ได้ตั้งค่าประเภทไหนเป็น Ticket จึงตรวจสอบสถานะ ticket ไม่ได้ กรุณาตั้งค่าใน',
+    'events.stat_no_ticket'       => 'ยังไม่มี ticket',
 
     'report.ti_expensive'   => '20 รายการที่แพงที่สุด',
     'report.ti_unit_baht'   => 'ราคา/ชิ้น',
@@ -413,6 +421,8 @@ return [
     'types.stat_spend'     => 'ยอดใช้จ่ายที่บันทึก:',
     'types.all_mapped'     => 'ชื่อประเภททั้งหมดถูกจับคู่แล้ว!',
     'types.edit_prefix'    => 'แก้ไข: {name}',
+    'types.is_ticket'      => 'เป็นประเภท Ticket',
+    'types.is_ticket_hint' => 'รายการที่ใช้ประเภทนี้จะนับเป็นตั๋วเข้างานสำหรับการตรวจจับ "ยังไม่มี ticket" ในหน้าอีเวนต์',
 
     // ── Idols (idols.php) ──────────────────────────────────────────────────
     'idols.title'             => 'จัดการไอดอล',

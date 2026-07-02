@@ -16,7 +16,7 @@
 | created_at | TEXT | Record creation timestamp |
 | updated_at | TEXT | Last update timestamp |
 
-### `events` (v8, +`end_date` in v9)
+### `events` (v8, +`end_date` in v9, +`is_free_entry` in v10)
 Named events (concerts, fanmeets, etc.) that items can be linked to via `items.event_id`.
 | Column | Type | Description |
 |--------|------|-------------|
@@ -26,8 +26,10 @@ Named events (concerts, fanmeets, etc.) that items can be linked to via `items.e
 | end_date | TEXT | (v9) End date (YYYY-MM-DD), nullable — `NULL` (or equal to `event_date`) means a single-day event; otherwise the event spans `event_date`…`end_date` |
 | description | TEXT | Optional description |
 | created_at | TEXT | Record creation timestamp |
+| is_free_entry | INTEGER | (v10) `1` = free entry, no ticket expected — excluded from the "missing ticket" detection on the Events page |
 
 > **v9 note:** auto-assign-by-date links unlinked items whose `event_date` falls within `event_date`…`COALESCE(end_date, event_date)`.
+> **v10 note:** ticket detection works by flagging one or more `type_categories` rows with `is_ticket = 1`; an event "has a ticket" if any linked item's `type` matches a ticket-flagged type category. See `type_categories` below.
 
 ### `idol_entities`
 | Column | Type | Description |
@@ -57,13 +59,14 @@ Tracks which group a member belongs to over time. One row per (member, group) pe
 
 Report queries pick the membership whose `start_date` ≤ `items.order_date` ≤ `end_date` (open bounds count as ±∞) and prefer rows where `is_primary = 1`.
 
-### `type_categories`
+### `type_categories` (+`is_ticket` in v10)
 | Column | Type | Description |
 |--------|------|-------------|
 | id | INTEGER PK | Auto-increment ID |
 | name | TEXT UNIQUE | Type name |
 | description | TEXT | Description |
 | sort_order | INTEGER | Display order |
+| is_ticket | INTEGER | (v10) `1` = items of this type count as an event ticket for the Events page's "missing ticket" detection |
 
 ### `budgets` (v6, `period` added in v7)
 Monthly spending limits per scope, with a recurring default plus per-month overrides.

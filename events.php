@@ -44,6 +44,9 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                     </button>
                 </div>
                 <div class="card-body p-0">
+                    <div class="alert alert-info small m-2 d-none" id="ticketSetupHint">
+                        <?= t('events.ticket_setup_hint') ?> <a href="types.php"><?= t('types.title') ?></a>
+                    </div>
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
@@ -51,11 +54,12 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                                 <th><?= t('events.name') ?></th>
                                 <th class="text-center" style="width:70px"><?= t('events.items_count') ?></th>
                                 <th class="text-end" style="width:120px"><?= t('events.total_spent') ?></th>
+                                <th class="text-center" style="width:130px"><?= t('events.ticket_status') ?></th>
                                 <th style="width:110px"></th>
                             </tr>
                         </thead>
                         <tbody id="eventList">
-                            <tr><td colspan="5" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4"><?= t('common.loading') ?></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -102,6 +106,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <label class="form-label small"><?= t('events.description') ?></label>
                         <input type="text" class="form-control form-control-sm" id="eDesc">
                     </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="eFree">
+                        <label class="form-check-label small" for="eFree"><?= t('events.is_free_entry') ?></label>
+                        <div class="form-text small"><?= t('events.free_entry_hint') ?></div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -146,19 +155,39 @@ const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maxi
 const dateRange = ev => ev.end_date && ev.end_date !== ev.event_date
     ? `${ev.event_date} – ${ev.end_date}` : ev.event_date;
 let allEvents = [];
+let ticketTypesCount = 0;
+
+// Ticket status per event: 'free' (free entry), 'ok' (ticket item linked), or 'missing'.
+const ticketStatus = ev => ev.is_free_entry == 1 ? 'free' : (ev.ticket_items_count > 0 ? 'ok' : 'missing');
 
 document.addEventListener('DOMContentLoaded', loadEvents);
 
 async function loadEvents() {
     const res = await fetch('api.php?action=event_list').then(r => r.json());
     allEvents = res.events || [];
+    ticketTypesCount = res.ticket_types_count || 0;
+    $('ticketSetupHint').classList.toggle('d-none', ticketTypesCount > 0);
     renderTable();
     renderStats();
 }
 
+function ticketBadge(ev) {
+    if (ticketTypesCount === 0) {
+        return `<span class="text-muted">-</span>`;
+    }
+    const status = ticketStatus(ev);
+    if (status === 'free') {
+        return `<span class="badge bg-secondary"><i class="bi bi-door-open"></i> ${t('events.ticket_free')}</span>`;
+    }
+    if (status === 'ok') {
+        return `<span class="badge bg-success"><i class="bi bi-ticket-perforated"></i> ${t('events.ticket_ok')}</span>`;
+    }
+    return `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> ${t('events.ticket_missing')}</span>`;
+}
+
 function renderTable() {
     if (allEvents.length === 0) {
-        $('eventList').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${t('events.none')}</td></tr>`;
+        $('eventList').innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">${t('events.none')}</td></tr>`;
         return;
     }
 
@@ -179,6 +208,7 @@ function renderTable() {
                     : `<span class="text-muted">0</span>`}
             </td>
             <td class="text-end">${ev.total_price > 0 ? '฿' + fmt(ev.total_price) : '-'}</td>
+            <td class="text-center">${ticketBadge(ev)}</td>
             <td class="text-end">
                 <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editEvent(${ev.id})" title="${t('common.edit')}"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deleteEvent(${ev.id}, '${escJs(ev.name)}', ${ev.items_count})" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>
@@ -191,9 +221,11 @@ function renderStats() {
     const total = allEvents.length;
     const withItems = allEvents.filter(e => e.items_count > 0).length;
     const totalSpend = allEvents.reduce((s, e) => s + (e.total_price || 0), 0);
+    const missingTicket = ticketTypesCount > 0 ? allEvents.filter(e => ticketStatus(e) === 'missing').length : null;
     $('statsPanel').innerHTML = `
         <div>${t('events.stat_total')}: <strong>${total}</strong></div>
         <div>${t('events.stat_with_items')}: <strong>${withItems}</strong></div>
+        ${missingTicket !== null ? `<div class="${missingTicket > 0 ? 'text-danger' : ''}">${t('events.stat_no_ticket')}: <strong>${missingTicket}</strong></div>` : ''}
         <div class="mt-2 pt-2 border-top">${t('events.stat_spend')}: <strong>฿${fmt(totalSpend)}</strong></div>
     `;
 }
@@ -214,6 +246,7 @@ function editEvent(id) {
     $('eDate').value = ev.event_date;
     $('eEnd').value = ev.end_date || '';
     $('eDesc').value = ev.description || '';
+    $('eFree').checked = ev.is_free_entry == 1;
     $('formTitle').textContent = t('events.edit_prefix', { name: ev.name });
     new bootstrap.Modal($('formModal')).show();
 }
@@ -230,6 +263,7 @@ async function saveEvent() {
     body.append('event_date', $('eDate').value);
     body.append('end_date', $('eEnd').value);
     body.append('description', $('eDesc').value);
+    body.append('is_free_entry', $('eFree').checked ? '1' : '0');
 
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }

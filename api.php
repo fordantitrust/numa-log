@@ -1551,17 +1551,18 @@ function handleTypeSave(PDO $pdo): void
     $name = trim($_POST['name'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $sortOrder = (int) ($_POST['sort_order'] ?? 0);
+    $isTicket = !empty($_POST['is_ticket']) ? 1 : 0;
 
     if ($name === '') {
         jsonResponse(['error' => 'Name is required'], 400);
     }
 
     if ($id > 0) {
-        $stmt = $pdo->prepare("UPDATE type_categories SET name = :name, description = :desc, sort_order = :sort WHERE id = :id");
-        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':id' => $id]);
+        $stmt = $pdo->prepare("UPDATE type_categories SET name = :name, description = :desc, sort_order = :sort, is_ticket = :ticket WHERE id = :id");
+        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':ticket' => $isTicket, ':id' => $id]);
     } else {
-        $stmt = $pdo->prepare("INSERT INTO type_categories (name, description, sort_order) VALUES (:name, :desc, :sort)");
-        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder]);
+        $stmt = $pdo->prepare("INSERT INTO type_categories (name, description, sort_order, is_ticket) VALUES (:name, :desc, :sort, :ticket)");
+        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':ticket' => $isTicket]);
         $id = (int) $pdo->lastInsertId();
     }
 
@@ -1588,7 +1589,10 @@ function handleEventList(PDO $pdo): void
                COALESCE(SUM(i.price_per_qty * i.qty), 0) AS total_price,
                (SELECT COUNT(*) FROM items x
                 WHERE x.event_date BETWEEN e.event_date AND COALESCE(e.end_date, e.event_date)
-                  AND x.event_id IS NULL) AS unassigned_same_date
+                  AND x.event_id IS NULL) AS unassigned_same_date,
+               (SELECT COUNT(*) FROM items x
+                JOIN type_categories tc ON tc.name = x.type AND tc.is_ticket = 1
+                WHERE x.event_id = e.id) AS ticket_items_count
         FROM events e
         LEFT JOIN items i ON i.event_id = e.id
         GROUP BY e.id
@@ -1602,12 +1606,16 @@ function handleEventList(PDO $pdo): void
         'end_date'             => $r['end_date'],
         'description'          => $r['description'],
         'created_at'           => $r['created_at'],
+        'is_free_entry'        => (int) $r['is_free_entry'],
         'items_count'          => (int) $r['items_count'],
         'total_price'          => (float) $r['total_price'],
         'unassigned_same_date' => (int) $r['unassigned_same_date'],
+        'ticket_items_count'   => (int) $r['ticket_items_count'],
     ], $events);
 
-    jsonResponse(['events' => $events]);
+    $ticketTypesCount = (int) $pdo->query("SELECT COUNT(*) FROM type_categories WHERE is_ticket = 1")->fetchColumn();
+
+    jsonResponse(['events' => $events, 'ticket_types_count' => $ticketTypesCount]);
 }
 
 function handleEventSave(PDO $pdo): void
@@ -1617,6 +1625,7 @@ function handleEventSave(PDO $pdo): void
     $eventDate   = trim($_POST['event_date'] ?? '');
     $endDate     = trim($_POST['end_date'] ?? '');
     $description = trim($_POST['description'] ?? '');
+    $isFreeEntry = !empty($_POST['is_free_entry']) ? 1 : 0;
 
     if ($name === '') {
         jsonResponse(['error' => 'Name is required'], 400);
@@ -1634,11 +1643,11 @@ function handleEventSave(PDO $pdo): void
     $endDateVal = ($endDate === '' || $endDate === $eventDate) ? null : $endDate;
 
     if ($id > 0) {
-        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, end_date = :end, description = :desc WHERE id = :id")
-            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':id' => $id]);
+        $pdo->prepare("UPDATE events SET name = :name, event_date = :date, end_date = :end, description = :desc, is_free_entry = :free WHERE id = :id")
+            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':free' => $isFreeEntry, ':id' => $id]);
     } else {
-        $pdo->prepare("INSERT INTO events (name, event_date, end_date, description) VALUES (:name, :date, :end, :desc)")
-            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description]);
+        $pdo->prepare("INSERT INTO events (name, event_date, end_date, description, is_free_entry) VALUES (:name, :date, :end, :desc, :free)")
+            ->execute([':name' => $name, ':date' => $eventDate, ':end' => $endDateVal, ':desc' => $description, ':free' => $isFreeEntry]);
         $id = (int) $pdo->lastInsertId();
     }
     jsonResponse(['success' => true, 'id' => $id]);

@@ -122,6 +122,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <label class="form-label small"><?= t('types.sort_order') ?></label>
                         <input type="number" class="form-control form-control-sm" id="tSort" value="0">
                     </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="tIsTicket">
+                        <label class="form-check-label small" for="tIsTicket"><?= t('types.is_ticket') ?></label>
+                        <div class="form-text small"><?= t('types.is_ticket_hint') ?></div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -244,7 +249,7 @@ function renderTable() {
     $('typeList').innerHTML = allTypes.map((ty, i) => `
         <tr>
             <td class="text-muted">${i + 1}</td>
-            <td><strong>${escHtml(ty.name)}</strong></td>
+            <td><strong>${escHtml(ty.name)}</strong>${ty.is_ticket == 1 ? ` <span class="badge bg-info-subtle text-info-emphasis" title="${t('types.is_ticket')}"><i class="bi bi-ticket-perforated"></i></span>` : ''}</td>
             <td class="stat-muted">${escHtml(ty.description || '')}</td>
             <td class="text-center">${ty.items_count}</td>
             <td class="text-center">${ty.total_qty}</td>
@@ -299,6 +304,7 @@ function editType(id) {
     $('tName').value = ty.name;
     $('tDesc').value = ty.description || '';
     $('tSort').value = ty.sort_order;
+    $('tIsTicket').checked = ty.is_ticket == 1;
     $('formTitle').textContent = t('types.edit_prefix', { name: ty.name });
     new bootstrap.Modal($('formModal')).show();
 }
@@ -319,6 +325,7 @@ async function saveType() {
     body.append('name', $('tName').value);
     body.append('description', $('tDesc').value);
     body.append('sort_order', $('tSort').value);
+    body.append('is_ticket', $('tIsTicket').checked ? '1' : '0');
 
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }

@@ -4,6 +4,15 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.15 (2026-07-02)
+
+### Events / Types
+
+- **Missing-ticket detection** — the Events page now shows a per-event ticket status badge: **Ticket recorded** (green), **No ticket** (red warning), or **Free entry** (gray). Mark a type category as "Is Ticket Type" in Manage Types to opt in; mark an event as "Free entry" to exclude it from the warning. A sidebar stat shows the count of events still missing a ticket.
+- Schema: `type_categories.is_ticket` and `events.is_free_entry` (migration v10).
+
+---
+
 ## v1.9.14 (2026-07-02)
 
 ### Items / UX

@@ -566,6 +566,24 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventTicket">
+                                    <i class="bi bi-ticket-perforated me-2"></i> การตรวจจับ Ticket <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.15</span>
+                                </button>
+                            </h2>
+                            <div id="eventTicket" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>แต่ละแถวอีเวนต์จะมี badge สถานะ ticket ให้ตรวจสอบได้ว่าอีเวนต์ที่ต้องเสียเงินได้บันทึกตั๋วเข้างานไว้แล้วหรือยัง:</p>
+                                    <table class="table table-sm help-table mt-2 mb-2">
+                                        <tr><th style="width:160px"><span class="badge bg-success">มี ticket แล้ว</span></th><td>มีรายการที่เชื่อมกับอีเวนต์นี้อย่างน้อย 1 รายการที่ใช้ประเภทซึ่งตั้งค่าเป็น Ticket ไว้ (ดู <a href="#types">จัดการประเภทสินค้า</a>)</td></tr>
+                                        <tr><th><span class="badge bg-warning text-dark">ยังไม่มี ticket</span></th><td>ยังไม่มีรายการที่ตรงกับประเภท Ticket &mdash; อาจยังไม่ได้บันทึกการซื้อตั๋ว</td></tr>
+                                        <tr><th><span class="badge bg-secondary">เข้าฟรี</span></th><td>อีเวนต์นี้ถูกตั้งค่าเป็น <strong>เข้าฟรี (ไม่ต้องใช้ตั๋ว)</strong> ในฟอร์มแก้ไข จึงไม่ถูกนับเป็นการแจ้งเตือน</td></tr>
+                                    </table>
+                                    <p class="mb-0">ต้องตั้งค่าอย่างน้อย 1 ประเภทเป็น <strong>เป็นประเภท Ticket</strong> ในหน้า <a href="#types">จัดการประเภทสินค้า</a> ก่อน มิฉะนั้นหน้า Events จะแสดงข้อความแนะนำการตั้งค่าแทน badge สถานะ และแถบด้านข้างจะแสดงจำนวนอีเวนต์ที่ยังไม่มี ticket ด้วย</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="tip-box mb-0">
                         <i class="bi bi-info-circle"></i> ลบอีเวนต์จะแค่ <strong>ยกเลิกการผูก</strong> รายการที่เชื่อมอยู่ (event_id กลับเป็นว่าง) &mdash; ไม่ลบรายการสินค้า
@@ -710,10 +728,12 @@
                     <ol>
                         <li>กดปุ่ม <span class="shortcut-key">Add Type</span></li>
                         <li>กรอก <strong>Name</strong> (ชื่อประเภท), <strong>Description</strong> (คำอธิบาย), <strong>Sort Order</strong> (ลำดับ)</li>
+                        <li>ติ๊ก <strong>เป็นประเภท Ticket</strong> ถ้าประเภทนี้ใช้แทนตั๋วเข้างานอีเวนต์ <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.15</span></li>
                         <li>กดปุ่ม <strong>Save</strong></li>
                     </ol>
 
                     <p class="small text-muted mb-2">แต่ละประเภทจะแสดงสถิติ: จำนวนแถว, จำนวนชิ้น, ยอดใช้จ่ายรวม นอกจากนี้ยังมีระบบ <strong>Unmapped Names</strong> เพื่อตรวจจับชื่อ Type ที่ยังไม่ได้เพิ่มในระบบ</p>
+                    <p class="small text-muted mb-2"><strong>เป็นประเภท Ticket</strong> ใช้เป็นข้อมูลให้หน้า <a href="#events">Events</a> ตรวจจับสถานะ ticket &mdash; ตั้งค่าได้มากกว่า 1 ประเภท (เช่น "Ticket" และ "VIP Ticket") ถ้าใช้ชื่อประเภทต่างกันในการบันทึกตั๋ว</p>
                     <h6 class="mt-2">Members by Type</h6>
                     <p class="small text-muted mb-0">ด้านล่างของหน้า Types มีส่วน <strong>Members by Type</strong> แสดง accordion รายชื่อสมาชิก กลุ่ม และค่ายที่ซื้อสินค้าในแต่ละประเภท พร้อมสถิติจำนวนรายการ จำนวนชิ้น และยอดใช้จ่าย</p>
                 </div>

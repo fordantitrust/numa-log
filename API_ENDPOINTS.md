@@ -3,7 +3,7 @@
 ## Overview
 
 The API is split into two files:
-- **`api.php`** — Items, Reports, Idol Entities, Type Categories, Budgets, Backups
+- **`api.php`** — Items, Reports, Idol Entities, Type Categories, Events, Budgets, Backups
 - **`api_users.php`** — User management
 
 All responses are JSON (`Content-Type: application/json`).
@@ -393,11 +393,13 @@ List all type categories with usage stats and unmapped type names.
 ```json
 {
   "types": [
-    { "id": 1, "name": "Photo", "description": "Photo cards", "sort_order": 1, "items_count": 20, "total_qty": 35, "total_price": 10500.0 }
+    { "id": 1, "name": "Photo", "description": "Photo cards", "sort_order": 1, "is_ticket": 0, "items_count": 20, "total_qty": 35, "total_price": 10500.0 }
   ],
   "unmapped": ["NewType"]
 }
 ```
+
+`is_ticket` (v1.9.15): `1` marks this type as representing an event admission ticket — used by the Events page's missing-ticket detection.
 
 ---
 
@@ -430,6 +432,7 @@ Create or update a type category.
 | `name` | string | Type name (required) |
 | `description` | string | Description |
 | `sort_order` | int | Display order |
+| `is_ticket` | bool | (v1.9.15) `1` to flag this type as a ticket type |
 | `csrf_token` | string | CSRF token |
 
 **Response:**
@@ -448,6 +451,96 @@ Delete a type category.
 **Response:**
 ```json
 { "success": true }
+```
+
+---
+
+## Events (`api.php`)
+
+### `event_list` — GET
+
+List all events with linked-item stats and ticket-detection fields.
+
+**Response:**
+```json
+{
+  "events": [
+    {
+      "id": 1, "name": "TWICE World Tour Bangkok", "event_date": "2025-09-01", "end_date": null,
+      "description": "", "created_at": "2025-08-01 10:00:00", "is_free_entry": 0,
+      "items_count": 3, "total_price": 5500.0, "unassigned_same_date": 0, "ticket_items_count": 1
+    }
+  ],
+  "ticket_types_count": 1
+}
+```
+
+`is_free_entry`, `ticket_items_count`, and the top-level `ticket_types_count` were added in v1.9.15. An
+event's ticket status (used by the Events page badge) is derived client-side: `is_free_entry=1` → **Free
+entry**; else `ticket_items_count > 0` → **Ticket recorded**; else → **No ticket**. `ticket_types_count`
+is the number of `type_categories` rows flagged `is_ticket=1` — when `0`, no type has been configured yet
+and the UI shows a setup hint instead of status badges.
+
+---
+
+### `event_save` — POST
+
+Create or update a named event.
+
+**POST Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Omit or `0` to create; provide to update |
+| `name` | string | Event name (required) |
+| `event_date` | string | Start date, `YYYY-MM-DD` (required) |
+| `end_date` | string | End date, `YYYY-MM-DD`; blank or equal to `event_date` means a single-day event |
+| `description` | string | Optional description |
+| `is_free_entry` | bool | (v1.9.15) `1` marks the event as free entry (excluded from missing-ticket detection) |
+| `csrf_token` | string | CSRF token |
+
+**Response:**
+```json
+{ "success": true, "id": 5 }
+```
+
+---
+
+### `event_delete` — POST
+
+Delete an event. Linked items are not deleted — their `event_id` is set to `NULL`.
+
+**POST Body:** `id` (int, required), `csrf_token`
+
+**Response:**
+```json
+{ "success": true }
+```
+
+---
+
+### `event_bulk_assign` — POST
+
+Link or unlink a list of items to/from an event.
+
+**POST Body:** `ids` (int[] or comma-separated string, required), `event_id` (int; omit/`0` to unassign), `csrf_token`
+
+**Response:**
+```json
+{ "success": true, "updated": 4 }
+```
+
+---
+
+### `event_auto_assign` — POST
+
+Link all currently-unassigned items whose `event_date` falls within the event's date range.
+
+**POST Body:** `event_id` (int, required), `csrf_token`
+
+**Response:**
+```json
+{ "success": true, "updated": 2 }
 ```
 
 ---

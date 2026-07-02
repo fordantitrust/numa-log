@@ -566,6 +566,24 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eventTicket">
+                                    <i class="bi bi-ticket-perforated me-2"></i> Ticket Detection <span class="badge bg-info ms-2" style="font-size:.65rem">v1.9.15</span>
+                                </button>
+                            </h2>
+                            <div id="eventTicket" class="accordion-collapse collapse" data-bs-parent="#accEvents">
+                                <div class="accordion-body">
+                                    <p>Each event row shows a ticket status badge so you can confirm every paid event actually has its ticket purchase logged:</p>
+                                    <table class="table table-sm help-table mt-2 mb-2">
+                                        <tr><th style="width:160px"><span class="badge bg-success">Ticket recorded</span></th><td>At least one linked item uses a type flagged as a ticket type (see <a href="#types">Type Management</a>)</td></tr>
+                                        <tr><th><span class="badge bg-warning text-dark">No ticket</span></th><td>No linked item matches a ticket type yet &mdash; the purchase may be missing from the log</td></tr>
+                                        <tr><th><span class="badge bg-secondary">Free entry</span></th><td>The event is marked <strong>Free entry (no ticket required)</strong> in its edit form, so it's excluded from the warning</td></tr>
+                                    </table>
+                                    <p class="mb-0">This needs at least one type marked <strong>Is Ticket Type</strong> in <a href="#types">Type Management</a> first &mdash; until then, the Events page shows a setup reminder instead of status badges. The sidebar also shows a running count of events still missing a ticket.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="tip-box mb-0">
                         <i class="bi bi-info-circle"></i> Deleting an event only <strong>unlinks</strong> its items (their event_id is cleared) &mdash; it never deletes the items themselves.
@@ -710,10 +728,12 @@
                     <ol>
                         <li>Click the <span class="shortcut-key">Add Type</span> button</li>
                         <li>Enter <strong>Name</strong>, <strong>Description</strong>, and <strong>Sort Order</strong></li>
+                        <li>Check <strong>Is Ticket Type</strong> if items of this type represent an event admission ticket <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.15</span></li>
                         <li>Click <strong>Save</strong></li>
                     </ol>
 
                     <p class="small text-muted mb-2">Each type shows statistics: row count, quantity, and total spending. The system also has an <strong>Unmapped Names</strong> feature to detect type names that haven't been added yet.</p>
+                    <p class="small text-muted mb-2"><strong>Is Ticket Type</strong> feeds the <a href="#events">Events</a> page's ticket-detection badges &mdash; you can flag more than one type name (e.g. "Ticket" and "VIP Ticket") if tickets are logged under different names.</p>
                     <h6 class="mt-2">Members by Type</h6>
                     <p class="small text-muted mb-0">The bottom of the Types page includes a <strong>Members by Type</strong> accordion showing which members, groups, and companies purchased each type, along with item count, quantity, and total spending statistics.</p>
                 </div>

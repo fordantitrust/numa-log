@@ -1387,6 +1387,88 @@ if (count($mbListAfter['data']) === 0) pass('membership_delete clears all rows')
 else                                    fail('membership_delete clears all rows', 'remaining: ' . count($mbListAfter['data']));
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 9 — Ticket detection (events + type_categories)
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('9. Ticket detection (events + type_categories)');
+
+// 9a. Create a type category flagged as a ticket type
+$ticketTypeRes = apiPost($BASE_URL, 'type_save', [
+    'name' => 'ConcertTicket', 'description' => 'Admission ticket', 'sort_order' => 1, 'is_ticket' => '1',
+], $CSRF, $COOKIE_FILE);
+$ticketTypeId = (int) (json_decode($ticketTypeRes['body'], true)['id'] ?? 0);
+assertJson('Create ticket-flagged type category', $ticketTypeRes, 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+assertJson('type_list reflects is_ticket=1', apiGet($BASE_URL, 'type_list', [], $COOKIE_FILE), 200, function ($d) use ($ticketTypeId) {
+    foreach ($d['types'] as $ty) {
+        if ((int) $ty['id'] === $ticketTypeId) {
+            return ((int) $ty['is_ticket'] === 1) ? null : 'Expected is_ticket=1';
+        }
+    }
+    return 'Type not found in list';
+});
+
+// 9b. Create an event without a ticket item yet → should report as missing
+$eventRes = apiPost($BASE_URL, 'event_save', [
+    'name' => 'Ticket Test Concert', 'event_date' => '2025-09-01', 'end_date' => '', 'description' => '',
+], $CSRF, $COOKIE_FILE);
+$ticketEventId = (int) (json_decode($eventRes['body'], true)['id'] ?? 0);
+assertJson('Create event', $eventRes, 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+assertJson('event_list: new event has no ticket yet', apiGet($BASE_URL, 'event_list', [], $COOKIE_FILE), 200, function ($d) use ($ticketEventId) {
+    if (($d['ticket_types_count'] ?? 0) < 1) return 'Expected ticket_types_count >= 1';
+    foreach ($d['events'] as $ev) {
+        if ((int) $ev['id'] === $ticketEventId) {
+            if ((int) $ev['is_free_entry'] !== 0) return 'Expected is_free_entry=0';
+            return ((int) $ev['ticket_items_count'] === 0) ? null : 'Expected ticket_items_count=0';
+        }
+    }
+    return 'Event not found in list';
+});
+
+// 9c. Link a ticket-typed item to the event → should now be detected
+$ticketItemRes = apiPost($BASE_URL, 'create', [
+    'order_date' => '2025-08-20', 'event_date' => '2025-09-01', 'event_id' => $ticketEventId,
+    'title' => 'Concert admission', 'idol' => 'Member A',
+    'type' => 'ConcertTicket', 'price_per_qty' => 2000, 'qty' => 1,
+], $CSRF, $COOKIE_FILE);
+$ticketItemId = (int) (json_decode($ticketItemRes['body'], true)['id'] ?? 0);
+
+assertJson('event_list: ticket item now detected', apiGet($BASE_URL, 'event_list', [], $COOKIE_FILE), 200, function ($d) use ($ticketEventId) {
+    foreach ($d['events'] as $ev) {
+        if ((int) $ev['id'] === $ticketEventId) {
+            return ((int) $ev['ticket_items_count'] === 1) ? null : 'Expected ticket_items_count=1, got ' . $ev['ticket_items_count'];
+        }
+    }
+    return 'Event not found in list';
+});
+
+// 9d. Free-entry event is reported regardless of linked items
+$freeEventRes = apiPost($BASE_URL, 'event_save', [
+    'name' => 'Free Fan Meeting', 'event_date' => '2025-09-05', 'end_date' => '', 'description' => '', 'is_free_entry' => '1',
+], $CSRF, $COOKIE_FILE);
+$freeEventId = (int) (json_decode($freeEventRes['body'], true)['id'] ?? 0);
+
+assertJson('event_list: free-entry flag persisted', apiGet($BASE_URL, 'event_list', [], $COOKIE_FILE), 200, function ($d) use ($freeEventId) {
+    foreach ($d['events'] as $ev) {
+        if ((int) $ev['id'] === $freeEventId) {
+            return ((int) $ev['is_free_entry'] === 1) ? null : 'Expected is_free_entry=1';
+        }
+    }
+    return 'Event not found in list';
+});
+
+// 9e. Cleanup
+apiPost($BASE_URL, 'delete', ['id' => $ticketItemId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'event_delete', ['id' => $ticketEventId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'event_delete', ['id' => $freeEventId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'type_delete', ['id' => $ticketTypeId], $CSRF, $COOKIE_FILE);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SUMMARY
 // ─────────────────────────────────────────────────────────────────────────────
 

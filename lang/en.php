@@ -316,6 +316,14 @@ return [
     'events.clear_event'          => 'Clear event',
     'events.unassign_from_event'  => 'Unassign',
     'events.bulk_unassign_confirm' => 'Remove the event link from {n} item(s)? (Items are not deleted.)',
+    'events.is_free_entry'        => 'Free entry (no ticket required)',
+    'events.free_entry_hint'      => 'Check this if the event has no admission ticket, so it is excluded from the missing-ticket warning.',
+    'events.ticket_status'        => 'Ticket',
+    'events.ticket_ok'            => 'Ticket recorded',
+    'events.ticket_missing'       => 'No ticket',
+    'events.ticket_free'          => 'Free entry',
+    'events.ticket_setup_hint'    => 'No type is marked as a Ticket type yet, so ticket status cannot be detected. Mark one in',
+    'events.stat_no_ticket'       => 'Missing ticket',
 
     'report.ti_expensive'   => 'Top 20 Most Expensive Purchases',
     'report.ti_unit_baht'   => 'Unit ฿',
@@ -419,6 +427,8 @@ return [
     'types.stat_spend'     => 'Total tracked spend:',
     'types.all_mapped'     => 'All type names are mapped!',
     'types.edit_prefix'    => 'Edit: {name}',
+    'types.is_ticket'      => 'Is Ticket Type',
+    'types.is_ticket_hint' => 'Items using this type count as an event ticket for the "missing ticket" detection on the Events page.',
 
     // ── Idols (idols.php) ──────────────────────────────────────────────────
     'idols.title'             => 'Idol Management',
