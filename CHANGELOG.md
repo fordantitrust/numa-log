@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.18 (2026-07-27)
+
+### Build
+
+- **PHP 8.2 compatibility** — pinned the Composer platform to PHP 8.2 and added an explicit `php: ^8.2` requirement, so `composer install` no longer fails on PHP 8.2 environments. The lock file had resolved to `maennchen/zipstream-php` 3.2.2 (requires PHP 8.3+); it is now held at 3.1.2 with `phpoffice/phpspreadsheet` 5.9.0.
+
+---
+
 ## v1.9.17 (2026-07-27)
 
 ### Items

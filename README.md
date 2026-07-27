@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.17 — Cloning an item now takes the event date from the source item's linked event and syncs the order date with the filter, so rapid entry of multiple same-day orders reuses the last order date.
+**Latest:** v1.9.18 — Pinned the Composer platform to PHP 8.2 so `composer install` works on PHP 8.2 environments (zipstream-php held at 3.1.2, phpspreadsheet 5.9.0).
 
 **v1.9.15** — The Events page now detects missing tickets: mark a type as "Is Ticket Type" in Manage Types and mark free-entry events, and each event shows a Ticket recorded / No ticket / Free entry badge.
 
