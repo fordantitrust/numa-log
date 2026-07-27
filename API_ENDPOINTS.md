@@ -905,6 +905,34 @@ Reassign all unmapped items with a matching `idol` text within an optional date 
 
 ---
 
+### `item_bulk_set_type` — POST
+
+Set the type on a set of selected items in one go — backs the **Change Type** button in
+the Items page's bulk action bar.
+
+**POST Body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | New type name (required, trimmed) |
+| `ids[]` | int[] | Item IDs to update (also accepts a comma-separated string) |
+| `csrf_token` | string | CSRF token |
+
+**Response:**
+```json
+{ "success": true, "updated": 3, "type": "Travel", "excluded": true }
+```
+
+`items.type` is free text with no FK, so — like the item form — a name that does not exist
+in `type_categories` is accepted rather than rejected; it simply shows up in the "Unmapped
+Type Names" panel on `types.php`.
+
+`excluded` is `true` when the destination type is flagged `exclude_from_reports`. The
+client uses it to warn that the rows it just changed are about to leave the list, so a
+successful bulk move is never mistaken for a failed one.
+
+---
+
 ### `ambiguous_list` — GET
 
 List distinct `items.idol` values that are currently unmapped *and* have more than one matching member entity. Used by the Conflict Resolution UI.

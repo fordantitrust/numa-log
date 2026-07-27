@@ -249,6 +249,9 @@ require __DIR__ . '/navbar.php';
             <button class="btn btn-outline-danger btn-sm" onclick="confirmBulkUnassign()">
                 <i class="bi bi-x-circle"></i> <?= t('events.unassign_from_event') ?>
             </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="showBulkTypeModal()">
+                <i class="bi bi-tags"></i> <?= t('items.bulk_change_type') ?>
+            </button>
             <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()"><?= t('common.cancel') ?></button>
         </div>
     </div>
@@ -432,6 +435,33 @@ require __DIR__ . '/navbar.php';
     </div>
 </div>
 
+<!-- Bulk Change Type Modal -->
+<div class="modal fade" id="bulkTypeModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkTypeTitle"><?= t('items.bulk_change_type') ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label small"><?= t('items.bulk_type_pick') ?></label>
+                <!-- Free text with suggestions, same as the item form: items.type has no FK,
+                     so a brand-new name is a valid entry rather than an error. -->
+                <div class="sd-wrap">
+                    <input type="text" class="form-control form-control-sm" id="bulkTypeName" autocomplete="off" placeholder="<?= t('items.search_or_type') ?>">
+                    <div class="sd-list" id="bulkTypeDropdown"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="confirmBulkSetType()">
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>window.I18N=<?= json_encode(loadLang(), JSON_UNESCAPED_UNICODE) ?>;window.LANG='<?= currentLang() ?>';</script>
 <script src="assets/i18n.js?v=<?= APP_VERSION ?>"></script>
@@ -539,6 +569,7 @@ async function loadFilters() {
     msEvent = initMultiSelect('msEvent', () => eventsData.map(eventDisplay), () => { currentPage = 1; loadData(); });
     initSearchableDropdown('itemIdol', 'idolDropdown', () => filtersData.idols);
     initSearchableDropdown('itemType', 'typeDropdown', () => filtersData.types);
+    initSearchableDropdown('bulkTypeName', 'bulkTypeDropdown', () => filtersData.types);
     initEventDropdown('itemEventName', 'eventDropdown', 'itemEventId', 'itemEventDate', () => eventsData, 'itemEventClear');
     initEventDropdown('bulkEventName', 'bulkEventDropdown', 'bulkEventId', null, () => eventsData);
     refreshPendingBanner();
@@ -1200,6 +1231,43 @@ async function confirmBulkUnassign() {
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
     clearSelection();
+    loadData();
+}
+
+function showBulkTypeModal() {
+    if (!selectedIds.size) return;
+    $('bulkTypeName').value = '';
+    $('bulkTypeTitle').textContent = t('items.bulk_type_title', { n: selectedIds.size });
+    new bootstrap.Modal($('bulkTypeModal')).show();
+}
+
+async function confirmBulkSetType() {
+    const type = $('bulkTypeName').value.trim();
+    if (!type) { alert(t('items.bulk_type_required')); return; }
+    const n = selectedIds.size;
+    if (!n) return;
+    if (!confirm(t('items.bulk_type_confirm', { n, type }))) return;
+
+    const body = new FormData();
+    body.append('action', 'item_bulk_set_type');
+    body.append('type', type);
+    [...selectedIds].forEach(id => body.append('ids[]', id));
+    const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
+    if (res.error) { alert(res.error); return; }
+
+    bootstrap.Modal.getInstance($('bulkTypeModal')).hide();
+
+    // Same reasoning as the single-item save: moving rows into an excluded type makes
+    // them leave the list, which reads as a failed update unless we say so.
+    if (res.excluded && !includeExcluded) {
+        if (confirm(t('items.bulk_type_excluded', { n: res.updated, type: res.type }) + '\n\n' + t('excluded.toggle') + '?')) {
+            includeExcluded = true;
+            localStorage.setItem('numalog.includeExcluded', '1');
+        }
+    }
+
+    clearSelection();
+    loadFilters();   // a brand-new type name joins the suggestion list
     loadData();
 }
 

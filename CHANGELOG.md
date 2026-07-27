@@ -4,6 +4,19 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.11.0 (2026-07-27)
+
+### Items
+
+- **Bulk change type** — tick the checkboxes on the Items page and the bulk action bar now offers **Change Type** alongside the existing event actions, so a batch of mis-typed entries can be corrected in one step instead of one edit at a time. The field is a searchable dropdown like the one on the item form, and since `items.type` is free text a brand-new type name is accepted rather than rejected.
+- If the destination type is flagged **Exclude from reports** (v1.10.0), the moved rows leave the list immediately — so the response reports it and the page offers to switch on **Include excluded types**. A successful bulk move is never mistaken for a failed one.
+
+### API
+
+- New `item_bulk_set_type` (POST) action: `type` + `ids[]`, returning `updated`, `type` and `excluded`.
+
+---
+
 ## v1.10.0 (2026-07-27)
 
 ### Types

@@ -1709,6 +1709,81 @@ apiPost($BASE_URL, 'event_delete', ['id' => $excEventId], $CSRF, $COOKIE_FILE);
 apiPost($BASE_URL, 'type_delete', ['id' => $excTypeId], $CSRF, $COOKIE_FILE);
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 11 — Bulk type change (item_bulk_set_type)
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('11. Bulk type change');
+
+// 11a. Three items to operate on, with a fourth left alone as a control
+$bulkIds = [];
+foreach ([['Bulk A', 300], ['Bulk B', 400], ['Bulk C', 500]] as [$title, $price]) {
+    $bulkIds[] = (int) (json_decode(apiPost($BASE_URL, 'create', [
+        'order_date' => '2026-05-02', 'title' => $title, 'idol' => 'Mina', 'idol_id' => $minaId,
+        'type' => 'BulkBefore', 'price_per_qty' => $price, 'qty' => 1,
+    ], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+}
+$bulkControlId = (int) (json_decode(apiPost($BASE_URL, 'create', [
+    'order_date' => '2026-05-02', 'title' => 'Bulk Control', 'idol' => 'Mina', 'idol_id' => $minaId,
+    'type' => 'BulkBefore', 'price_per_qty' => 600, 'qty' => 1,
+], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+
+assertJson('item_bulk_set_type updates only the selected items', apiPost($BASE_URL, 'item_bulk_set_type', [
+    'type' => 'BulkAfter', 'ids' => $bulkIds,
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    if (($d['updated'] ?? 0) !== 3) return 'Expected updated=3, got ' . ($d['updated'] ?? 0);
+    return empty($d['excluded']) ? null : 'Expected excluded=false for a normal type';
+});
+
+foreach ($bulkIds as $bid) {
+    $got = json_decode(apiGet($BASE_URL, 'get', ['id' => $bid], $COOKIE_FILE)['body'], true)['data']['type'] ?? '';
+    if ($got !== 'BulkAfter') { fail('Selected item type persisted', "item {$bid} has type '{$got}'"); break; }
+}
+pass('Selected item types persisted as BulkAfter');
+
+$controlType = json_decode(apiGet($BASE_URL, 'get', ['id' => $bulkControlId], $COOKIE_FILE)['body'], true)['data']['type'] ?? '';
+if ($controlType === 'BulkBefore') pass('Unselected item was left untouched');
+else                               fail('Unselected item was left untouched', "control item type is '{$controlType}'");
+
+// 11b. Validation
+assertJson('item_bulk_set_type without ids → 400', apiPost($BASE_URL, 'item_bulk_set_type', [
+    'type' => 'BulkAfter',
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+assertJson('item_bulk_set_type with a blank type → 400', apiPost($BASE_URL, 'item_bulk_set_type', [
+    'type' => '   ', 'ids' => $bulkIds,
+], $CSRF, $COOKIE_FILE), 400, function ($d) {
+    return isset($d['error']) ? null : 'Expected error field';
+});
+
+// 11c. Moving items INTO an excluded type reports it, so the UI can warn that the
+// rows are about to leave the list rather than let it look like a failed update.
+$bulkExcTypeId = (int) (json_decode(apiPost($BASE_URL, 'type_save', [
+    'name' => 'BulkExcluded', 'sort_order' => 9, 'exclude_from_reports' => '1',
+], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+
+assertJson('item_bulk_set_type flags an excluded destination type', apiPost($BASE_URL, 'item_bulk_set_type', [
+    'type' => 'BulkExcluded', 'ids' => $bulkIds,
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    if (($d['updated'] ?? 0) !== 3) return 'Expected updated=3, got ' . ($d['updated'] ?? 0);
+    return !empty($d['excluded']) ? null : 'Expected excluded=true for a flagged type';
+});
+
+assertJson('the moved items are now hidden from list', apiGet($BASE_URL, 'list', ['per_page' => 200], $COOKIE_FILE), 200, function ($d) use ($bulkIds) {
+    foreach ($d['data'] ?? [] as $r) {
+        if (in_array((int) $r['id'], $bulkIds, true)) return 'Item ' . $r['id'] . ' should be hidden after the bulk move';
+    }
+    return null;
+});
+
+// 11d. Cleanup
+foreach ([...$bulkIds, $bulkControlId] as $bid) {
+    apiPost($BASE_URL, 'delete', ['id' => $bid], $CSRF, $COOKIE_FILE);
+}
+apiPost($BASE_URL, 'type_delete', ['id' => $bulkExcTypeId], $CSRF, $COOKIE_FILE);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SUMMARY
 // ─────────────────────────────────────────────────────────────────────────────
 

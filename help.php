@@ -232,6 +232,38 @@
                         </div>
                         <div class="accordion-item">
                             <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#itemBulk">
+                                    <i class="bi bi-check2-square me-2"></i> การทำงานแบบกลุ่ม (Bulk) <span class="badge bg-info ms-2" style="font-size:.65rem">v1.11.0</span>
+                                </button>
+                            </h2>
+                            <div id="itemBulk" class="accordion-collapse collapse" data-bs-parent="#accItems">
+                                <div class="accordion-body">
+                                    <p>ติ๊ก checkbox ที่แถวรายการ (หรือติ๊กที่หัวตารางเพื่อเลือกทั้งหน้า) แถบเครื่องมือแบบกลุ่มจะปรากฏเหนือตาราง:</p>
+                                    <table class="table table-sm help-table">
+                                        <tr>
+                                            <th style="width:150px"><i class="bi bi-link-45deg text-primary"></i> ผูกกับอีเวนต์</th>
+                                            <td>ผูกรายการที่เลือกทั้งหมดเข้ากับอีเวนต์เดียว (ดู <a href="#events">จัดการอีเวนต์</a>)</td>
+                                        </tr>
+                                        <tr>
+                                            <th><i class="bi bi-x-circle text-danger"></i> ยกเลิกการผูก</th>
+                                            <td>ล้างการผูกอีเวนต์ของรายการที่เลือกทั้งหมด โดยยังเก็บ Event Date ของแต่ละรายการไว้</td>
+                                        </tr>
+                                        <tr>
+                                            <th><i class="bi bi-tags text-primary"></i> เปลี่ยนประเภท <span class="badge bg-info ms-1" style="font-size:.65rem">v1.11.0</span></th>
+                                            <td>ตั้งประเภทเดียวกันให้รายการที่เลือกทั้งหมด &mdash; เหมาะกับการแก้รายการที่ใส่ประเภทผิดหลายรายการในครั้งเดียว</td>
+                                        </tr>
+                                    </table>
+                                    <div class="tip-box">
+                                        <i class="bi bi-lightbulb"></i> <strong>เคล็ดลับ:</strong> ช่องเปลี่ยนประเภทเป็นดรอปดาวน์ค้นหาได้เหมือนในฟอร์มเพิ่มรายการ จะเลือกประเภทที่มีอยู่หรือพิมพ์ชื่อใหม่ก็ได้
+                                    </div>
+                                    <div class="tip-box mt-2" style="background:#fff7ed;border-left:3px solid #f59e0b">
+                                        <i class="bi bi-info-circle"></i> ถ้าเปลี่ยนไปเป็นประเภทที่ตั้งค่า <strong>ไม่นับในรายงาน</strong> (ดู <a href="#types">จัดการประเภท</a>) รายการเหล่านั้นจะหายจากตารางทันที ระบบจะแจ้งให้ทราบและถามว่าต้องการเปิด <strong>รวมประเภทที่ยกเว้น</strong> หรือไม่ เพื่อไม่ให้เข้าใจผิดว่าบันทึกไม่สำเร็จ
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#itemFilter">
                                     <i class="bi bi-funnel me-2"></i> กรอง ค้นหา และเรียงลำดับ
                                 </button>

@@ -232,6 +232,38 @@
                         </div>
                         <div class="accordion-item">
                             <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#itemBulk">
+                                    <i class="bi bi-check2-square me-2"></i> Bulk Actions <span class="badge bg-info ms-2" style="font-size:.65rem">v1.11.0</span>
+                                </button>
+                            </h2>
+                            <div id="itemBulk" class="accordion-collapse collapse" data-bs-parent="#accItems">
+                                <div class="accordion-body">
+                                    <p>Tick the checkbox on one or more item rows (or the header checkbox to select the whole page) and a bulk action bar appears above the table:</p>
+                                    <table class="table table-sm help-table">
+                                        <tr>
+                                            <th style="width:150px"><i class="bi bi-link-45deg text-primary"></i> Assign to Event</th>
+                                            <td>Link every selected item to one named event (see <a href="#events">Event Management</a>)</td>
+                                        </tr>
+                                        <tr>
+                                            <th><i class="bi bi-x-circle text-danger"></i> Unassign</th>
+                                            <td>Clear the event link on all selected items, keeping each item's own Event Date</td>
+                                        </tr>
+                                        <tr>
+                                            <th><i class="bi bi-tags text-primary"></i> Change Type <span class="badge bg-info ms-1" style="font-size:.65rem">v1.11.0</span></th>
+                                            <td>Set the same type on every selected item &mdash; useful for correcting a batch of mis-typed entries in one step</td>
+                                        </tr>
+                                    </table>
+                                    <div class="tip-box">
+                                        <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> The Change Type field is a searchable dropdown like the one on the item form, so you can pick an existing type or enter a brand-new name.
+                                    </div>
+                                    <div class="tip-box mt-2" style="background:#fff7ed;border-left:3px solid #f59e0b">
+                                        <i class="bi bi-info-circle"></i> If you change items to a type marked <strong>Exclude from reports</strong> (see <a href="#types">Type Management</a>), those rows leave the list straight away. Numa Log tells you this happened and offers to switch on <strong>Include excluded types</strong>, so a successful change is never mistaken for a failed one.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#itemFilter">
                                     <i class="bi bi-funnel me-2"></i> Filter, Search & Sort
                                 </button>

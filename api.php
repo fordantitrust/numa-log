@@ -46,6 +46,7 @@ try {
         'idol_resolve_name' => handleIdolResolveName($pdo),
         'item_remap' => handleItemRemap($pdo),
         'item_bulk_remap' => handleItemBulkRemap($pdo),
+        'item_bulk_set_type' => handleItemBulkSetType($pdo),
         'ambiguous_list' => handleAmbiguousList($pdo),
         'membership_list' => handleMembershipList($pdo),
         'membership_save' => handleMembershipSave($pdo),
@@ -1829,6 +1830,47 @@ function handleEventBulkAssign(PDO $pdo): void
     $stmt = $pdo->prepare("UPDATE items SET event_id = ? WHERE id IN ($phs)");
     $stmt->execute([$eventId, ...$ids]);
     jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
+}
+
+/**
+ * Set the type on a set of selected items in one go.
+ *
+ * `items.type` is free text everywhere else in the app (the item form accepts new
+ * values), so this deliberately does not require the name to exist in
+ * type_categories — it only trims. An unknown name simply shows up in the
+ * "Unmapped Type Names" panel on types.php, same as one typed into the item form.
+ */
+function handleItemBulkSetType(PDO $pdo): void
+{
+    $type = trim($_POST['type'] ?? '');
+    if ($type === '') {
+        jsonResponse(['error' => 'Type is required'], 400);
+    }
+
+    $rawIds = $_POST['ids'] ?? [];
+    if (is_string($rawIds)) {
+        $rawIds = array_filter(array_map('trim', explode(',', $rawIds)));
+    }
+    $ids = array_values(array_filter(array_map('intval', (array) $rawIds)));
+    if (!$ids) {
+        jsonResponse(['error' => 'No item IDs provided'], 400);
+    }
+
+    $phs  = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("UPDATE items SET type = ?, updated_at = datetime('now','localtime') WHERE id IN ($phs)");
+    $stmt->execute([$type, ...$ids]);
+
+    // Tell the client whether the new type is excluded from reports, so it can warn
+    // that the rows it just changed are about to leave the list (v12).
+    $exc = $pdo->prepare("SELECT COUNT(*) FROM type_categories WHERE name = :n AND exclude_from_reports = 1");
+    $exc->execute([':n' => $type]);
+
+    jsonResponse([
+        'success'  => true,
+        'updated'  => $stmt->rowCount(),
+        'type'     => $type,
+        'excluded' => (bool) $exc->fetchColumn(),
+    ]);
 }
 
 function handleEventAutoAssign(PDO $pdo): void
