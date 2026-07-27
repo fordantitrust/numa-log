@@ -497,6 +497,13 @@ function setupFilterEvents() {
         $(id).addEventListener('change', () => { currentPage = 1; loadData(); });
     });
     $('fPerPage').addEventListener('change', () => { currentPage = 1; loadData(); });
+    // When adding/cloning, keep the filter's From date in sync with the order date
+    // so the next clone references the value the user just entered.
+    $('itemOrderDate').addEventListener('change', () => {
+        if ($('itemId').value) return;                       // add/clone only
+        if ($('fDateField').value !== 'order_date') return;  // filter must be keyed by order_date
+        $('fDateFrom').value = $('itemOrderDate').value;
+    });
 }
 
 // --- API ---
@@ -866,7 +873,7 @@ async function cloneItem(id) {
     const filterFrom = $('fDateFrom').value;
     const dateField = $('fDateField').value;
     const orderDate = (filterFrom && dateField === 'order_date') ? filterFrom : today;
-    const eventDate = (filterFrom && dateField === 'event_date') ? filterFrom : today;
+    const eventDate = d.event_date || today;
     $('itemId').value = '';
     $('itemOrderDate').value = orderDate;
     $('itemEventDate').value = eventDate;

@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.9.17 (2026-07-27)
+
+### Items
+
+- **Clone date handling** — when cloning an item, the **event date** now comes from the source item's linked event (falling back to today if it has none), instead of the filter/today. The **order date** is still taken from the filter's *From* value. Editing the order date in an add/clone form now writes it back to the filter's *From* field, so the next clone reuses the value you just entered — smoothing rapid entry of multiple items ordered on the same day.
+
+---
+
 ## v1.9.16 (2026-07-02)
 
 ### Events

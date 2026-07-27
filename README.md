@@ -184,7 +184,7 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.16 — Events can now also be marked "Did not attend (ordered items only)", alongside Free entry, to exclude them from the missing-ticket warning.
+**Latest:** v1.9.17 — Cloning an item now takes the event date from the source item's linked event and syncs the order date with the filter, so rapid entry of multiple same-day orders reuses the last order date.
 
 **v1.9.15** — The Events page now detects missing tickets: mark a type as "Is Ticket Type" in Manage Types and mark free-entry events, and each event shows a Ticket recorded / No ticket / Free entry badge.
 
