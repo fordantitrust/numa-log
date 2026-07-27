@@ -128,6 +128,16 @@ require __DIR__ . '/navbar.php';
         </a>
     </div>
 
+    <!-- Excluded-types banner (v12). Never hidden while there is something to hide:
+         the item list is the ledger, so it must always say what it is holding back. -->
+    <div id="excludedBanner" class="alert alert-secondary d-none justify-content-between align-items-center py-2 mb-3">
+        <span><i class="bi bi-eye-slash"></i> <span id="excludedBannerText"></span></span>
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="chkIncludeExcluded">
+            <label class="form-check-label small" for="chkIncludeExcluded"><?= t('excluded.toggle') ?></label>
+        </div>
+    </div>
+
     <!-- Summary Cards -->
     <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
@@ -432,10 +442,12 @@ let currentSort = 'order_date';
 let currentDir = 'desc';
 let currentPage = 1;
 let debounceTimer = null;
-let filtersData = { idols: [], types: [] };
+let filtersData = { idols: [], types: [], excluded_types: [] };
 let eventsData = [];
 let msIdol, msType, msEvent;
 let selectedIds = new Set();
+// Shared with index.php and report.php — one mode across the app.
+let includeExcluded = localStorage.getItem('numalog.includeExcluded') === '1';
 
 function eventDateRange(ev) { return ev.end_date && ev.end_date !== ev.event_date ? `${ev.event_date} – ${ev.end_date}` : ev.event_date; }
 function eventDisplay(ev) { return `${ev.name} (${eventDateRange(ev)})`; }
@@ -497,6 +509,12 @@ function setupFilterEvents() {
         $(id).addEventListener('change', () => { currentPage = 1; loadData(); });
     });
     $('fPerPage').addEventListener('change', () => { currentPage = 1; loadData(); });
+    $('chkIncludeExcluded').addEventListener('change', e => {
+        includeExcluded = e.target.checked;
+        localStorage.setItem('numalog.includeExcluded', includeExcluded ? '1' : '0');
+        currentPage = 1;
+        loadData();
+    });
     // When adding/cloning, keep the filter's From date in sync with the order date
     // so the next clone references the value the user just entered.
     $('itemOrderDate').addEventListener('change', () => {
@@ -689,6 +707,7 @@ async function loadData() {
         date_from: $('fDateFrom').value,
         date_to: $('fDateTo').value,
     });
+    if (includeExcluded) params.set('include_excluded', '1');
     if (msIdol) msIdol.getSelected().forEach(v => params.append('idol[]', v));
     if (msType) msType.getSelected().forEach(v => params.append('type[]', v));
     if (msEvent) msEvent.getSelected().forEach(disp => {
@@ -818,6 +837,26 @@ function renderSummary(res) {
     $('sumPrice').textContent = '฿' + formatNumber(res.summary.total_price);
     const avg = res.total > 0 ? Math.round(res.summary.total_price / res.total) : 0;
     $('sumAvg').textContent = '฿' + formatNumber(avg);
+    renderExcludedBanner(res.excluded);
+}
+
+// The four KPI cards above just read low when items are hidden — this banner is what
+// makes the omission legible. Shown whenever there is an excluded slice under the
+// current filters, in BOTH modes, with different wording so the mode is never
+// ambiguous (the toggle is shared across pages via localStorage).
+function renderExcludedBanner(excluded) {
+    const banner = $('excludedBanner');
+    const n = excluded ? excluded.items : 0;
+    if (!n) {
+        banner.classList.remove('d-flex');
+        banner.classList.add('d-none');
+        return;
+    }
+    const params = { n: formatInt(n), amount: '฿' + formatNumber(excluded.total_price) };
+    $('excludedBannerText').textContent = t(includeExcluded ? 'excluded.banner_shown' : 'excluded.banner', params);
+    $('chkIncludeExcluded').checked = includeExcluded;
+    banner.classList.remove('d-none');
+    banner.classList.add('d-flex');
 }
 
 function goPage(p) { currentPage = p; loadData(); }
@@ -923,6 +962,18 @@ async function saveItem(explicitIdolId) {
     }
     if (json.error) { alert(json.error); return; }
     bootstrap.Modal.getInstance($('formModal')).hide();
+
+    // Tell the user at the moment of confusion. Without this, saving a "travel cost"
+    // item and watching the row not appear reads as a failed save — and the natural
+    // recovery is to enter it again, duplicating financial data.
+    const savedType = $('itemType').value;
+    if (!includeExcluded && (filtersData.excluded_types || []).includes(savedType)) {
+        if (confirm(t('excluded.item_hidden_warning') + '\n\n' + t('excluded.toggle') + '?')) {
+            includeExcluded = true;
+            localStorage.setItem('numalog.includeExcluded', '1');
+        }
+    }
+
     loadFilters();
     loadData();
 }
@@ -1009,6 +1060,7 @@ function exportExcel() {
         const ev = eventsData.find(e => eventDisplay(e) === disp);
         if (ev) params.append('event_id[]', ev.id);
     });
+    if (includeExcluded) params.set('include_excluded', '1');
     window.location.href = 'export.php?' + params.toString();
 }
 

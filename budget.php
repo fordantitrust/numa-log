@@ -305,11 +305,17 @@ function updatePeriodLabels() {
     $('summaryPeriod').textContent = lbl;
 }
 
+// Shared with index.php / report.php / items.php — one exclusion mode across the app.
+// Budgets scoped to a type are unaffected either way (the carve-out in
+// budgetSpentForMonth), which is why those rows carry an is_excluded_type badge.
+const includeExcluded = localStorage.getItem('numalog.includeExcluded') === '1';
+const excParam = includeExcluded ? '&include_excluded=1' : '';
+
 async function loadBudgets() {
     updatePeriodLabels();
     const [eff, defs] = await Promise.all([
-        fetch('api.php?action=budget_progress&month=' + currentMonth()).then(r => r.json()),
-        fetch('api.php?action=budget_list&mode=defaults').then(r => r.json()),
+        fetch('api.php?action=budget_progress&month=' + currentMonth() + excParam).then(r => r.json()),
+        fetch('api.php?action=budget_list&mode=defaults' + excParam).then(r => r.json()),
     ]);
     if (eff.error || defs.error) { $('budgetReport').innerHTML = `<div class="text-danger">${t('budget.err_load')}</div>`; return; }
     budgets = eff.budgets || [];
@@ -547,7 +553,7 @@ function monthAbbr(m) {
 async function loadMatrix() {
     $('matrixYear').textContent = matrixYear;
     const from = matrixYear + '-01', to = matrixYear + '-12';
-    const res = await fetch(`api.php?action=budget_matrix&from=${from}&to=${to}`).then(r => r.json());
+    const res = await fetch(`api.php?action=budget_matrix&from=${from}&to=${to}${excParam}`).then(r => r.json());
     if (res.error) { $('matrixBody').innerHTML = `<tr><td colspan="14" class="text-danger py-3">${t('budget.err_load')}</td></tr>`; return; }
     matrixData = res;
     renderMatrix();

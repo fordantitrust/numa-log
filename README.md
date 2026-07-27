@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.9.18 — Pinned the Composer platform to PHP 8.2 so `composer install` works on PHP 8.2 environments (zipstream-php held at 3.1.2, phpspreadsheet 5.9.0).
+**Latest:** v1.10.0 — Types can now be excluded from reports: tick **"Exclude from reports"** on a type in Manage Types (travel costs, gifts for other people, resale stock) and its items stop inflating the dashboard KPIs, reports, budgets, item list and exports. Nothing is deleted or hidden silently — the excluded amount is always shown, and an **Include excluded types** toggle brings it back on any page.
+
+**v1.9.18** — Pinned the Composer platform to PHP 8.2 so `composer install` works on PHP 8.2 environments (zipstream-php held at 3.1.2, phpspreadsheet 5.9.0).
 
 **v1.9.15** — The Events page now detects missing tickets: mark a type as "Is Ticket Type" in Manage Types and mark free-entry events, and each event shows a Ticket recorded / No ticket / Free entry badge.
 

@@ -23,6 +23,7 @@ try {
         'update' => handleUpdate($pdo),
         'delete' => handleDelete($pdo),
         'filters' => handleFilters($pdo),
+        'excluded_summary' => handleExcludedSummary($pdo),
         'report_monthly' => handleReportMonthly($pdo),
         'report_daily' => handleReportDaily($pdo),
         'report_dashboard' => handleReportDashboard($pdo),
@@ -54,6 +55,7 @@ try {
         'type_members_report' => handleTypeByMembers($pdo),
         'report_type_detail' => handleReportTypeDetail($pdo),
         'type_save' => handleTypeSave($pdo),
+        'type_rename_items' => handleTypeRenameItems($pdo),
         'type_delete' => handleTypeDelete($pdo),
         'event_list' => handleEventList($pdo),
         'event_save' => handleEventSave($pdo),
@@ -136,6 +138,21 @@ function handleList(PDO $pdo): void
         foreach ($eventIds as $i => $v) { $params[":evid$i"] = $v; }
     }
 
+    // Snapshot the user's own filters before the exclusion is added, so the hidden
+    // slice below is measured under exactly the same filters as the visible rows.
+    $userWhere  = $where;
+    $userParams = $params;
+
+    // Carve-out: when the user explicitly filtered by type[], honour that verbatim.
+    // Otherwise picking the excluded type in the filter would return nothing — the
+    // one action a user takes when they go looking for these items.
+    if (empty($types)) {
+        $p = excludedTypesPredicate('i.type');
+        if ($p !== '') {
+            $where[] = $p;
+        }
+    }
+
     $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
     $sortCol = $_GET['sort'] ?? 'order_date';
@@ -184,6 +201,13 @@ function handleList(PDO $pdo): void
             'total_price' => (float) $summary['total_price'],
             'total_qty' => (int) $summary['total_qty'],
         ],
+        // Always reported, in both modes, so the item list can state what it is
+        // holding back instead of just showing a shorter table.
+        'excluded' => excludedTypesTotals(
+            $pdo,
+            $userWhere ? ' AND ' . implode(' AND ', $userWhere) : '',
+            $userParams
+        ),
     ]);
 }
 
@@ -304,9 +328,30 @@ function handleDelete(PDO $pdo): void
 
 function handleFilters(PDO $pdo): void
 {
+    // Deliberately unfiltered: the dropdowns must still OFFER excluded types, or the
+    // safety valve in handleList is unreachable and the items become invisible.
     $idols = $pdo->query("SELECT DISTINCT idol FROM items WHERE idol != '' ORDER BY idol")->fetchAll(PDO::FETCH_COLUMN);
     $types = $pdo->query("SELECT DISTINCT type FROM items WHERE type != '' ORDER BY type")->fetchAll(PDO::FETCH_COLUMN);
-    jsonResponse(['idols' => $idols, 'types' => $types]);
+    jsonResponse([
+        'idols' => $idols,
+        'types' => $types,
+        'excluded_types' => excludedTypeNames($pdo),
+    ]);
+}
+
+/**
+ * Lightweight summary of the excluded slice: which types are flagged and what they
+ * add up to. Drives the banners on report.php and items.php without having to load
+ * a whole report first.
+ */
+function handleExcludedSummary(PDO $pdo): void
+{
+    $names = excludedTypeNames($pdo);
+    jsonResponse([
+        'enabled' => !empty($names),
+        'types'   => $names,
+        'by_type' => excludedTypesByType($pdo),
+    ] + excludedTypesTotals($pdo));
 }
 
 function handleReportMonthly(PDO $pdo): void
@@ -318,7 +363,7 @@ function handleReportMonthly(PDO $pdo): void
             SUM(qty) as total_qty,
             SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE order_date != ''
+        WHERE order_date != ''" . excludedTypesClause('type') . "
         GROUP BY month
         ORDER BY month
     ")->fetchAll();
@@ -339,7 +384,7 @@ function handleReportDaily(PDO $pdo): void
             SUM(qty) as total_qty,
             SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE strftime('%Y-%m', order_date) = :month AND order_date != ''
+        WHERE strftime('%Y-%m', order_date) = :month AND order_date != ''" . excludedTypesClause('type') . "
         GROUP BY order_date
         ORDER BY order_date
     ");
@@ -357,7 +402,7 @@ function handleReportDaily(PDO $pdo): void
     $stmtType = $pdo->prepare("
         SELECT type, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND type != '' AND type != '-'
+        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND type != '' AND type != '-'" . excludedTypesClause('type') . "
         GROUP BY type ORDER BY total_price DESC
     ");
     $stmtType->execute([':month' => $month]);
@@ -375,7 +420,7 @@ function handleReportDaily(PDO $pdo): void
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
         WHERE strftime('%Y-%m', i.order_date) = :month
-          AND i.order_date != '' AND i.idol != '' AND i.idol != '-'
+          AND i.order_date != '' AND i.idol != '' AND i.idol != '-'" . excludedTypesClause() . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
     ");
@@ -415,7 +460,7 @@ function handleReportIdol(PDO $pdo): void
             SUM(i.price_per_qty * i.qty)                AS total_price
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
-        WHERE i.idol != '' AND i.idol != '-'
+        WHERE i.idol != '' AND i.idol != '-'" . excludedTypesClause() . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -433,11 +478,15 @@ function handleReportType(PDO $pdo): void
             SUM(qty) as total_qty,
             SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE type != '' AND type != '-'
+        WHERE type != '' AND type != '-'" . excludedTypesClause('type') . "
         GROUP BY type
         ORDER BY total_price DESC
     ")->fetchAll();
-    jsonResponse(['data' => $rows]);
+
+    // The By Type tab is where the exclusion is most visible — whole rows drop out
+    // of the one tab whose job is showing types. Ship the excluded slice alongside
+    // so report.php can render it as a muted section instead of losing it.
+    jsonResponse(['data' => $rows, 'excluded' => excludedTypesByType($pdo)]);
 }
 
 function handleReportIdolDetail(PDO $pdo): void
@@ -467,7 +516,7 @@ function handleReportIdolDetail(PDO $pdo): void
             SUM(i.qty)                     AS total_qty,
             SUM(i.price_per_qty * i.qty)   AS total_price
         FROM items i
-        WHERE {$filterSql} AND i.type != '' AND i.type != '-'
+        WHERE {$filterSql} AND i.type != '' AND i.type != '-'" . excludedTypesClause() . "
         GROUP BY i.type
         ORDER BY total_price DESC
     ");
@@ -482,7 +531,7 @@ function handleReportIdolDetail(PDO $pdo): void
             SUM(i.qty)                      AS total_qty,
             SUM(i.price_per_qty * i.qty)    AS total_price
         FROM items i
-        WHERE {$filterSql} AND i.order_date != ''
+        WHERE {$filterSql} AND i.order_date != ''" . excludedTypesClause() . "
         GROUP BY month
         ORDER BY month
     ");
@@ -519,6 +568,7 @@ function handleReportByGroup(PDO $pdo): void
             ON g.id = ms.group_id AND g.category IN ('group','unit')
         LEFT JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
+        WHERE 1=1" . excludedTypesClause() . "
         GROUP BY g.id
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -556,7 +606,11 @@ function handleReportGroupDetail(PDO $pdo): void
         if ($groupId === 0) jsonResponse(['error' => 'Group not found'], 404);
     }
 
-    // Members under this group (primary memberships)
+    // Members under this group (primary memberships).
+    // NOTE: the exclusion goes in the LEFT JOIN's ON, not the WHERE — in the WHERE it
+    // would degrade this to an inner join and members whose only items are excluded
+    // would vanish from the list instead of showing 0. For the same reason the
+    // aggregates must stay COUNT(i.id) / COALESCE(SUM(...),0); COUNT(*) would report 1.
     $members = $pdo->prepare("
         SELECT
             m.id                              AS idol_id,
@@ -570,7 +624,7 @@ function handleReportGroupDetail(PDO $pdo): void
         LEFT JOIN items i
             ON i.idol_id = m.id
             AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
-            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))" . excludedTypesClause() . "
         WHERE ms.group_id = :g AND ms.is_primary = 1
         GROUP BY m.id
         ORDER BY total_price DESC
@@ -609,7 +663,7 @@ function handleReportGroupDetail(PDO $pdo): void
             AND ms.is_primary = 1
             AND (ms.start_date IS NULL OR ms.start_date <= i.order_date)
             AND (ms.end_date   IS NULL OR ms.end_date   >= i.order_date)
-        WHERE i.order_date != ''
+        WHERE i.order_date != ''" . excludedTypesClause() . "
         GROUP BY month
         ORDER BY month
     ");
@@ -648,6 +702,7 @@ function handleReportByCompany(PDO $pdo): void
             ON g.id = ms.group_id AND g.category IN ('group','unit')
         JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
+        WHERE 1=1" . excludedTypesClause() . "
         GROUP BY c.id, g.id
         ORDER BY c.name
     ")->fetchAll();
@@ -708,6 +763,11 @@ function handleReportDashboard(PDO $pdo): void
     if ($from !== '') { $dateClause .= " AND i.order_date >= :df"; $dateParams[':df'] = $from; }
     if ($to   !== '') { $dateClause .= " AND i.order_date <= :dt"; $dateParams[':dt'] = $to; }
 
+    // Date filter + report exclusion, for the aggregate queries. $dateClause stays
+    // exclusion-free so it can be handed to excludedTypesTotals() below, which needs
+    // the same date window but the opposite type predicate.
+    $filterClause = $dateClause . excludedTypesClause();
+
     $run = function (string $sql) use ($pdo, $dateParams) {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($dateParams);
@@ -722,7 +782,7 @@ function handleReportDashboard(PDO $pdo): void
             SUM(i.qty)                      AS total_qty,
             SUM(i.price_per_qty * i.qty)    AS total_price
         FROM items i
-        WHERE i.order_date != '' $dateClause
+        WHERE i.order_date != '' $filterClause
         GROUP BY month
         ORDER BY month
     ");
@@ -740,7 +800,7 @@ function handleReportDashboard(PDO $pdo): void
             COALESCE(SUM(i.qty), 0)                     AS total_qty,
             COALESCE(SUM(i.price_per_qty * i.qty), 0)   AS total_spent
         FROM items i
-        WHERE i.order_date != '' $dateClause
+        WHERE i.order_date != '' $filterClause
     ")[0];
 
     // Top members (mapped + unmapped), top 5
@@ -754,7 +814,7 @@ function handleReportDashboard(PDO $pdo): void
             SUM(i.price_per_qty * i.qty)                AS total_price
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
-        WHERE i.idol != '' AND i.idol != '-' $dateClause
+        WHERE i.idol != '' AND i.idol != '-' $filterClause
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
         LIMIT 5
@@ -769,7 +829,7 @@ function handleReportDashboard(PDO $pdo): void
     ], $run("
         SELECT i.type AS type, COUNT(*) AS items, SUM(i.qty) AS total_qty, SUM(i.price_per_qty * i.qty) AS total_price
         FROM items i
-        WHERE i.type != '' AND i.type != '-' $dateClause
+        WHERE i.type != '' AND i.type != '-' $filterClause
         GROUP BY i.type
         ORDER BY total_price DESC
     "));
@@ -804,7 +864,7 @@ function handleReportDashboard(PDO $pdo): void
             ON g.id = ms.group_id AND g.category IN ('group','unit')
         LEFT JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
-        WHERE 1=1 $dateClause
+        WHERE 1=1 $filterClause
         GROUP BY g.id
         ORDER BY total_price DESC
         LIMIT 5
@@ -834,7 +894,7 @@ function handleReportDashboard(PDO $pdo): void
             ON g.id = ms.group_id AND g.category IN ('group','unit')
         JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
-        WHERE 1=1 $dateClause
+        WHERE 1=1 $filterClause
         GROUP BY c.id
         ORDER BY total_price DESC
     "));
@@ -879,6 +939,12 @@ function handleReportDashboard(PDO $pdo): void
         'by_type'     => $byType,
         'by_company'  => $byCompany,
         'years'       => $years,
+        // The slice left out of the KPIs above, over the same date window, so the
+        // dashboard can state it rather than let it disappear. Note this is NOT a
+        // simple subtraction from total_spent: a month whose only spending was
+        // excluded also drops out of $monthly, which changes active_months — the
+        // denominator of avg_per_month, not just the numerator.
+        'excluded'    => excludedTypesTotals($pdo, $dateClause, $dateParams),
     ]);
 }
 
@@ -911,6 +977,7 @@ function handleReportByUnit(PDO $pdo): void
             ON u.id = ms.group_id AND u.category = 'unit'
         LEFT JOIN idol_entities c
             ON c.id = u.parent_id
+        WHERE 1=1" . excludedTypesClause() . "
         GROUP BY u.id
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -935,7 +1002,11 @@ function handleReportByUnit(PDO $pdo): void
  */
 function handleReportEvent(PDO $pdo): void
 {
-    // Named events: aggregate items linked via event_id
+    // Named events: aggregate items linked via event_id.
+    // NOTE: the exclusion belongs in the LEFT JOIN's ON, not the WHERE — in the WHERE
+    // it would become an inner join and an event whose only items are excluded would
+    // drop off the report entirely instead of showing 0. Keep COUNT(i.id), never
+    // COUNT(*), or those events would report 1 item.
     $named = $pdo->query("
         SELECT
             e.id                                AS event_id,
@@ -948,7 +1019,7 @@ function handleReportEvent(PDO $pdo): void
             COUNT(DISTINCT i.idol_id)           AS idols,
             COUNT(DISTINCT i.type)              AS types
         FROM events e
-        LEFT JOIN items i ON i.event_id = e.id
+        LEFT JOIN items i ON i.event_id = e.id" . excludedTypesClause() . "
         GROUP BY e.id
         ORDER BY e.event_date DESC, e.name
     ")->fetchAll();
@@ -977,7 +1048,7 @@ function handleReportEvent(PDO $pdo): void
             COUNT(DISTINCT type)                AS types
         FROM items
         WHERE event_date IS NOT NULL AND event_date != ''
-          AND event_id IS NULL
+          AND event_id IS NULL" . excludedTypesClause('type') . "
         GROUP BY event_date
         ORDER BY event_date DESC
     ")->fetchAll();
@@ -1004,11 +1075,11 @@ function handleReportEvent(PDO $pdo): void
             MAX(julianday(event_date) - julianday(order_date))             AS max_days
         FROM items
         WHERE event_date IS NOT NULL AND event_date != ''
-          AND order_date IS NOT NULL AND order_date != ''
+          AND order_date IS NOT NULL AND order_date != ''" . excludedTypesClause('type') . "
     ")->fetch();
 
     $noEvent = (int) $pdo->query("
-        SELECT COUNT(*) FROM items WHERE event_date IS NULL OR event_date = ''
+        SELECT COUNT(*) FROM items WHERE (event_date IS NULL OR event_date = '')" . excludedTypesClause('type') . "
     ")->fetchColumn();
 
     jsonResponse([
@@ -1034,6 +1105,8 @@ function handleReportEventSummary(PDO $pdo): void
 {
     $today = date('Y-m-d');
 
+    // NOTE: the exclusion goes in the LEFT JOIN's ON — see handleReportEvent. In the
+    // WHERE it would silently drop events whose only items are excluded.
     $rows = $pdo->query("
         SELECT
             e.id, e.name,
@@ -1043,7 +1116,7 @@ function handleReportEventSummary(PDO $pdo): void
             COALESCE(SUM(i.qty), 0)                AS total_qty,
             COALESCE(SUM(i.price_per_qty*i.qty),0) AS total_price
         FROM events e
-        LEFT JOIN items i ON i.event_id = e.id
+        LEFT JOIN items i ON i.event_id = e.id" . excludedTypesClause() . "
         GROUP BY e.id
         ORDER BY e.event_date DESC, COALESCE(e.end_date, e.event_date) DESC, e.name
     ")->fetchAll();
@@ -1108,6 +1181,7 @@ function handleReportTopItems(PDO $pdo): void
             price_per_qty, qty,
             (price_per_qty * qty) AS line_total
         FROM items
+        WHERE 1=1" . excludedTypesClause('type') . "
         ORDER BY line_total DESC
         LIMIT 20
     ")->fetchAll();
@@ -1131,7 +1205,7 @@ function handleReportTopItems(PDO $pdo): void
             SUM(qty)                       AS total_qty,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE title != '' AND title != '-'
+        WHERE title != '' AND title != '-'" . excludedTypesClause('type') . "
         GROUP BY title
         ORDER BY items DESC, total_price DESC
         LIMIT 20
@@ -1154,7 +1228,7 @@ function handleReportTopItems(PDO $pdo): void
             MAX(price_per_qty)             AS max_price,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE type != '' AND type != '-'
+        WHERE type != '' AND type != '-'" . excludedTypesClause('type') . "
         GROUP BY type
         ORDER BY avg_price DESC
     ")->fetchAll();
@@ -1188,7 +1262,7 @@ function handleReportSeasonality(PDO $pdo): void
             SUM(qty)                       AS total_qty,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE order_date != ''
+        WHERE order_date != ''" . excludedTypesClause('type') . "
         GROUP BY dow
         ORDER BY dow
     ")->fetchAll();
@@ -1206,7 +1280,7 @@ function handleReportSeasonality(PDO $pdo): void
             SUM(qty)                       AS total_qty,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE order_date != ''
+        WHERE order_date != ''" . excludedTypesClause('type') . "
         GROUP BY moy
         ORDER BY moy
     ")->fetchAll();
@@ -1239,7 +1313,7 @@ function handleReportInactive(PDO $pdo): void
             CAST(julianday('now','localtime') - julianday(MAX(i.order_date)) AS INTEGER) AS days_since
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
-        WHERE i.idol != '' AND i.idol != '-' AND i.order_date != ''
+        WHERE i.idol != '' AND i.idol != '-' AND i.order_date != ''" . excludedTypesClause() . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY days_since DESC
     ")->fetchAll();
@@ -1267,7 +1341,7 @@ function handleIdolEntitiesTree(PDO $pdo): void
     $memberStats = $pdo->query("
         SELECT idol_id, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE idol_id IS NOT NULL
+        WHERE idol_id IS NOT NULL" . excludedTypesClause('type') . "
         GROUP BY idol_id
     ")->fetchAll();
     $statsByMember = [];
@@ -1294,6 +1368,7 @@ function handleIdolEntitiesTree(PDO $pdo): void
             AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
             AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
         JOIN idol_entities g ON g.id = ms.group_id
+        WHERE 1=1" . excludedTypesClause() . "
         GROUP BY g.id
     ")->fetchAll();
     $statsByGroup = [];
@@ -1310,6 +1385,7 @@ function handleIdolEntitiesTree(PDO $pdo): void
             AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
         JOIN idol_entities g ON g.id = ms.group_id
         JOIN idol_entities c ON c.id = g.parent_id AND c.category = 'company'
+        WHERE 1=1" . excludedTypesClause() . "
         GROUP BY c.id
     ")->fetchAll();
     $statsByCompany = [];
@@ -1409,6 +1485,9 @@ function handleIdolEntityDelete(PDO $pdo): void
 
 function handleTypeList(PDO $pdo): void
 {
+    // Deliberately NOT filtered by exclude_from_reports: Manage Types must show the
+    // real totals for an excluded type — that is the whole point of the page, and it
+    // is where the user goes to check what the exclusion is costing them.
     // Single query: LEFT JOIN aggregation from items
     $types = $pdo->query("
         SELECT tc.*,
@@ -1462,7 +1541,7 @@ function handleTypeByMembers(PDO $pdo): void
             ON g.id = ms.group_id
         LEFT JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
-        WHERE i.type != '' AND i.idol != '' AND i.idol != '-'
+        WHERE i.type != '' AND i.idol != '' AND i.idol != '-'" . excludedTypesClause() . "
         GROUP BY i.type, COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY i.type, total_price DESC
     ")->fetchAll();
@@ -1493,6 +1572,11 @@ function handleReportTypeDetail(PDO $pdo): void
     if ($type === '') {
         jsonResponse(['error' => 'type is required'], 400);
     }
+
+    // Carve-out: this is a drill-down into one named type, so exclude_from_reports is
+    // deliberately not applied — filtering here would blank the tab for exactly the
+    // types the user opened it to inspect. Same reasoning as the budget scope_type
+    // ='type' branch and the explicit type[] filter in handleList.
 
     $stmt = $pdo->prepare("
         SELECT
@@ -1552,21 +1636,54 @@ function handleTypeSave(PDO $pdo): void
     $description = trim($_POST['description'] ?? '');
     $sortOrder = (int) ($_POST['sort_order'] ?? 0);
     $isTicket = !empty($_POST['is_ticket']) ? 1 : 0;
+    $isExcluded = !empty($_POST['exclude_from_reports']) ? 1 : 0;
 
     if ($name === '') {
         jsonResponse(['error' => 'Name is required'], 400);
     }
 
+    $orphaned = 0;
     if ($id > 0) {
-        $stmt = $pdo->prepare("UPDATE type_categories SET name = :name, description = :desc, sort_order = :sort, is_ticket = :ticket WHERE id = :id");
-        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':ticket' => $isTicket, ':id' => $id]);
+        // Both is_ticket and exclude_from_reports match items by NAME (items.type is
+        // free text with no FK), so renaming a category silently detaches every
+        // existing item from its flags. For exclude_from_reports that moves money:
+        // the orphaned items re-enter every total at once. Count them so types.php
+        // can offer to rename the items too.
+        $old = $pdo->prepare("SELECT name FROM type_categories WHERE id = :id");
+        $old->execute([':id' => $id]);
+        $oldName = (string) ($old->fetchColumn() ?: '');
+        if ($oldName !== '' && $oldName !== $name) {
+            $cnt = $pdo->prepare("SELECT COUNT(*) FROM items WHERE type = :n");
+            $cnt->execute([':n' => $oldName]);
+            $orphaned = (int) $cnt->fetchColumn();
+        }
+
+        $stmt = $pdo->prepare("UPDATE type_categories SET name = :name, description = :desc, sort_order = :sort, is_ticket = :ticket, exclude_from_reports = :excluded WHERE id = :id");
+        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':ticket' => $isTicket, ':excluded' => $isExcluded, ':id' => $id]);
     } else {
-        $stmt = $pdo->prepare("INSERT INTO type_categories (name, description, sort_order, is_ticket) VALUES (:name, :desc, :sort, :ticket)");
-        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':ticket' => $isTicket]);
+        $stmt = $pdo->prepare("INSERT INTO type_categories (name, description, sort_order, is_ticket, exclude_from_reports) VALUES (:name, :desc, :sort, :ticket, :excluded)");
+        $stmt->execute([':name' => $name, ':desc' => $description, ':sort' => $sortOrder, ':ticket' => $isTicket, ':excluded' => $isExcluded]);
         $id = (int) $pdo->lastInsertId();
     }
 
-    jsonResponse(['success' => true, 'id' => $id]);
+    jsonResponse(['success' => true, 'id' => $id, 'orphaned_items' => $orphaned, 'old_name' => $oldName ?? '']);
+}
+
+/**
+ * Re-point items left behind by a type-category rename (see handleTypeSave).
+ * Without this the old free-text name keeps its own identity and loses whatever
+ * flags the category carried.
+ */
+function handleTypeRenameItems(PDO $pdo): void
+{
+    $from = trim($_POST['from'] ?? '');
+    $to   = trim($_POST['to'] ?? '');
+    if ($from === '' || $to === '') {
+        jsonResponse(['error' => 'from and to are required'], 400);
+    }
+    $stmt = $pdo->prepare("UPDATE items SET type = :to, updated_at = datetime('now','localtime') WHERE type = :from");
+    $stmt->execute([':to' => $to, ':from' => $from]);
+    jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
 }
 
 function handleTypeDelete(PDO $pdo): void
@@ -1581,6 +1698,17 @@ function handleTypeDelete(PDO $pdo): void
 
 // --- Events ---
 
+/**
+ * Deliberately NOT filtered by exclude_from_reports.
+ *
+ * events.php is operational, not analytical. Ticket detection answers "did I buy
+ * admission for this event?" — a type can be both a ticket type and excluded (a
+ * ticket bought for a friend), and filtering would turn that into a false
+ * "missing ticket" warning, regressing the v10 feature. unassigned_same_date
+ * drives auto-assign, so filtering it would quietly make excluded items
+ * unassignable. The Event tabs in report.php ARE filtered — see handleReportEvent
+ * and handleReportEventSummary.
+ */
 function handleEventList(PDO $pdo): void
 {
     $events = $pdo->query("
@@ -1772,10 +1900,17 @@ function budgetSpentForMonth(PDO $pdo, string $scopeType, ?int $refId, string $r
         JOIN idol_entities g
             ON g.id = ms.group_id AND g.category IN ('group','unit')";
 
+    // Carve-out: a budget whose scope IS a type must measure that type's real spend
+    // even when it is flagged exclude_from_reports — the user deliberately pointed the
+    // budget at it. Every other scope excludes. Consequence: with both an overall and
+    // a type budget on an excluded type, the type figure is no longer a subset of the
+    // overall figure; budgetRow() flags that with is_excluded_type.
+    $exc = excludedTypesClause();
+
     switch ($scopeType) {
         case 'overall':
             $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
-                    FROM items i WHERE i.order_date != '' AND $monthClause";
+                    FROM items i WHERE i.order_date != '' AND $monthClause$exc";
             break;
         case 'type':
             $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
@@ -1784,20 +1919,20 @@ function budgetSpentForMonth(PDO $pdo, string $scopeType, ?int $refId, string $r
             break;
         case 'member':
             $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
-                    FROM items i WHERE i.idol_id = :ref AND $monthClause";
+                    FROM items i WHERE i.idol_id = :ref AND $monthClause$exc";
             $params[':ref'] = $refId;
             break;
         case 'group':
             $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
                     FROM items i $membershipJoin
-                    WHERE g.id = :ref AND $monthClause";
+                    WHERE g.id = :ref AND $monthClause$exc";
             $params[':ref'] = $refId;
             break;
         case 'company':
             $sql = "SELECT COALESCE(SUM(i.price_per_qty * i.qty),0)
                     FROM items i $membershipJoin
                     JOIN idol_entities c ON c.id = g.parent_id AND c.category = 'company'
-                    WHERE c.id = :ref AND $monthClause";
+                    WHERE c.id = :ref AND $monthClause$exc";
             $params[':ref'] = $refId;
             break;
         default:
@@ -1835,6 +1970,16 @@ function budgetScopeOrder(string $s): int
     return ['overall' => 0, 'company' => 1, 'group' => 2, 'member' => 3, 'type' => 4][$s] ?? 5;
 }
 
+/** Names of excluded types, cached per request — budgetRow() is called in loops. */
+function budgetExcludedTypeNames(PDO $pdo): array
+{
+    static $names = null;
+    if ($names === null) {
+        $names = excludedTypeNames($pdo);
+    }
+    return $names;
+}
+
 /** Enrich a raw budgets row with a fresh scope label, spending and colour status. */
 function budgetRow(PDO $pdo, array $b, string $month): array
 {
@@ -1864,6 +2009,10 @@ function budgetRow(PDO $pdo, array $b, string $month): array
         'remaining'      => $amount - $spent,
         'pct'            => $amount > 0 ? round($spent / $amount * 100, 1) : 0.0,
         'status'         => budgetStatus($spent, $amount, $warn, $danger),
+        // True when this budget targets a type flagged exclude_from_reports. Its spend
+        // is counted in full (the carve-out in budgetSpentForMonth), so it is NOT a
+        // subset of the overall budget — the UI has to say so.
+        'is_excluded_type' => $scopeType === 'type' && in_array($refName, budgetExcludedTypeNames($pdo), true),
     ];
 }
 

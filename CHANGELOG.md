@@ -4,6 +4,40 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.10.0 (2026-07-27)
+
+### Types
+
+- **"Exclude from reports" flag** — a type category can now be marked as not counting toward the normal totals, for spending you want on record but not mixed in with your merch: travel to events, gifts bought for other people, items bought to resell. Set it in **Manage Types**; the type gets an 👁️‍🗨️ badge and its own line in the summary panel, which always shows the real amount.
+- **Rename protection** — `items.type` is free text with no foreign key, so renaming a category used to leave existing items behind under the old name, silently losing the category's flags. Saving a rename now reports how many items are affected and offers to re-point them (`type_rename_items`). This matters more than it did for `is_ticket`: orphaning an excluded type puts the money straight back into every total.
+
+### Reports
+
+- All 14 report tabs, the dashboard KPIs and the charts leave excluded types out by default. An **Include excluded types** toggle sits above the tabs and applies to every tab at once; the setting is shared across the dashboard, reports, budgets and the item list so the whole app stays in one mode.
+- **Nothing disappears silently.** The dashboard's total-spent card carries an "excl. ฿X" footnote, the reports banner names the flagged types with their totals, and the **By Type** tab lists excluded types in a muted section below the table rather than dropping the rows.
+- Note that the footnote is not a plain subtraction: a month whose only spending was excluded also drops out of the monthly series, which changes the denominator of the average-per-month KPI, not just the numerator.
+- **Events are treated differently on purpose.** `events.php` is operational, not analytical, so ticket detection and auto-assign still see every item — a type can be both a ticket type and excluded (a ticket bought for a friend), and filtering there would produce false "missing ticket" warnings. The Event and Event Summary tabs in **Reports** *are* filtered. Events whose only items are excluded still appear, with totals of 0, rather than vanishing.
+
+### Budgets
+
+- Overall, member, group and company budgets leave excluded types out of their spend.
+- **A budget scoped directly to an excluded type still counts it in full** — you pointed the budget at that type deliberately. Such rows carry a badge, since their spend is no longer a subset of the overall budget.
+
+### Items & export
+
+- The item list hides excluded items by default and shows a persistent banner with the hidden count and amount plus its own toggle. Filtering by the excluded type in the Type filter always returns the items regardless of the toggle, and saving an item of an excluded type warns you that it will not appear in the list — so a hidden row is never mistaken for a failed save.
+- Excel export follows the same rules; exports taken with the toggle on are suffixed `-with-excluded` so the two files are distinguishable.
+
+### API
+
+- New `excluded_summary` (GET) and `type_rename_items` (POST) actions. Every read endpoint accepts `include_excluded=1`. `list` and `report_dashboard` gained an `excluded` block; `filters` and `type_list` expose the flagged type names.
+
+### Schema
+
+- `type_categories.exclude_from_reports` (migration **v12**). Also fixed a missing `$currentVer` assignment in the v11 branch of `initDB()`, which left the migration chain depending on an accident.
+
+---
+
 ## v1.9.18 (2026-07-27)
 
 ### Build

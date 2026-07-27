@@ -51,6 +51,7 @@
                 <span class="text-truncate">
                     <span class="badge ${badge}" style="font-weight:500">${escHtml(scopeTypeLabel(b.scope_type))}</span>
                     <strong>${escHtml(scopeLabel(b))}</strong>
+                    ${b.is_excluded_type ? `<span class="badge bg-warning-subtle text-warning-emphasis" title="${escHtml(t('excluded.budget_type_note'))}"><i class="bi bi-eye-slash"></i></span>` : ''}
                     ${opts.tag || ''}
                 </span>
                 <span class="d-flex align-items-center gap-2">
@@ -274,6 +275,8 @@
         });
         if (st.selected.scope_type === 'type') params.set('scope_ref_name', st.selected.scope_ref_name || '');
         else if (st.selected.scope_type !== 'overall') params.set('scope_ref_id', st.selected.scope_ref_id || '');
+        // Match the exclusion mode the rest of the app is in (see budget.php).
+        if (localStorage.getItem('numalog.includeExcluded') === '1') params.set('include_excluded', '1');
 
         const recsEl = root.querySelector('.bi-recs');
         if (recsEl) recsEl.innerHTML = `<div class="text-muted small">${escHtml(t('common.loading'))}</div>`;

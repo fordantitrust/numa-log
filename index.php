@@ -45,12 +45,18 @@
     <!-- Period selector -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <h5 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> <?= t('dashboard.overview_title') ?></h5>
-        <div class="d-flex align-items-center gap-2">
-            <label class="small text-muted mb-0"><?= t('dashboard.period') ?></label>
-            <select class="form-select form-select-sm" id="periodSelect" style="width:auto">
-                <option value="all"><?= t('dashboard.period_all') ?></option>
-                <option value="last12"><?= t('dashboard.period_last12') ?></option>
-            </select>
+        <div class="d-flex align-items-center gap-3">
+            <div class="form-check form-switch mb-0 d-none" id="excludedToggleWrap">
+                <input class="form-check-input" type="checkbox" id="chkIncludeExcluded">
+                <label class="form-check-label small text-muted" for="chkIncludeExcluded"><?= t('excluded.toggle') ?></label>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small text-muted mb-0"><?= t('dashboard.period') ?></label>
+                <select class="form-select form-select-sm" id="periodSelect" style="width:auto">
+                    <option value="all"><?= t('dashboard.period_all') ?></option>
+                    <option value="last12"><?= t('dashboard.period_last12') ?></option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -162,10 +168,22 @@
 const $ = id => document.getElementById(id);
 let chartMonthly, chartType, chartCompany;
 
+// Shared with report.php and items.php so the whole app agrees on one mode. The
+// banner/footnote text differs between the two states so it is always clear which
+// mode a page is in, even after toggling somewhere else.
+let includeExcluded = localStorage.getItem('numalog.includeExcluded') === '1';
+
 const PALETTE = ['#7c3aed','#a78bfa','#ec4899','#f59e0b','#0891b2','#10b981','#ef4444','#6366f1','#14b8a6','#f97316'];
 
 document.addEventListener('DOMContentLoaded', () => {
     $('periodSelect').addEventListener('change', loadDashboard);
+    $('chkIncludeExcluded').checked = includeExcluded;
+    $('chkIncludeExcluded').addEventListener('change', e => {
+        includeExcluded = e.target.checked;
+        localStorage.setItem('numalog.includeExcluded', includeExcluded ? '1' : '0');
+        loadDashboard();
+        loadBudgetCard();
+    });
     loadDashboard();
     loadBudgetCard();
 });
@@ -173,7 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Budgets are tied to the current calendar month, independent of the period selector.
 async function loadBudgetCard() {
     const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
-    const res = await fetch('api.php?action=budget_progress&month=' + month, { cache: 'no-store' }).then(r => r.json());
+    const url = 'api.php?action=budget_progress&month=' + month + (includeExcluded ? '&include_excluded=1' : '');
+    const res = await fetch(url, { cache: 'no-store' }).then(r => r.json());
     const el = $('budgetCard');
     if (!res || res.error) { el.innerHTML = ''; return; }
     const budgets = res.budgets || [];
@@ -206,11 +225,17 @@ function currentRange() {
 async function loadDashboard() {
     const { from, to } = currentRange();
     const params = new URLSearchParams({ action: 'report_dashboard', date_from: from, date_to: to });
+    if (includeExcluded) params.set('include_excluded', '1');
     const res = await fetch('api.php?' + params, { cache: 'no-store' }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
 
+    // Only offer the toggle once a type is actually flagged — users who never use
+    // the feature should see no extra chrome.
+    const hasExcluded = res.excluded && res.excluded.items > 0;
+    $('excludedToggleWrap').classList.toggle('d-none', !hasExcluded && !includeExcluded);
+
     populateYears(res.years);
-    renderKpis(res.kpis);
+    renderKpis(res.kpis, res.excluded);
     renderMonthly(res.monthly);
     renderType(res.by_type);
     renderCompany(res.by_company);
@@ -234,9 +259,14 @@ function fmtMoney(n) { return '฿' + new Intl.NumberFormat('th-TH', { maximumFr
 function fmtInt(n)   { return new Intl.NumberFormat('th-TH').format(n || 0); }
 function escHtml(s)  { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
-function renderKpis(k) {
+function renderKpis(k, excluded) {
     $('kpiSpent').textContent  = fmtMoney(k.total_spent);
-    $('kpiSpentSub').innerHTML = t('dashboard.kpi_spent_sub', { n: k.active_months || 0 });
+    const spentSub = t('dashboard.kpi_spent_sub', { n: k.active_months || 0 });
+    // State the excluded amount rather than let it vanish. When the toggle is on the
+    // amount is already inside total_spent, so only annotate in the filtered mode.
+    $('kpiSpentSub').innerHTML = (!includeExcluded && excluded && excluded.items > 0)
+        ? `${spentSub} · <span class="text-warning-emphasis" title="${t('excluded.tooltip')}"><i class="bi bi-eye-slash"></i> ${t('excluded.kpi_note', { amount: fmtMoney(excluded.total_price) })}</span>`
+        : spentSub;
 
     $('kpiItems').textContent  = fmtInt(k.total_items);
     $('kpiItemsSub').innerHTML = t('dashboard.kpi_items_sub', { n: fmtInt(k.total_qty) });

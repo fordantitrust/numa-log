@@ -9,6 +9,23 @@ The API is split into two files:
 All responses are JSON (`Content-Type: application/json`).
 All endpoints require an active login session (returns `401` if unauthenticated).
 
+### `include_excluded` (v12) — accepted by every read endpoint
+
+Items whose type category is flagged `exclude_from_reports = 1` are left out of all
+aggregates by default. Pass `include_excluded=1` on any read endpoint (including
+`export.php`) to count them.
+
+Three carve-outs ignore the flag entirely, all from the same rule — *if the caller points
+at a type directly, they get the full amount*:
+
+1. `budget_progress` / `budget_list` rows with `scope_type='type'`
+2. `report_type_detail`
+3. `list` and `export.php` when `type[]` is supplied
+
+`type_list` and `filters` are also unfiltered (Manage Types must report the excluded
+type's real totals; the filter dropdowns must still offer excluded types). `event_list` is
+unfiltered too — see the note under **Events**.
+
 ---
 
 ## Authentication & CSRF
@@ -57,9 +74,14 @@ List items with pagination, filters, and sorting.
   "page": 1,
   "per_page": 20,
   "total_pages": 3,
-  "summary": { "total_price": 15000.0, "total_qty": 38 }
+  "summary": { "total_price": 15000.0, "total_qty": 38 },
+  "excluded": { "items": 3, "total_qty": 3, "total_price": 8400.0 }
 }
 ```
+
+`excluded` is the slice held back by `exclude_from_reports`, measured under the *same*
+filters as `data`, and is reported in both modes so a shorter table is never mistaken for
+missing data. Supplying `type[]` disables the exclusion for this endpoint (carve-out 3).
 
 ---
 
@@ -151,12 +173,37 @@ Get distinct idol and type values for filter dropdowns.
 
 **Response:**
 ```json
-{ "idols": ["Member A", "Member B"], "types": ["Photo", "CD", "Merch"] }
+{ "idols": ["Member A", "Member B"], "types": ["Photo", "CD", "Merch"], "excluded_types": ["Travel"] }
 ```
+
+Deliberately unfiltered: the dropdowns must still offer excluded types, or the `type[]`
+carve-out on `list` is unreachable and those items become invisible. `excluded_types`
+(v12) lets the client mark them.
 
 ---
 
 ## Reports (`api.php`)
+
+### `excluded_summary` — GET
+
+Lightweight summary of the `exclude_from_reports` slice. Drives the banners on
+`report.php` and `items.php` without loading a whole report first.
+
+**Response:**
+```json
+{
+  "enabled": true,
+  "types": ["Travel"],
+  "by_type": [ { "type": "Travel", "items": 3, "total_qty": 3, "total_price": 8400.0 } ],
+  "items": 3, "total_qty": 3, "total_price": 8400.0
+}
+```
+
+`enabled` is `false` when no type is flagged — clients hide the banner entirely in that
+case. Ignores `include_excluded`: this is always the excluded-only slice, so the same
+figure can be shown in both modes.
+
+---
 
 ### `report_monthly` — GET
 
@@ -204,6 +251,12 @@ Report page.
 |-----------|------|---------|-------------|
 | `date_from` | YYYY-MM-DD | — | Lower bound on `order_date` (empty = no bound) |
 | `date_to` | YYYY-MM-DD | — | Upper bound on `order_date` (empty = no bound) |
+| `include_excluded` | `1` | — | Count types flagged `exclude_from_reports` |
+
+Also returns `excluded: { items, total_qty, total_price }` — the slice left out of the
+KPIs, over the same date window. **Not a plain subtraction from `total_spent`:** a month
+whose only spending was excluded also drops out of `monthly`, which changes
+`active_months` — the denominator of `avg_per_month`, not just the numerator.
 
 `top_members` / `top_groups` are capped at 5 rows. `years` is the distinct list of years that have
 data (unfiltered) — used to populate the period selector.
@@ -267,9 +320,14 @@ Spending ranking by item type.
 **Response:**
 ```json
 {
-  "data": [ { "type": "Photo", "items": 20, "total_qty": 35, "total_price": 10500.0 } ]
+  "data": [ { "type": "Photo", "items": 20, "total_qty": 35, "total_price": 10500.0 } ],
+  "excluded": [ { "type": "Travel", "items": 3, "total_qty": 3, "total_price": 8400.0 } ]
 }
 ```
+
+`excluded` is the per-type breakdown of the flagged types. This is the one tab whose job
+is listing types, so they are shipped separately rather than simply dropped — the client
+renders them as a muted section below the table.
 
 ---
 
@@ -393,13 +451,17 @@ List all type categories with usage stats and unmapped type names.
 ```json
 {
   "types": [
-    { "id": 1, "name": "Photo", "description": "Photo cards", "sort_order": 1, "is_ticket": 0, "items_count": 20, "total_qty": 35, "total_price": 10500.0 }
+    { "id": 1, "name": "Photo", "description": "Photo cards", "sort_order": 1, "is_ticket": 0, "exclude_from_reports": 0, "items_count": 20, "total_qty": 35, "total_price": 10500.0 }
   ],
   "unmapped": ["NewType"]
 }
 ```
 
 `is_ticket` (v1.9.15): `1` marks this type as representing an event admission ticket — used by the Events page's missing-ticket detection.
+
+`exclude_from_reports` (v1.10.0): `1` leaves this type's items out of the normal totals.
+**These stats are deliberately unfiltered** — Manage Types must report the excluded type's
+real totals, since that is where the user goes to see what the exclusion is costing them.
 
 ---
 
@@ -433,11 +495,30 @@ Create or update a type category.
 | `description` | string | Description |
 | `sort_order` | int | Display order |
 | `is_ticket` | bool | (v1.9.15) `1` to flag this type as a ticket type |
+| `exclude_from_reports` | bool | (v1.10.0) `1` to leave this type's items out of the normal totals |
 | `csrf_token` | string | CSRF token |
+
+On update, the response also carries `orphaned_items` and `old_name`: `items.type` is free
+text with no FK, so a rename leaves existing items behind under the old name where they
+lose the category's flags. For `exclude_from_reports` that moves money — the orphans
+re-enter every total at once — so the client should offer `type_rename_items`.
 
 **Response:**
 ```json
 { "success": true, "id": 3 }
+```
+
+---
+
+### `type_rename_items` — POST
+
+Re-point items left behind by a type-category rename (see `type_save`).
+
+**POST Body:** `from` (string, required), `to` (string, required), `csrf_token`
+
+**Response:**
+```json
+{ "success": true, "updated": 12 }
 ```
 
 ---
@@ -460,6 +541,14 @@ Delete a type category.
 ### `event_list` — GET
 
 List all events with linked-item stats and ticket-detection fields.
+
+> **Deliberately ignores `exclude_from_reports`.** `events.php` is operational rather than
+> analytical: ticket detection answers "did I buy admission for this event?", and a type
+> can be both a ticket type and excluded (a ticket bought for a friend). Filtering here
+> would turn that into a false "missing ticket" warning and would quietly make excluded
+> items unassignable via `unassigned_same_date`. The **Event** and **Event Summary** tabs
+> in `report.php` (`report_event`, `report_event_summary`) *are* filtered — events whose
+> only items are excluded still appear there, with totals of 0.
 
 **Response:**
 ```json

@@ -730,11 +730,18 @@
                         <li>Click the <span class="shortcut-key">Add Type</span> button</li>
                         <li>Enter <strong>Name</strong>, <strong>Description</strong>, and <strong>Sort Order</strong></li>
                         <li>Check <strong>Is Ticket Type</strong> if items of this type represent an event admission ticket <span class="badge bg-info ms-1" style="font-size:.65rem">v1.9.15</span></li>
+                        <li>Check <strong>Exclude from reports</strong> if this type shouldn't count toward your normal totals <span class="badge bg-info ms-1" style="font-size:.65rem">v1.10.0</span></li>
                         <li>Click <strong>Save</strong></li>
                     </ol>
 
                     <p class="small text-muted mb-2">Each type shows statistics: row count, quantity, and total spending. The system also has an <strong>Unmapped Names</strong> feature to detect type names that haven't been added yet.</p>
                     <p class="small text-muted mb-2"><strong>Is Ticket Type</strong> feeds the <a href="#events">Events</a> page's ticket-detection badges &mdash; you can flag more than one type name (e.g. "Ticket" and "VIP Ticket") if tickets are logged under different names.</p>
+
+                    <h6 class="mt-3">Exclude from reports <span class="badge bg-info ms-1" style="font-size:.65rem">v1.10.0</span></h6>
+                    <p class="small text-muted mb-2">For spending you want on record but not mixed in with your merch &mdash; travel to events, gifts bought for other people, items bought to resell. Items of a flagged type are left out of the dashboard KPIs, all report tabs, budgets, the item list and Excel exports.</p>
+                    <p class="small text-muted mb-2"><strong>Nothing is deleted or hidden silently.</strong> The excluded amount is always shown &mdash; in the Types summary panel here, as an &ldquo;excl. &#3647;X&rdquo; note under the dashboard's total, and as a banner on the Reports and Items pages. Every page has an <strong>Include excluded types</strong> toggle that brings them back, and the setting is shared across pages. On the Items page you can also just filter by that type to see them regardless of the toggle.</p>
+                    <p class="small text-muted mb-2">Two exceptions worth knowing: a <a href="#budget">budget</a> pointed directly at an excluded type still counts its spending in full (you targeted it deliberately), and the <a href="#events">Events</a> page still counts every item for ticket detection &mdash; otherwise a ticket bought for a friend would trigger a false &ldquo;No ticket&rdquo; warning.</p>
+                    <p class="small text-muted mb-2"><strong>If you rename a type</strong>, existing items keep the old name and stop being excluded &mdash; their spending reappears in every total. Numa Log detects this on save and offers to update the affected items for you; accept it unless you meant to split the type.</p>
                     <h6 class="mt-2">Members by Type</h6>
                     <p class="small text-muted mb-0">The bottom of the Types page includes a <strong>Members by Type</strong> accordion showing which members, groups, and companies purchased each type, along with item count, quantity, and total spending statistics.</p>
                 </div>

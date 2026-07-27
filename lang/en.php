@@ -432,6 +432,24 @@ return [
     'types.edit_prefix'    => 'Edit: {name}',
     'types.is_ticket'      => 'Is Ticket Type',
     'types.is_ticket_hint' => 'Items using this type count as an event ticket for the "missing ticket" detection on the Events page.',
+    'types.is_excluded'      => 'Exclude from reports',
+    'types.is_excluded_hint' => 'Items of this type are left out of the totals on the dashboard, reports, budgets, the item list and exports by default. Nothing is deleted — turn on "Include excluded types" anywhere to see them again.',
+    'types.stat_excluded'    => 'Excluded from reports:',
+    'types.rename_orphans'   => 'Renamed. {n} items still use the old name "{old}" and no longer carry this type\'s settings. Update them to "{new}"?',
+    'types.rename_orphans_ok' => 'Updated {n} items.',
+
+    // ── Excluded types (shared: index / report / items / budget) ────────────
+    'excluded.toggle'              => 'Include excluded types',
+    'excluded.banner'              => '{n} items ({amount}) are hidden — their type is excluded from reports.',
+    'excluded.banner_shown'        => 'Showing {n} excluded items ({amount}).',
+    'excluded.report_banner'       => 'Excluded types are left out of these reports: {types}',
+    'excluded.report_banner_shown' => 'Excluded types are included in these reports: {types}',
+    'excluded.kpi_note'            => 'excl. {amount}',
+    'excluded.tooltip'             => 'Spending on types flagged "exclude from reports". Not a plain subtraction: a month with only excluded spending also drops out of the monthly average.',
+    'excluded.item_hidden_warning' => 'Saved. This item\'s type is excluded from reports, so it is hidden from the list.',
+    'excluded.show'                => 'Show',
+    'excluded.section_title'       => 'Excluded from reports',
+    'excluded.budget_type_note'    => 'This budget targets an excluded type — its spending is always counted in full, so it is not part of the overall budget.',
 
     // ── Idols (idols.php) ──────────────────────────────────────────────────
     'idols.title'             => 'Idol Management',

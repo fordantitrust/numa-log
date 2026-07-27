@@ -45,6 +45,15 @@
 <?php $navActive = 'report'; $navIcon = 'bi-bar-chart-line'; $navTitle = t('nav.report'); require __DIR__ . '/navbar.php'; ?>
 
 <div class="container-fluid py-3">
+    <!-- Excluded-types banner (v12). Applies to every tab, so it sits above the nav. -->
+    <div id="excludedBanner" class="alert alert-secondary d-none justify-content-between align-items-center py-2 mb-3">
+        <span class="small"><i class="bi bi-eye-slash"></i> <span id="excludedBannerText"></span></span>
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="chkIncludeExcluded">
+            <label class="form-check-label small" for="chkIncludeExcluded"><?= t('excluded.toggle') ?></label>
+        </div>
+    </div>
+
     <!-- Tab Navigation — 14 tabs grouped into dropdowns to stay compact -->
     <ul class="nav nav-pills mb-3 gap-1" id="reportTabs" role="tablist">
         <li class="nav-item">
@@ -483,6 +492,9 @@
                                     <tfoot id="footType" class="table-light fw-bold"></tfoot>
                                 </table>
                             </div>
+                            <!-- Excluded types, listed below the table rather than
+                                 dropped: this is the one tab whose job is showing types. -->
+                            <div id="typeExcludedPanel" class="card-footer py-2 d-none"></div>
                         </div>
                     </div>
                 </div>
@@ -1069,6 +1081,42 @@ let chartUnitPie = null, chartEvent = null;
 let unitData = [];
 let cmpMembers = [];
 
+// Shared with index.php and items.php — one mode across the app.
+let includeExcluded = localStorage.getItem('numalog.includeExcluded') === '1';
+
+/** Build an api.php URL carrying the current exclusion mode. Every report fetch uses this. */
+function rq(action, params = {}) {
+    const p = new URLSearchParams({ action, ...params });
+    if (includeExcluded) p.set('include_excluded', '1');
+    return 'api.php?' + p.toString();
+}
+
+// Module-scope so the toggle handler can reach them (they used to be local to the
+// DOMContentLoaded callback).
+const lazy = {
+    '#tabTrends': loadTrends,
+    '#tabSeasonality': loadSeasonality,
+    '#tabCompare': initCompare,
+    '#tabUnit': loadUnit,
+    '#tabEvent': loadEvent,
+    '#tabEventSummary': loadEventSummary,
+    '#tabTopItems': loadTopItems,
+    '#tabInactive': loadInactive,
+};
+const loaded = {};
+
+/**
+ * Re-run the eagerly loaded tabs plus any lazy tab already rendered. Tabs never
+ * opened stay unloaded and pick up the new mode on their first click.
+ */
+function reloadAllReportTabs() {
+    loadOverview(); loadMonthly(); loadIdol(); loadType(); loadGroup(); loadCompany();
+    // initCompare is an initialiser rather than a plain loader, but it is written to
+    // be idempotent (preserves the A/B selection, binds its listeners once), so it is
+    // safe to re-run here alongside the others.
+    Object.keys(loaded).forEach(k => { if (lazy[k]) lazy[k](); });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadOverview();   // default active tab
     loadMonthly();
@@ -1076,19 +1124,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadType();
     loadGroup();
     loadCompany();
+    loadExcludedBanner();
+
+    $('chkIncludeExcluded').addEventListener('change', e => {
+        includeExcluded = e.target.checked;
+        localStorage.setItem('numalog.includeExcluded', includeExcluded ? '1' : '0');
+        loadExcludedBanner();
+        reloadAllReportTabs();
+    });
 
     // Lazy-load the heavier analytics tabs the first time they're shown.
-    const lazy = {
-        '#tabTrends': loadTrends,
-        '#tabSeasonality': loadSeasonality,
-        '#tabCompare': initCompare,
-        '#tabUnit': loadUnit,
-        '#tabEvent': loadEvent,
-        '#tabEventSummary': loadEventSummary,
-        '#tabTopItems': loadTopItems,
-        '#tabInactive': loadInactive,
-    };
-    const loaded = {};
     document.querySelectorAll('[data-bs-toggle="pill"]').forEach(btn => {
         btn.addEventListener('shown.bs.tab', e => {
             const target = e.target.getAttribute('data-bs-target');
@@ -1101,9 +1146,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+/** Banner naming the flagged types + the toggle. Hidden entirely when none exist. */
+async function loadExcludedBanner() {
+    const res = await fetch('api.php?action=excluded_summary', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
+    const banner = $('excludedBanner');
+    if (!res || !res.enabled) {
+        banner.classList.remove('d-flex');
+        banner.classList.add('d-none');
+        return;
+    }
+    const key = includeExcluded ? 'excluded.report_banner_shown' : 'excluded.report_banner';
+    $('excludedBannerText').textContent =
+        t(key, { types: res.types.join(', ') }) + ` (${fmtInt(res.items)} · ฿${fmt(res.total_price)})`;
+    $('chkIncludeExcluded').checked = includeExcluded;
+    banner.classList.remove('d-none');
+    banner.classList.add('d-flex');
+}
+
 // --- Monthly ---
 async function loadMonthly() {
-    const res = await fetch('api.php?action=report_monthly').then(r => r.json());
+    const res = await fetch(rq('report_monthly')).then(r => r.json());
     const data = res.data;
 
     // Chart
@@ -1204,7 +1266,7 @@ function hideDailyDetail() {
 
 async function loadDaily(month) {
     $('dailyMonthLabel').textContent = formatMonth(month);
-    const res = await fetch('api.php?action=report_daily&month=' + encodeURIComponent(month)).then(r => r.json());
+    const res = await fetch(rq('report_daily', { month })).then(r => r.json());
     const data = res.data;
 
     // Summary cards
@@ -1392,14 +1454,32 @@ function formatDay(d) {
 
 // --- Idol ---
 async function loadIdol() {
-    const res = await fetch('api.php?action=report_idol').then(r => r.json());
+    const res = await fetch(rq('report_idol')).then(r => r.json());
     renderRankReport(res.data, 'Idol', 'idol', 'chartIdolPie', 'tableIdol', 'footIdol');
 }
 
 // --- Type ---
 async function loadType() {
-    const res = await fetch('api.php?action=report_type').then(r => r.json());
+    const res = await fetch(rq('report_type')).then(r => r.json());
     renderRankReport(res.data, 'Type', 'type', 'chartTypePie', 'tableType', 'footType');
+    renderTypeExcluded(res.excluded || []);
+}
+
+// Excluded types would otherwise vanish from the By Type table entirely. List them
+// separately (muted) so the tab still accounts for every type that exists.
+function renderTypeExcluded(rows) {
+    const panel = $('typeExcludedPanel');
+    if (!rows.length || includeExcluded) {
+        panel.classList.add('d-none');
+        panel.innerHTML = '';
+        return;
+    }
+    panel.innerHTML = `<div class="small text-muted mb-1"><i class="bi bi-eye-slash"></i> ${t('excluded.section_title')}</div>`
+        + rows.map(r => `<div class="d-flex justify-content-between small text-muted">
+            <span>${escHtml(r.type)}</span>
+            <span>${fmtInt(r.items)} · ฿${fmt(r.total_price)}</span>
+        </div>`).join('');
+    panel.classList.remove('d-none');
 }
 
 function renderRankReport(data, label, key, chartId, tableId, footId) {
@@ -1523,7 +1603,7 @@ async function showIdolDetail(idol) {
     $('idolMainView').style.display = 'none';
     $('idolDetailView').style.display = 'block';
 
-    const res = await fetch('api.php?action=report_idol_detail&idol=' + encodeURIComponent(idol)).then(r => r.json());
+    const res = await fetch(rq('report_idol_detail', { idol })).then(r => r.json());
     const byType = res.by_type;
     const byMonth = res.by_month;
 
@@ -1642,7 +1722,7 @@ function hideIdolDetail() {
 
 // --- Group Report ---
 async function loadGroup() {
-    const res = await fetch('api.php?action=report_by_group').then(r => r.json());
+    const res = await fetch(rq('report_by_group')).then(r => r.json());
     groupData = res.data;
     const grandTotal = groupData.reduce((s, r) => s + Number(r.total_price), 0);
     const maxPrice = groupData.length > 0 ? Number(groupData[0].total_price) : 1;
@@ -1726,14 +1806,14 @@ async function showGroupMembers(idx) {
     // Prefer the v5 endpoint: returns primary members + sub-unit memberships + monthly.
     let detail = null;
     if (group.group_id) {
-        const res = await fetch(`api.php?action=report_group_detail&group_id=${group.group_id}`).then(r => r.json());
+        const res = await fetch(rq('report_group_detail', { group_id: group.group_id })).then(r => r.json());
         if (!res.error) detail = res;
     }
 
     let members = detail ? detail.members : null;
     if (!members) {
         // Legacy fallback — derive members by name (for solo / unmapped buckets)
-        const res = await fetch('api.php?action=report_idol').then(r => r.json());
+        const res = await fetch(rq('report_idol')).then(r => r.json());
         const memberSet = new Set(group.members || []);
         members = (res.data || []).filter(r => memberSet.has(r.idol));
     }
@@ -1795,7 +1875,7 @@ function renderGroupSubUnits(units) {
 
 // --- Company Report ---
 async function loadCompany() {
-    const res = await fetch('api.php?action=report_by_company').then(r => r.json());
+    const res = await fetch(rq('report_by_company')).then(r => r.json());
     companyData = res.data;
     const grandTotal = companyData.reduce((s, r) => s + Number(r.total_price), 0);
     const maxPrice = companyData.length > 0 ? Number(companyData[0].total_price) : 1;
@@ -1901,7 +1981,7 @@ async function showTypeDetail(type) {
     $('typeDetailView').style.display = 'block';
     $('tableTypeDetail').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${t('common.loading')}</td></tr>`;
 
-    const res = await fetch('api.php?action=report_type_detail&type=' + encodeURIComponent(type)).then(r => r.json());
+    const res = await fetch(rq('report_type_detail', { type })).then(r => r.json());
     const members = res.members || [];
 
     const totItems = members.reduce((s, r) => s + r.items_count, 0);
@@ -2034,7 +2114,7 @@ function barOptsBaht() {
 //  #1 Overview
 // =====================================================================
 async function loadOverview() {
-    const res = await fetch('api.php?action=report_dashboard').then(r => r.json());
+    const res = await fetch(rq('report_dashboard')).then(r => r.json());
     const k = res.kpis || {};
     $('ovSpent').textContent = '฿' + fmt(k.total_spent || 0);
     $('ovSpentSub').textContent = t('report.ov_active_months', { n: k.active_months || 0 });
@@ -2082,7 +2162,7 @@ async function loadOverview() {
 //  #5 Trends (cumulative + MoM growth + forecast)
 // =====================================================================
 async function loadTrends() {
-    const res = await fetch('api.php?action=report_monthly').then(r => r.json());
+    const res = await fetch(rq('report_monthly')).then(r => r.json());
     const data = res.data || [];
 
     let cum = 0;
@@ -2158,7 +2238,7 @@ function seasonRow(label, r, total) {
     </tr>`;
 }
 async function loadSeasonality() {
-    const res = await fetch('api.php?action=report_seasonality').then(r => r.json());
+    const res = await fetch(rq('report_seasonality')).then(r => r.json());
 
     const dowsLong = tArr('date.weekdays_long');
     const dowsShort = tArr('date.weekdays');
@@ -2205,14 +2285,28 @@ function cmpCard(name, s, color) {
     </div></div>`;
 }
 async function initCompare() {
-    const res = await fetch('api.php?action=report_idol').then(r => r.json());
+    // Idempotent: reloadAllReportTabs() calls this again when the exclusion mode
+    // flips (the member list itself changes), so the A/B choice must survive and the
+    // change listeners must not stack up.
+    const prevA = cmpMembers[+($('cmpSelA').value || 0)]?.idol;
+    const prevB = cmpMembers[+($('cmpSelB').value || 0)]?.idol;
+
+    const res = await fetch(rq('report_idol')).then(r => r.json());
     cmpMembers = (res.data || []).filter(r => r.idol && r.idol !== '-');
     const opts = cmpMembers.map((r, i) => `<option value="${i}">${escHtml(r.display || r.idol)}</option>`).join('');
     $('cmpSelA').innerHTML = opts;
     $('cmpSelB').innerHTML = opts;
-    if (cmpMembers.length > 1) $('cmpSelB').value = '1';
-    $('cmpSelA').addEventListener('change', loadCompare);
-    $('cmpSelB').addEventListener('change', loadCompare);
+
+    const idxA = prevA ? cmpMembers.findIndex(m => m.idol === prevA) : -1;
+    const idxB = prevB ? cmpMembers.findIndex(m => m.idol === prevB) : -1;
+    $('cmpSelA').value = idxA >= 0 ? idxA : 0;
+    $('cmpSelB').value = idxB >= 0 ? idxB : (cmpMembers.length > 1 ? 1 : 0);
+
+    if (!$('cmpSelA')._cmpBound) {
+        $('cmpSelA').addEventListener('change', loadCompare);
+        $('cmpSelB').addEventListener('change', loadCompare);
+        $('cmpSelA')._cmpBound = true;
+    }
     if (cmpMembers.length) loadCompare();
 }
 async function loadCompare() {
@@ -2220,8 +2314,8 @@ async function loadCompare() {
     const b = cmpMembers[+$('cmpSelB').value];
     if (!a || !b) return;
     const [da, db] = await Promise.all([
-        fetch('api.php?action=report_idol_detail&idol=' + encodeURIComponent(a.idol)).then(r => r.json()),
-        fetch('api.php?action=report_idol_detail&idol=' + encodeURIComponent(b.idol)).then(r => r.json())
+        fetch(rq('report_idol_detail', { idol: a.idol })).then(r => r.json()),
+        fetch(rq('report_idol_detail', { idol: b.idol })).then(r => r.json())
     ]);
 
     $('cmpCards').innerHTML = cmpCard(a.display || a.idol, summarize(da.by_type), 'var(--primary)')
@@ -2274,7 +2368,7 @@ async function loadCompare() {
 //  #3 By Unit
 // =====================================================================
 async function loadUnit() {
-    const res = await fetch('api.php?action=report_by_unit').then(r => r.json());
+    const res = await fetch(rq('report_by_unit')).then(r => r.json());
     unitData = res.data || [];
     if (unitData.length === 0) {
         $('tableUnit').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${t('report.un_no_data')}</td></tr>`;
@@ -2322,7 +2416,7 @@ async function loadUnit() {
 // =====================================================================
 function evDateRange(r) { return r.end_date && r.end_date !== r.event_date ? `${r.event_date} – ${r.end_date}` : r.event_date; }
 async function loadEvent() {
-    const res = await fetch('api.php?action=report_event').then(r => r.json());
+    const res = await fetch(rq('report_event')).then(r => r.json());
     const named   = res.named   || [];
     const unlinked = res.unlinked || [];
     const allData  = [...named, ...unlinked];
@@ -2394,7 +2488,7 @@ function esStatusBadge(s) {
     return `<span class="badge ${cls}">${label}</span>`;
 }
 async function loadEventSummary() {
-    const res = await fetch('api.php?action=report_event_summary').then(r => r.json());
+    const res = await fetch(rq('report_event_summary')).then(r => r.json());
     const events = res.events || [];
     const s = res.summary || {};
 
@@ -2431,7 +2525,7 @@ async function loadEventSummary() {
 //  #4 Top Items
 // =====================================================================
 async function loadTopItems() {
-    const res = await fetch('api.php?action=report_top_items').then(r => r.json());
+    const res = await fetch(rq('report_top_items')).then(r => r.json());
 
     $('tableTopExpensive').innerHTML = (res.expensive || []).map((r, i) => `<tr>
         <td>${i + 1}</td>
@@ -2465,7 +2559,7 @@ async function loadTopItems() {
 // =====================================================================
 let inactiveData = [];
 async function loadInactive() {
-    const res = await fetch('api.php?action=report_inactive').then(r => r.json());
+    const res = await fetch(rq('report_inactive')).then(r => r.json());
     inactiveData = res.data || [];
     document.querySelectorAll('#inactiveThresholds button').forEach(b => {
         b.addEventListener('click', () => {

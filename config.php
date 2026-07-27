@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.9.18');
-const DB_SCHEMA_VERSION = 11;
+define('APP_VERSION', '1.10.0');
+const DB_SCHEMA_VERSION = 12;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -145,10 +145,16 @@ function initDB(): void
     if ($currentVer < 11) {
         require_once __DIR__ . '/migrations/v11_event_not_attended.php';
         runMigrationV11($pdo);
+        $currentVer = 11;
+    }
+    if ($currentVer < 12) {
+        require_once __DIR__ . '/migrations/v12_exclude_from_reports.php';
+        runMigrationV12($pdo);
     }
 }
 
 require_once __DIR__ . '/helpers_idol.php';
+require_once __DIR__ . '/helpers_report.php';
 
 // Ensure backup directory exists before initDB() (migrations write auto-backups here)
 if (!is_dir(BACKUP_DIR)) {

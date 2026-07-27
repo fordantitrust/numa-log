@@ -61,7 +61,7 @@ Tracks which group a member belongs to over time. One row per (member, group) pe
 
 Report queries pick the membership whose `start_date` ≤ `items.order_date` ≤ `end_date` (open bounds count as ±∞) and prefer rows where `is_primary = 1`.
 
-### `type_categories` (+`is_ticket` in v10)
+### `type_categories` (+`is_ticket` in v10, +`exclude_from_reports` in v12)
 | Column | Type | Description |
 |--------|------|-------------|
 | id | INTEGER PK | Auto-increment ID |
@@ -69,6 +69,29 @@ Report queries pick the membership whose `start_date` ≤ `items.order_date` ≤
 | description | TEXT | Description |
 | sort_order | INTEGER | Display order |
 | is_ticket | INTEGER | (v10) `1` = items of this type count as an event ticket for the Events page's "missing ticket" detection |
+| exclude_from_reports | INTEGER | (v12) `1` = items of this type are left out of the normal totals — dashboard, reports, budgets, item list and export |
+
+> **v12 note — both flags match items by NAME, not by foreign key.** `items.type` is free
+> text with no FK; the join is `type_categories.name = items.type` (BINARY collation, so
+> case-sensitive). Renaming a category therefore leaves existing items behind under the
+> old name, where they lose the flag. For `is_ticket` that only mis-colours a badge; for
+> `exclude_from_reports` it moves money — the orphaned items re-enter every total at
+> once. `type_save` returns `orphaned_items` + `old_name` on a rename so the UI can offer
+> `type_rename_items` to re-point them, and the orphaned name also shows up immediately
+> in the "Unmapped Type Names" panel on `types.php`.
+>
+> **Deliberate carve-outs**, all from the same rule — *if the user points at a type
+> directly, they get the full amount*:
+>
+> 1. `budgetSpentForMonth()` with `scope_type='type'` — the budget targets that type
+> 2. `report_type_detail` — a drill-down into one named type
+> 3. `list` / `export.php` when `type[]` is supplied — the user filtered to it
+>
+> **Also unfiltered by design:** `type_list` (Manage Types must show the excluded type's
+> real totals), `filters` (the dropdowns must still offer excluded types), and
+> `event_list` — events.php is operational rather than analytical, and filtering ticket
+> detection would produce false "missing ticket" warnings. The Event tabs in `report.php`
+> *are* filtered.
 
 ### `budgets` (v6, `period` added in v7)
 Monthly spending limits per scope, with a recurring default plus per-month overrides.

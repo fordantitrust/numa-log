@@ -481,6 +481,13 @@ try {
     fail('UNIQUE on idol_entities.name dropped', 'INSERT raised: ' . $e->getMessage());
 }
 
+// 0g. type_categories.exclude_from_reports column exists (v12).
+// The bootstrap creates type_categories WITHOUT this column on purpose, so this
+// asserts the migration actually ran rather than the CREATE TABLE.
+$tcCols = $migPdo->query("PRAGMA table_info(type_categories)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (in_array('exclude_from_reports', $tcCols, true)) pass('type_categories.exclude_from_reports column present');
+else                                                  fail('type_categories.exclude_from_reports column present', 'column missing');
+
 // 0f. Auto-backup file present
 $backupFiles = glob($TEST_BACKUP . '/pre-v5-*.sqlite') ?: [];
 if (count($backupFiles) >= 1) pass('Auto-backup file created (pre-v5-*.sqlite)');
@@ -1485,6 +1492,221 @@ apiPost($BASE_URL, 'event_delete', ['id' => $ticketEventId], $CSRF, $COOKIE_FILE
 apiPost($BASE_URL, 'event_delete', ['id' => $freeEventId], $CSRF, $COOKIE_FILE);
 apiPost($BASE_URL, 'event_delete', ['id' => $notAttendedEventId], $CSRF, $COOKIE_FILE);
 apiPost($BASE_URL, 'type_delete', ['id' => $ticketTypeId], $CSRF, $COOKIE_FILE);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SUITE 10 — Report exclusion (type_categories.exclude_from_reports, v12)
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('10. Report exclusion (exclude_from_reports)');
+
+$EXC_TYPE  = 'TravelCost';
+$EXC_MONTH = '2025-10';
+$EXC_PRICE = 4200.0;
+
+// 10a. Create a type category flagged as excluded
+$excTypeRes = apiPost($BASE_URL, 'type_save', [
+    'name' => $EXC_TYPE, 'description' => 'Travel to events', 'sort_order' => 9, 'exclude_from_reports' => '1',
+], $CSRF, $COOKIE_FILE);
+$excTypeId = (int) (json_decode($excTypeRes['body'], true)['id'] ?? 0);
+assertJson('Create excluded type category', $excTypeRes, 200, function ($d) {
+    return empty($d['success']) ? 'Expected success=true' : null;
+});
+
+assertJson('type_list reflects exclude_from_reports=1', apiGet($BASE_URL, 'type_list', [], $COOKIE_FILE), 200, function ($d) use ($excTypeId) {
+    foreach ($d['types'] as $ty) {
+        if ((int) $ty['id'] === $excTypeId) {
+            return ((int) $ty['exclude_from_reports'] === 1) ? null : 'Expected exclude_from_reports=1';
+        }
+    }
+    return 'Type not found in list';
+});
+
+// Baseline BEFORE the excluded item exists — other suites seeded data, so every
+// assertion below is a delta rather than an absolute figure.
+$monthTotalBefore = 0.0;
+foreach ((json_decode(apiGet($BASE_URL, 'report_monthly', [], $COOKIE_FILE)['body'], true)['data'] ?? []) as $r) {
+    if ($r['month'] === $EXC_MONTH) $monthTotalBefore = (float) $r['total_price'];
+}
+
+// 10b. An item of that type, tied to a member so the membership-aware reports see it
+$excItemRes = apiPost($BASE_URL, 'create', [
+    'order_date' => $EXC_MONTH . '-15', 'event_date' => '',
+    'title' => 'Shinkansen ticket', 'idol' => 'Mina', 'idol_id' => $minaId,
+    'type' => $EXC_TYPE, 'price_per_qty' => $EXC_PRICE, 'qty' => 1,
+], $CSRF, $COOKIE_FILE);
+$excItemId = (int) (json_decode($excItemRes['body'], true)['id'] ?? 0);
+assertStatus('Create item of the excluded type', $excItemRes, 200);
+
+// 10c. report_monthly excludes it by default and includes it with include_excluded=1
+$monthTotal = function (array $params) use ($BASE_URL, $COOKIE_FILE, $EXC_MONTH): float {
+    $d = json_decode(apiGet($BASE_URL, 'report_monthly', $params, $COOKIE_FILE)['body'], true);
+    foreach ($d['data'] ?? [] as $r) {
+        if ($r['month'] === $EXC_MONTH) return (float) $r['total_price'];
+    }
+    return 0.0;
+};
+$filtered = $monthTotal([]);
+$included = $monthTotal(['include_excluded' => '1']);
+if (abs($filtered - $monthTotalBefore) < 0.01) pass('report_monthly excludes the flagged type by default');
+else fail('report_monthly excludes the flagged type by default', "expected {$monthTotalBefore}, got {$filtered}");
+if (abs($included - ($monthTotalBefore + $EXC_PRICE)) < 0.01) pass('report_monthly includes it with include_excluded=1');
+else fail('report_monthly includes it with include_excluded=1', 'expected ' . ($monthTotalBefore + $EXC_PRICE) . ", got {$included}");
+
+// 10d. The WHERE-1=1 shapes still produce valid SQL (a missing WHERE would 500 here)
+foreach (['report_by_group', 'report_by_company', 'report_by_unit', 'report_top_items', 'idol_entities_tree'] as $act) {
+    assertJson("{$act} returns valid JSON with the exclusion applied", apiGet($BASE_URL, $act, [], $COOKIE_FILE), 200, function ($d) {
+        return isset($d['error']) ? 'Got error: ' . $d['error'] : null;
+    });
+}
+
+// 10e. LEFT JOIN regression — the highest-value test in this suite.
+// An event whose ONLY linked item is excluded must still appear, with items=0. If the
+// predicate is put in the WHERE instead of the JOIN's ON, the event disappears
+// entirely — invisible in the totals, which is why it needs its own assertion.
+$excEventId = (int) (json_decode(apiPost($BASE_URL, 'event_save', [
+    'name' => 'Excluded-Only Event', 'event_date' => $EXC_MONTH . '-20', 'end_date' => '', 'description' => '',
+], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+
+$excEventItemId = (int) (json_decode(apiPost($BASE_URL, 'create', [
+    'order_date' => $EXC_MONTH . '-10', 'event_date' => $EXC_MONTH . '-20', 'event_id' => $excEventId,
+    'title' => 'Travel to the show', 'idol' => 'Mina', 'idol_id' => $minaId,
+    'type' => $EXC_TYPE, 'price_per_qty' => 1500, 'qty' => 1,
+], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+
+assertJson('report_event_summary keeps an event whose only items are excluded', apiGet($BASE_URL, 'report_event_summary', [], $COOKIE_FILE), 200, function ($d) use ($excEventId) {
+    foreach ($d['events'] ?? [] as $ev) {
+        if ((int) $ev['id'] === $excEventId) {
+            return ((int) $ev['items'] === 0) ? null : 'Expected items=0, got ' . $ev['items'];
+        }
+    }
+    return 'Event vanished from the report — exclusion is in the WHERE, not the LEFT JOIN ON';
+});
+
+assertJson('report_event keeps the same event with totals of 0', apiGet($BASE_URL, 'report_event', [], $COOKIE_FILE), 200, function ($d) use ($excEventId) {
+    foreach ($d['named'] ?? [] as $ev) {
+        if ((int) $ev['event_id'] === $excEventId) {
+            return ((float) $ev['total_price'] === 0.0) ? null : 'Expected total_price=0, got ' . $ev['total_price'];
+        }
+    }
+    return 'Event vanished from report_event';
+});
+
+// 10f. Same regression for report_group_detail's LEFT JOIN onto items
+assertJson('report_group_detail keeps members whose items are all excluded', apiGet($BASE_URL, 'report_group_detail', ['group_id' => $twiceId], $COOKIE_FILE), 200, function ($d) use ($minaId) {
+    foreach ($d['members'] ?? [] as $m) {
+        if ((int) $m['idol_id'] === $minaId) return null;   // present at all is the assertion
+    }
+    return 'Member vanished from group detail — exclusion is in the WHERE, not the LEFT JOIN ON';
+});
+
+// 10g. Budget carve-out: a type-scoped budget counts the excluded type in full,
+// while an overall budget leaves it out.
+$excBudgetId = (int) (json_decode(apiPost($BASE_URL, 'budget_save', [
+    'scope_type' => 'type', 'scope_ref_name' => $EXC_TYPE, 'amount' => 10000,
+    'warn_pct' => 80, 'danger_pct' => 100, 'period' => $EXC_MONTH,
+], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+
+assertJson('budget scoped to the excluded type still counts its spend', apiGet($BASE_URL, 'budget_progress', ['month' => $EXC_MONTH], $COOKIE_FILE), 200, function ($d) use ($EXC_TYPE, $EXC_PRICE) {
+    foreach ($d['budgets'] ?? [] as $b) {
+        if ($b['scope_type'] === 'type' && $b['scope_ref_name'] === $EXC_TYPE) {
+            if ((float) $b['spent'] < $EXC_PRICE) return 'Expected spend >= ' . $EXC_PRICE . ', got ' . $b['spent'];
+            return !empty($b['is_excluded_type']) ? null : 'Expected is_excluded_type=true';
+        }
+    }
+    return 'Type budget not found';
+});
+
+$overallBudgetId = (int) (json_decode(apiPost($BASE_URL, 'budget_save', [
+    'scope_type' => 'overall', 'amount' => 100000,
+    'warn_pct' => 80, 'danger_pct' => 100, 'period' => $EXC_MONTH,
+], $CSRF, $COOKIE_FILE)['body'], true)['id'] ?? 0);
+
+$overallSpent = function (array $extra) use ($BASE_URL, $COOKIE_FILE, $EXC_MONTH): float {
+    $d = json_decode(apiGet($BASE_URL, 'budget_progress', ['month' => $EXC_MONTH] + $extra, $COOKIE_FILE)['body'], true);
+    foreach ($d['budgets'] ?? [] as $b) {
+        if ($b['scope_type'] === 'overall') return (float) $b['spent'];
+    }
+    return -1.0;
+};
+$ovFiltered = $overallSpent([]);
+$ovIncluded = $overallSpent(['include_excluded' => '1']);
+if (abs(($ovIncluded - $ovFiltered) - ($EXC_PRICE + 1500)) < 0.01) pass('overall budget excludes the flagged type');
+else fail('overall budget excludes the flagged type', 'expected a delta of ' . ($EXC_PRICE + 1500) . ", got " . ($ovIncluded - $ovFiltered));
+
+// 10h. handleList safety valve — an explicit type[] filter must still find the items
+assertJson('list hides excluded items by default', apiGet($BASE_URL, 'list', ['per_page' => 200], $COOKIE_FILE), 200, function ($d) use ($excItemId, $EXC_PRICE) {
+    foreach ($d['data'] ?? [] as $r) {
+        if ((int) $r['id'] === $excItemId) return 'Excluded item should not be listed by default';
+    }
+    if (($d['excluded']['items'] ?? 0) < 2) return 'Expected excluded.items >= 2, got ' . ($d['excluded']['items'] ?? 0);
+    if (abs((float) ($d['excluded']['total_price'] ?? 0) - ($EXC_PRICE + 1500)) > 0.01) {
+        return 'Expected excluded.total_price ' . ($EXC_PRICE + 1500) . ', got ' . ($d['excluded']['total_price'] ?? 0);
+    }
+    return null;
+});
+
+assertJson('list with an explicit type[] filter still returns them', apiGet($BASE_URL, 'list', ['per_page' => 200, 'type' => [$EXC_TYPE]], $COOKIE_FILE), 200, function ($d) use ($excItemId) {
+    foreach ($d['data'] ?? [] as $r) {
+        if ((int) $r['id'] === $excItemId) return null;
+    }
+    return 'Safety valve failed: filtering to the excluded type returned nothing';
+});
+
+assertJson('list with include_excluded=1 returns them', apiGet($BASE_URL, 'list', ['per_page' => 200, 'include_excluded' => '1'], $COOKIE_FILE), 200, function ($d) use ($excItemId) {
+    foreach ($d['data'] ?? [] as $r) {
+        if ((int) $r['id'] === $excItemId) return null;
+    }
+    return 'Expected the excluded item with include_excluded=1';
+});
+
+// 10i. Manage Types must never lie about the excluded type's own totals
+assertJson('type_list still reports the excluded type\'s real totals', apiGet($BASE_URL, 'type_list', [], $COOKIE_FILE), 200, function ($d) use ($excTypeId, $EXC_PRICE) {
+    foreach ($d['types'] as $ty) {
+        if ((int) $ty['id'] === $excTypeId) {
+            return ((float) $ty['total_price'] >= $EXC_PRICE) ? null : 'Expected total_price >= ' . $EXC_PRICE . ', got ' . $ty['total_price'];
+        }
+    }
+    return 'Type not found in list';
+});
+
+// 10j. report_type_detail carve-out — drilling into the excluded type still works
+assertJson('report_type_detail still resolves the excluded type', apiGet($BASE_URL, 'report_type_detail', ['type' => $EXC_TYPE], $COOKIE_FILE), 200, function ($d) {
+    if (isset($d['error'])) return 'Got error: ' . $d['error'];
+    return !empty($d['members']) ? null : 'Expected members for the excluded type';
+});
+
+// 10k. excluded_summary drives the banners
+assertJson('excluded_summary reports the flagged types and totals', apiGet($BASE_URL, 'excluded_summary', [], $COOKIE_FILE), 200, function ($d) use ($EXC_TYPE, $EXC_PRICE) {
+    if (empty($d['enabled'])) return 'Expected enabled=true';
+    if (!in_array($EXC_TYPE, $d['types'] ?? [], true)) return 'Expected the flagged type in types[]';
+    if (abs((float) ($d['total_price'] ?? 0) - ($EXC_PRICE + 1500)) > 0.01) {
+        return 'Expected total_price ' . ($EXC_PRICE + 1500) . ', got ' . ($d['total_price'] ?? 0);
+    }
+    return null;
+});
+
+// 10l. Renaming a type category reports the items left behind under the old name
+$renameRes = apiPost($BASE_URL, 'type_save', [
+    'id' => $excTypeId, 'name' => 'TravelCostRenamed', 'description' => '', 'sort_order' => 9, 'exclude_from_reports' => '1',
+], $CSRF, $COOKIE_FILE);
+assertJson('type_save reports orphaned items after a rename', $renameRes, 200, function ($d) use ($EXC_TYPE) {
+    if (($d['orphaned_items'] ?? 0) < 2) return 'Expected orphaned_items >= 2, got ' . ($d['orphaned_items'] ?? 0);
+    return ($d['old_name'] ?? '') === $EXC_TYPE ? null : 'Expected old_name=' . $EXC_TYPE;
+});
+
+assertJson('type_rename_items re-points the orphaned items', apiPost($BASE_URL, 'type_rename_items', [
+    'from' => $EXC_TYPE, 'to' => 'TravelCostRenamed',
+], $CSRF, $COOKIE_FILE), 200, function ($d) {
+    return ($d['updated'] ?? 0) >= 2 ? null : 'Expected updated >= 2, got ' . ($d['updated'] ?? 0);
+});
+
+// 10m. Cleanup
+apiPost($BASE_URL, 'budget_delete', ['id' => $excBudgetId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'budget_delete', ['id' => $overallBudgetId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'delete', ['id' => $excItemId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'delete', ['id' => $excEventItemId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'event_delete', ['id' => $excEventId], $CSRF, $COOKIE_FILE);
+apiPost($BASE_URL, 'type_delete', ['id' => $excTypeId], $CSRF, $COOKIE_FILE);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUMMARY

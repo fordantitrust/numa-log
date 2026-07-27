@@ -127,6 +127,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                         <label class="form-check-label small" for="tIsTicket"><?= t('types.is_ticket') ?></label>
                         <div class="form-text small"><?= t('types.is_ticket_hint') ?></div>
                     </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="tIsExcluded">
+                        <label class="form-check-label small" for="tIsExcluded"><?= t('types.is_excluded') ?></label>
+                        <div class="form-text small"><?= t('types.is_excluded_hint') ?></div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -249,7 +254,7 @@ function renderTable() {
     $('typeList').innerHTML = allTypes.map((ty, i) => `
         <tr>
             <td class="text-muted">${i + 1}</td>
-            <td><strong>${escHtml(ty.name)}</strong>${ty.is_ticket == 1 ? ` <span class="badge bg-info-subtle text-info-emphasis" title="${t('types.is_ticket')}"><i class="bi bi-ticket-perforated"></i></span>` : ''}</td>
+            <td><strong>${escHtml(ty.name)}</strong>${ty.is_ticket == 1 ? ` <span class="badge bg-info-subtle text-info-emphasis" title="${t('types.is_ticket')}"><i class="bi bi-ticket-perforated"></i></span>` : ''}${ty.exclude_from_reports == 1 ? ` <span class="badge bg-warning-subtle text-warning-emphasis" title="${t('types.is_excluded')}"><i class="bi bi-eye-slash"></i></span>` : ''}</td>
             <td class="stat-muted">${escHtml(ty.description || '')}</td>
             <td class="text-center">${ty.items_count}</td>
             <td class="text-center">${ty.total_qty}</td>
@@ -268,11 +273,16 @@ function renderStats() {
     const withItems = allTypes.filter(t => t.items_count > 0).length;
     const totalQty = allTypes.reduce((s, t) => s + (t.total_qty || 0), 0);
     const totalSpend = allTypes.reduce((s, t) => s + (t.total_price || 0), 0);
+    // Always show what the exclusion is costing. type_list is deliberately unfiltered,
+    // so this is the one place the real figure is guaranteed to be visible.
+    const excluded = allTypes.filter(x => x.exclude_from_reports == 1);
+    const excludedSpend = excluded.reduce((s, x) => s + (x.total_price || 0), 0);
     $('statsPanel').innerHTML = `
         <div>${t('types.stat_total')} <strong>${total}</strong></div>
         <div>${t('types.stat_with')} <strong>${withItems}</strong></div>
         <div>${t('types.stat_qty')} <strong>${fmt(totalQty)}</strong></div>
         <div class="mt-2 pt-2 border-top">${t('types.stat_spend')} <strong>฿${fmt(totalSpend)}</strong></div>
+        ${excluded.length ? `<div class="text-warning-emphasis"><i class="bi bi-eye-slash"></i> ${t('types.stat_excluded')} <strong>฿${fmt(excludedSpend)}</strong></div>` : ''}
     `;
 }
 
@@ -305,6 +315,7 @@ function editType(id) {
     $('tDesc').value = ty.description || '';
     $('tSort').value = ty.sort_order;
     $('tIsTicket').checked = ty.is_ticket == 1;
+    $('tIsExcluded').checked = ty.exclude_from_reports == 1;
     $('formTitle').textContent = t('types.edit_prefix', { name: ty.name });
     new bootstrap.Modal($('formModal')).show();
 }
@@ -326,10 +337,28 @@ async function saveType() {
     body.append('description', $('tDesc').value);
     body.append('sort_order', $('tSort').value);
     body.append('is_ticket', $('tIsTicket').checked ? '1' : '0');
+    body.append('exclude_from_reports', $('tIsExcluded').checked ? '1' : '0');
 
     const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
     if (res.error) { alert(res.error); return; }
     bootstrap.Modal.getInstance($('formModal')).hide();
+
+    // items.type is free text with no FK, so a rename leaves existing items behind
+    // under the old name — they silently lose this category's flags, which for
+    // exclude_from_reports means they re-enter every total at once. Offer to fix it.
+    if (res.orphaned_items > 0) {
+        const newName = $('tName').value;
+        if (confirm(t('types.rename_orphans', { n: res.orphaned_items, old: res.old_name, new: newName }))) {
+            const mv = new FormData();
+            mv.append('action', 'type_rename_items');
+            mv.append('from', res.old_name);
+            mv.append('to', newName);
+            const r2 = await fetch('api.php', { method: 'POST', body: mv }).then(r => r.json());
+            if (r2.error) alert(r2.error);
+            else alert(t('types.rename_orphans_ok', { n: r2.updated }));
+        }
+    }
+
     loadTypes();
     notifyDataChanged('types');
 }

@@ -49,6 +49,15 @@ if (!empty($eventIds)) {
     foreach ($eventIds as $i => $v) { $params[":evid$i"] = $v; }
 }
 
+// Same carve-out as api.php handleList: an explicit type[] filter wins, so exporting
+// a filtered view of the excluded type still works.
+if (empty($types)) {
+    $p = excludedTypesPredicate('i.type');
+    if ($p !== '') {
+        $where[] = $p;
+    }
+}
+
 $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
 $stmt = $pdo->prepare("
@@ -123,6 +132,11 @@ if ($safeFrom !== '' && $safeTo !== '') {
     $parts[] = 'to-' . $safeTo;
 } else {
     $parts[] = date('Y-m-d');
+}
+// Distinguish the two exports on disk — otherwise a full and a filtered export of the
+// same range are indistinguishable once downloaded.
+if (includeExcludedTypes()) {
+    $parts[] = 'with-excluded';
 }
 // Only allow safe characters in filename to prevent header injection
 $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', implode('_', $parts)) . '.xlsx';
