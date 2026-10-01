@@ -351,8 +351,8 @@ function handleExcludedSummary(PDO $pdo): void
     jsonResponse([
         'enabled' => !empty($names),
         'types'   => $names,
-        'by_type' => excludedTypesByType($pdo),
-    ] + excludedTypesTotals($pdo));
+        'by_type' => excludedTypesByType($pdo, reportDateClause()),
+    ] + excludedTypesTotals($pdo, reportDateClause()));
 }
 
 function handleReportMonthly(PDO $pdo): void
@@ -364,7 +364,7 @@ function handleReportMonthly(PDO $pdo): void
             SUM(qty) as total_qty,
             SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE order_date != ''" . excludedTypesClause('type') . "
+        WHERE order_date != ''" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY month
         ORDER BY month
     ")->fetchAll();
@@ -385,7 +385,7 @@ function handleReportDaily(PDO $pdo): void
             SUM(qty) as total_qty,
             SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE strftime('%Y-%m', order_date) = :month AND order_date != ''" . excludedTypesClause('type') . "
+        WHERE strftime('%Y-%m', order_date) = :month AND order_date != ''" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY order_date
         ORDER BY order_date
     ");
@@ -403,7 +403,7 @@ function handleReportDaily(PDO $pdo): void
     $stmtType = $pdo->prepare("
         SELECT type, COUNT(*) as items, SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND type != '' AND type != '-'" . excludedTypesClause('type') . "
+        WHERE strftime('%Y-%m', order_date) = :month AND order_date != '' AND type != '' AND type != '-'" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY type ORDER BY total_price DESC
     ");
     $stmtType->execute([':month' => $month]);
@@ -421,7 +421,7 @@ function handleReportDaily(PDO $pdo): void
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
         WHERE strftime('%Y-%m', i.order_date) = :month
-          AND i.order_date != '' AND i.idol != '' AND i.idol != '-'" . excludedTypesClause() . "
+          AND i.order_date != '' AND i.idol != '' AND i.idol != '-'" . excludedTypesClause() . reportDateClause() . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
     ");
@@ -461,7 +461,7 @@ function handleReportIdol(PDO $pdo): void
             SUM(i.price_per_qty * i.qty)                AS total_price
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
-        WHERE i.idol != '' AND i.idol != '-'" . excludedTypesClause() . "
+        WHERE i.idol != '' AND i.idol != '-'" . excludedTypesClause() . reportDateClause() . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -479,7 +479,7 @@ function handleReportType(PDO $pdo): void
             SUM(qty) as total_qty,
             SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE type != '' AND type != '-'" . excludedTypesClause('type') . "
+        WHERE type != '' AND type != '-'" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY type
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -487,7 +487,7 @@ function handleReportType(PDO $pdo): void
     // The By Type tab is where the exclusion is most visible — whole rows drop out
     // of the one tab whose job is showing types. Ship the excluded slice alongside
     // so report.php can render it as a muted section instead of losing it.
-    jsonResponse(['data' => $rows, 'excluded' => excludedTypesByType($pdo)]);
+    jsonResponse(['data' => $rows, 'excluded' => excludedTypesByType($pdo, reportDateClause())]);
 }
 
 function handleReportIdolDetail(PDO $pdo): void
@@ -517,7 +517,7 @@ function handleReportIdolDetail(PDO $pdo): void
             SUM(i.qty)                     AS total_qty,
             SUM(i.price_per_qty * i.qty)   AS total_price
         FROM items i
-        WHERE {$filterSql} AND i.type != '' AND i.type != '-'" . excludedTypesClause() . "
+        WHERE {$filterSql} AND i.type != '' AND i.type != '-'" . excludedTypesClause() . reportDateClause() . "
         GROUP BY i.type
         ORDER BY total_price DESC
     ");
@@ -532,7 +532,7 @@ function handleReportIdolDetail(PDO $pdo): void
             SUM(i.qty)                      AS total_qty,
             SUM(i.price_per_qty * i.qty)    AS total_price
         FROM items i
-        WHERE {$filterSql} AND i.order_date != ''" . excludedTypesClause() . "
+        WHERE {$filterSql} AND i.order_date != ''" . excludedTypesClause() . reportDateClause() . "
         GROUP BY month
         ORDER BY month
     ");
@@ -569,7 +569,7 @@ function handleReportByGroup(PDO $pdo): void
             ON g.id = ms.group_id AND g.category IN ('group','unit')
         LEFT JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
-        WHERE 1=1" . excludedTypesClause() . "
+        WHERE 1=1" . excludedTypesClause() . reportDateClause() . "
         GROUP BY g.id
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -625,7 +625,7 @@ function handleReportGroupDetail(PDO $pdo): void
         LEFT JOIN items i
             ON i.idol_id = m.id
             AND (ms.start_date IS NULL OR ms.start_date <= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
-            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))" . excludedTypesClause() . "
+            AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))" . excludedTypesClause() . reportDateClause() . "
         WHERE ms.group_id = :g AND ms.is_primary = 1
         GROUP BY m.id
         ORDER BY total_price DESC
@@ -664,7 +664,7 @@ function handleReportGroupDetail(PDO $pdo): void
             AND ms.is_primary = 1
             AND (ms.start_date IS NULL OR ms.start_date <= i.order_date)
             AND (ms.end_date   IS NULL OR ms.end_date   >= i.order_date)
-        WHERE i.order_date != ''" . excludedTypesClause() . "
+        WHERE i.order_date != ''" . excludedTypesClause() . reportDateClause() . "
         GROUP BY month
         ORDER BY month
     ");
@@ -703,7 +703,7 @@ function handleReportByCompany(PDO $pdo): void
             ON g.id = ms.group_id AND g.category IN ('group','unit')
         JOIN idol_entities c
             ON c.id = g.parent_id AND c.category = 'company'
-        WHERE 1=1" . excludedTypesClause() . "
+        WHERE 1=1" . excludedTypesClause() . reportDateClause() . "
         GROUP BY c.id, g.id
         ORDER BY c.name
     ")->fetchAll();
@@ -978,7 +978,7 @@ function handleReportByUnit(PDO $pdo): void
             ON u.id = ms.group_id AND u.category = 'unit'
         LEFT JOIN idol_entities c
             ON c.id = u.parent_id
-        WHERE 1=1" . excludedTypesClause() . "
+        WHERE 1=1" . excludedTypesClause() . reportDateClause() . "
         GROUP BY u.id
         ORDER BY total_price DESC
     ")->fetchAll();
@@ -1003,6 +1003,11 @@ function handleReportByUnit(PDO $pdo): void
  */
 function handleReportEvent(PDO $pdo): void
 {
+    // Date range: the event tabs key off the EVENT's date, not order_date — "events
+    // in this period" with everything bought for them, even if ordered beforehand.
+    // A named event qualifies when its span overlaps the range.
+    $eventRange = reportEventOverlapClause();
+
     // Named events: aggregate items linked via event_id.
     // NOTE: the exclusion belongs in the LEFT JOIN's ON, not the WHERE — in the WHERE
     // it would become an inner join and an event whose only items are excluded would
@@ -1021,6 +1026,7 @@ function handleReportEvent(PDO $pdo): void
             COUNT(DISTINCT i.type)              AS types
         FROM events e
         LEFT JOIN items i ON i.event_id = e.id" . excludedTypesClause() . "
+        WHERE 1=1{$eventRange}
         GROUP BY e.id
         ORDER BY e.event_date DESC, e.name
     ")->fetchAll();
@@ -1049,7 +1055,7 @@ function handleReportEvent(PDO $pdo): void
             COUNT(DISTINCT type)                AS types
         FROM items
         WHERE event_date IS NOT NULL AND event_date != ''
-          AND event_id IS NULL" . excludedTypesClause('type') . "
+          AND event_id IS NULL" . excludedTypesClause('type') . reportDateClause('event_date') . "
         GROUP BY event_date
         ORDER BY event_date DESC
     ")->fetchAll();
@@ -1076,11 +1082,12 @@ function handleReportEvent(PDO $pdo): void
             MAX(julianday(event_date) - julianday(order_date))             AS max_days
         FROM items
         WHERE event_date IS NOT NULL AND event_date != ''
-          AND order_date IS NOT NULL AND order_date != ''" . excludedTypesClause('type') . "
+          AND order_date IS NOT NULL AND order_date != ''" . excludedTypesClause('type') . reportDateClause('event_date') . "
     ")->fetch();
 
+    // No event_date to key off, so this count falls back to order_date.
     $noEvent = (int) $pdo->query("
-        SELECT COUNT(*) FROM items WHERE (event_date IS NULL OR event_date = '')" . excludedTypesClause('type') . "
+        SELECT COUNT(*) FROM items WHERE (event_date IS NULL OR event_date = '')" . excludedTypesClause('type') . reportDateClause('order_date') . "
     ")->fetchColumn();
 
     jsonResponse([
@@ -1118,6 +1125,7 @@ function handleReportEventSummary(PDO $pdo): void
             COALESCE(SUM(i.price_per_qty*i.qty),0) AS total_price
         FROM events e
         LEFT JOIN items i ON i.event_id = e.id" . excludedTypesClause() . "
+        WHERE 1=1" . reportEventOverlapClause() . "
         GROUP BY e.id
         ORDER BY e.event_date DESC, COALESCE(e.end_date, e.event_date) DESC, e.name
     ")->fetchAll();
@@ -1182,7 +1190,7 @@ function handleReportTopItems(PDO $pdo): void
             price_per_qty, qty,
             (price_per_qty * qty) AS line_total
         FROM items
-        WHERE 1=1" . excludedTypesClause('type') . "
+        WHERE 1=1" . excludedTypesClause('type') . reportDateClause('order_date') . "
         ORDER BY line_total DESC
         LIMIT 20
     ")->fetchAll();
@@ -1206,7 +1214,7 @@ function handleReportTopItems(PDO $pdo): void
             SUM(qty)                       AS total_qty,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE title != '' AND title != '-'" . excludedTypesClause('type') . "
+        WHERE title != '' AND title != '-'" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY title
         ORDER BY items DESC, total_price DESC
         LIMIT 20
@@ -1229,7 +1237,7 @@ function handleReportTopItems(PDO $pdo): void
             MAX(price_per_qty)             AS max_price,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE type != '' AND type != '-'" . excludedTypesClause('type') . "
+        WHERE type != '' AND type != '-'" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY type
         ORDER BY avg_price DESC
     ")->fetchAll();
@@ -1263,7 +1271,7 @@ function handleReportSeasonality(PDO $pdo): void
             SUM(qty)                       AS total_qty,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE order_date != ''" . excludedTypesClause('type') . "
+        WHERE order_date != ''" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY dow
         ORDER BY dow
     ")->fetchAll();
@@ -1281,7 +1289,7 @@ function handleReportSeasonality(PDO $pdo): void
             SUM(qty)                       AS total_qty,
             SUM(price_per_qty * qty)       AS total_price
         FROM items
-        WHERE order_date != ''" . excludedTypesClause('type') . "
+        WHERE order_date != ''" . excludedTypesClause('type') . reportDateClause('order_date') . "
         GROUP BY moy
         ORDER BY moy
     ")->fetchAll();
@@ -1302,6 +1310,13 @@ function handleReportSeasonality(PDO $pdo): void
  */
 function handleReportInactive(PDO $pdo): void
 {
+    // Date range: only date_to applies — it becomes the "as of" date, so the tab
+    // answers "who had gone quiet by the end of this period". Applying date_from
+    // too would hide exactly the members whose last purchase predates the range.
+    $asOf    = reportDateRange()['to'];
+    $asOfSql = ($asOf !== '' && $asOf < date('Y-m-d')) ? "'{$asOf}'" : "'now','localtime'";
+    $toClause = $asOf !== '' ? " AND i.order_date <= '{$asOf}'" : '';
+
     $rows = $pdo->query("
         SELECT
             i.idol_id                                   AS idol_id,
@@ -1311,10 +1326,10 @@ function handleReportInactive(PDO $pdo): void
             SUM(i.qty)                                  AS total_qty,
             SUM(i.price_per_qty * i.qty)                AS total_price,
             MAX(i.order_date)                           AS last_order,
-            CAST(julianday('now','localtime') - julianday(MAX(i.order_date)) AS INTEGER) AS days_since
+            CAST(julianday({$asOfSql}) - julianday(MAX(i.order_date)) AS INTEGER) AS days_since
         FROM items i
         LEFT JOIN idol_entities m ON m.id = i.idol_id AND m.category = 'member'
-        WHERE i.idol != '' AND i.idol != '-' AND i.order_date != ''" . excludedTypesClause() . "
+        WHERE i.idol != '' AND i.idol != '-' AND i.order_date != ''" . excludedTypesClause() . $toClause . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY days_since DESC
     ")->fetchAll();
@@ -1569,12 +1584,19 @@ function handleTypeByMembers(PDO $pdo): void
 
 function handleReportTypeDetail(PDO $pdo): void
 {
-    $type = trim($_GET['type'] ?? '');
-    if ($type === '') {
+    // type[] (several types viewed combined, e.g. cheki + pin cheki) or legacy type.
+    $types = array_values(array_unique(array_filter(
+        array_map(fn($v) => is_string($v) ? trim($v) : '', (array) ($_GET['type'] ?? [])),
+        fn($v) => $v !== ''
+    )));
+    if (!$types) {
         jsonResponse(['error' => 'type is required'], 400);
     }
+    $phs        = implode(',', array_map(fn($i) => ":type$i", array_keys($types)));
+    $typeParams = [];
+    foreach ($types as $i => $v) { $typeParams[":type$i"] = $v; }
 
-    // Carve-out: this is a drill-down into one named type, so exclude_from_reports is
+    // Carve-out: this is a drill-down into named type(s), so exclude_from_reports is
     // deliberately not applied — filtering here would blank the tab for exactly the
     // types the user opened it to inspect. Same reasoning as the budget scope_type
     // ='type' branch and the explicit type[] filter in handleList.
@@ -1598,11 +1620,11 @@ function handleReportTypeDetail(PDO $pdo): void
             AND (ms.end_date   IS NULL OR ms.end_date   >= COALESCE(NULLIF(i.order_date,''), date('now','localtime')))
         LEFT JOIN idol_entities g ON g.id = ms.group_id
         LEFT JOIN idol_entities c ON c.id = g.parent_id AND c.category = 'company'
-        WHERE i.type = :type AND i.idol != '' AND i.idol != '-'
+        WHERE i.type IN ($phs) AND i.idol != '' AND i.idol != '-'" . reportDateClause() . "
         GROUP BY COALESCE(CAST(i.idol_id AS TEXT), 'NA:' || i.idol)
         ORDER BY total_price DESC
     ");
-    $stmt->execute([':type' => $type]);
+    $stmt->execute($typeParams);
     $rows = $stmt->fetchAll();
 
     $members = array_map(fn($r) => [
@@ -1616,18 +1638,45 @@ function handleReportTypeDetail(PDO $pdo): void
         'total_price' => (float) $r['total_price'],
     ], $rows);
 
-    // Monthly breakdown for this type
+    // Monthly breakdown, split per type (feeds the stacked chart when several types
+    // are combined); the per-month totals and per-type totals are rolled up from it
+    // so the three views can never disagree.
     $stmtMonth = $pdo->prepare("
-        SELECT strftime('%Y-%m', order_date) as month, COUNT(*) as items,
+        SELECT strftime('%Y-%m', order_date) as month, type, COUNT(*) as items,
                SUM(qty) as total_qty, SUM(price_per_qty * qty) as total_price
         FROM items
-        WHERE type = :type AND order_date != ''
-        GROUP BY month ORDER BY month
+        WHERE type IN ($phs) AND order_date != ''" . reportDateClause('order_date') . "
+        GROUP BY month, type ORDER BY month, type
     ");
-    $stmtMonth->execute([':type' => $type]);
-    $byMonth = $stmtMonth->fetchAll();
+    $stmtMonth->execute($typeParams);
+    $byMonthType = array_map(fn($r) => [
+        'month'       => $r['month'],
+        'type'        => $r['type'],
+        'items'       => (int) $r['items'],
+        'total_qty'   => (int) $r['total_qty'],
+        'total_price' => (float) $r['total_price'],
+    ], $stmtMonth->fetchAll());
 
-    jsonResponse(['members' => $members, 'by_month' => $byMonth]);
+    $byMonth = [];
+    $byType  = array_fill_keys($types, ['items' => 0, 'total_qty' => 0, 'total_price' => 0.0]);
+    foreach ($byMonthType as $r) {
+        $byMonth[$r['month']] ??= ['month' => $r['month'], 'items' => 0, 'total_qty' => 0, 'total_price' => 0.0];
+        foreach (['items', 'total_qty', 'total_price'] as $k) {
+            $byMonth[$r['month']][$k] += $r[$k];
+            $byType[$r['type']][$k]   += $r[$k];
+        }
+    }
+    // (string): PHP turns numeric-looking array keys into ints.
+    $byType = array_map(fn($t, $v) => ['type' => (string) $t] + $v, array_keys($byType), $byType);
+    usort($byType, fn($a, $b) => $b['total_price'] <=> $a['total_price']);
+
+    jsonResponse([
+        'types'         => $types,
+        'members'       => $members,
+        'by_month'      => array_values($byMonth),
+        'by_month_type' => $byMonthType,
+        'by_type'       => $byType,
+    ]);
 }
 
 function handleTypeSave(PDO $pdo): void

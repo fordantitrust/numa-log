@@ -333,19 +333,26 @@ renders them as a muted section below the table.
 
 ### `report_type_detail` — GET
 
-Member breakdown and monthly breakdown for a single type.
+Member breakdown and monthly breakdown for one type, or several types viewed combined
+(e.g. `cheki` + `pin cheki`).
 
-**Query Parameters:** `type` (string, required)
+**Query Parameters:** `type[]` (string, repeatable) or `type` (string, legacy single) — at least one required; optional `date_from` / `date_to` (YYYY-MM-DD)
 
 **Response:**
 ```json
 {
+  "types": ["cheki", "pin cheki"],
   "members": [
     { "member": "Member A", "group": "Group X", "company": "Company Z", "items_count": 5, "total_qty": 8, "total_price": 2400.0 }
   ],
-  "by_month": [ { "month": "2024-01", "items": 3, "total_qty": 5, "total_price": 1500.0 } ]
+  "by_month": [ { "month": "2024-01", "items": 3, "total_qty": 5, "total_price": 1500.0 } ],
+  "by_month_type": [ { "month": "2024-01", "type": "cheki", "items": 2, "total_qty": 3, "total_price": 900.0 } ],
+  "by_type": [ { "type": "cheki", "items": 4, "total_qty": 6, "total_price": 1800.0 } ]
 }
 ```
+
+`members` aggregates across all selected types (one row per member). `by_month` and
+`by_type` are rolled up from `by_month_type`, so they always agree.
 
 ---
 

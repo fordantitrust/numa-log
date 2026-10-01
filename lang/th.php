@@ -170,6 +170,11 @@ return [
     'report.group_time'      => 'ตามเวลา',
     'report.group_breakdown' => 'แยกตาม',
     'report.group_more'      => 'อื่นๆ',
+    'report.range_custom'    => 'กำหนดช่วงเอง…',
+    'report.type_select_hint'   => 'ติ๊กตั้งแต่ 2 ประเภทเพื่อดูรวม',
+    'report.type_view_selected' => 'ดูรวม {n} ประเภท',
+    'report.range_note_event'    => 'ช่วงวันที่กรองตามวันจัดงาน: แสดงงานที่อยู่ในช่วงที่เลือก พร้อมรายการทั้งหมดที่ผูกกับงานนั้น',
+    'report.range_note_inactive' => 'ช่วงวันที่: นับจำนวนวันที่ไม่เคลื่อนไหว ณ วันสิ้นสุดของช่วงที่เลือก',
 
     'report.others'          => 'อื่นๆ',
     'report.group_unit'      => 'กลุ่ม / ยูนิต',

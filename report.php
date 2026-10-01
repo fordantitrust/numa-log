@@ -54,6 +54,23 @@
         </div>
     </div>
 
+    <!-- Date range — applies to every tab (sent as date_from/date_to by rq()) -->
+    <div class="card p-2 mb-3 d-flex flex-row flex-wrap align-items-center gap-2" id="rangeBar">
+        <i class="bi bi-calendar-range text-muted ms-1"></i>
+        <label class="small text-muted mb-0" for="rangeSelect"><?= t('dashboard.period') ?></label>
+        <select class="form-select form-select-sm w-auto" id="rangeSelect">
+            <option value="all"><?= t('dashboard.period_all') ?></option>
+            <option value="last12"><?= t('dashboard.period_last12') ?></option>
+            <option value="custom" id="rangeCustomOpt"><?= t('report.range_custom') ?></option>
+        </select>
+        <div id="rangeCustom" class="d-none align-items-center gap-1">
+            <input type="date" class="form-control form-control-sm w-auto" id="rangeFrom" aria-label="<?= t('items.from') ?>">
+            <span class="text-muted">–</span>
+            <input type="date" class="form-control form-control-sm w-auto" id="rangeTo" aria-label="<?= t('items.to') ?>">
+        </div>
+        <span class="small text-muted ms-auto me-1" id="rangeLabel"></span>
+    </div>
+
     <!-- Tab Navigation — 14 tabs grouped into dropdowns to stay compact -->
     <ul class="nav nav-pills mb-3 gap-1" id="reportTabs" role="tablist">
         <li class="nav-item">
@@ -475,7 +492,12 @@
                     </div>
                     <div class="col-lg-7">
                         <div class="card">
-                            <div class="card-header py-2"><strong><?= t('report.all_types') ?></strong> <span class="text-muted small"><?= t('report.click_view_members') ?></span></div>
+                            <div class="card-header py-2"><strong><?= t('report.all_types') ?></strong> <span class="text-muted small"><?= t('report.click_view_members') ?> · <?= t('report.type_select_hint') ?></span></div>
+                            <!-- Shown once 2+ types are ticked: view them combined (e.g. cheki + pin cheki) -->
+                            <div id="typeSelBar" class="d-none align-items-center gap-2 px-3 py-2 border-bottom" style="background:#f5f3ff">
+                                <button class="btn btn-primary btn-sm" id="btnTypeViewSel"><i class="bi bi-collection"></i> <span id="typeSelLabel"></span></button>
+                                <button class="btn btn-outline-secondary btn-sm" id="btnTypeClearSel"><?= t('items.clear') ?></button>
+                            </div>
                             <div class="table-scroll">
                                 <table class="table table-sm table-hover mb-0">
                                     <thead>
@@ -533,6 +555,8 @@
                         </div>
                     </div>
                 </div>
+                <!-- Per-type split, only when several types are viewed combined -->
+                <div id="typeDetSplit" class="card p-2 mb-3 d-none flex-row flex-wrap gap-3 small"></div>
                 <div class="card">
                     <div class="card-header py-2"><strong><?= t('report.member_breakdown') ?></strong></div>
                     <div class="table-scroll">
@@ -851,6 +875,7 @@
 
         <!-- Event Tab -->
         <div class="tab-pane fade" id="tabEvent">
+            <div class="range-note small text-muted mb-2 d-none"><i class="bi bi-info-circle"></i> <?= t('report.range_note_event') ?></div>
             <div class="row g-3 mb-3">
                 <div class="col-6 col-lg-3">
                     <div class="card p-3 h-100" style="background:#f5f3ff">
@@ -910,6 +935,7 @@
 
         <!-- Event Summary Tab -->
         <div class="tab-pane fade" id="tabEventSummary">
+            <div class="range-note small text-muted mb-2 d-none"><i class="bi bi-info-circle"></i> <?= t('report.range_note_event') ?></div>
             <div class="row g-3 mb-3">
                 <div class="col-6 col-lg-3">
                     <div class="card p-3 h-100" style="background:#f5f3ff">
@@ -1012,6 +1038,7 @@
 
         <!-- Inactive Tab -->
         <div class="tab-pane fade" id="tabInactive">
+            <div class="range-note small text-muted mb-2 d-none"><i class="bi bi-info-circle"></i> <?= t('report.range_note_inactive') ?></div>
             <div class="card p-3 mb-3 d-flex flex-row align-items-center gap-2 flex-wrap">
                 <span class="fw-semibold"><?= t('report.in_threshold') ?></span>
                 <div class="btn-group btn-group-sm" role="group" id="inactiveThresholds">
@@ -1084,11 +1111,76 @@ let cmpMembers = [];
 // Shared with index.php and items.php — one mode across the app.
 let includeExcluded = localStorage.getItem('numalog.includeExcluded') === '1';
 
-/** Build an api.php URL carrying the current exclusion mode. Every report fetch uses this. */
+// Report date range. mode: 'all' | 'last12' | 'YYYY' | 'custom'. from/to (YYYY-MM-DD)
+// are only stored for 'custom'; the other modes are recomputed so 'last12' stays
+// rolling. Remembered per browser as a convenience — every read is try/catch'd.
+const RANGE_KEY = 'numalog.reportRange';
+let reportRange = { mode: 'all', from: '', to: '' };
+try {
+    const saved = JSON.parse(localStorage.getItem(RANGE_KEY) || 'null');
+    if (saved && typeof saved.mode === 'string') reportRange = { mode: saved.mode, from: saved.from || '', to: saved.to || '' };
+} catch (e) { /* ignore */ }
+
+/** Effective { from, to } for the current mode ('' = open-ended). */
+function rangeDates() {
+    const m = reportRange.mode;
+    if (m === 'last12') {
+        const d = new Date();
+        const to = d.toLocaleDateString('en-CA');
+        d.setMonth(d.getMonth() - 11);
+        d.setDate(1);
+        return { from: d.toLocaleDateString('en-CA'), to };
+    }
+    if (/^\d{4}$/.test(m)) return { from: `${m}-01-01`, to: `${m}-12-31` };
+    if (m === 'custom') return { from: reportRange.from, to: reportRange.to };
+    return { from: '', to: '' };
+}
+
+/** Build an api.php URL carrying the current exclusion mode + date range. Every report fetch uses this. */
 function rq(action, params = {}) {
     const p = new URLSearchParams({ action, ...params });
     if (includeExcluded) p.set('include_excluded', '1');
+    const { from, to } = rangeDates();
+    if (from) p.set('date_from', from);
+    if (to) p.set('date_to', to);
     return 'api.php?' + p.toString();
+}
+
+/** Add a "Year N" option to the range select (kept in descending order, before 'custom'). */
+function addRangeYear(y) {
+    const sel = $('rangeSelect');
+    if (sel.querySelector(`option[value="${y}"]`)) return;
+    const o = document.createElement('option');
+    o.value = y; o.textContent = t('dashboard.year', { y });
+    const later = [...sel.options].find(x => /^\d{4}$/.test(x.value) && x.value < y);
+    sel.insertBefore(o, later || $('rangeCustomOpt'));
+}
+
+/** Sync the range bar controls + per-tab notes with reportRange. */
+function renderRangeBar() {
+    const { from, to } = rangeDates();
+    if (/^\d{4}$/.test(reportRange.mode)) addRangeYear(reportRange.mode);
+    $('rangeSelect').value = reportRange.mode;
+    const custom = reportRange.mode === 'custom';
+    $('rangeCustom').classList.toggle('d-none', !custom);
+    $('rangeCustom').classList.toggle('d-flex', custom);
+    $('rangeFrom').value = reportRange.from;
+    $('rangeTo').value = reportRange.to;
+    $('rangeLabel').textContent = (from || to) ? `${from || '…'} – ${to || '…'}` : '';
+    const active = !!(from || to);
+    document.querySelectorAll('.range-note').forEach(el => el.classList.toggle('d-none', !active));
+}
+
+function setRange(next) {
+    reportRange = next;
+    try { localStorage.setItem(RANGE_KEY, JSON.stringify(reportRange)); } catch (e) { /* ignore */ }
+    renderRangeBar();
+    // Drill-down panels were fetched for the old range — close them rather than
+    // leave stale numbers next to freshly reloaded totals.
+    hideDailyDetail(); hideIdolDetail(); hideTypeDetail();
+    ['groupDetailCard', 'companyDetailCard'].forEach(id => { if ($(id)) $(id).style.display = 'none'; });
+    loadExcludedBanner();
+    reloadAllReportTabs();
 }
 
 // Module-scope so the toggle handler can reach them (they used to be local to the
@@ -1118,6 +1210,41 @@ function reloadAllReportTabs() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    renderRangeBar();
+    $('rangeSelect').addEventListener('change', e => {
+        const mode = e.target.value;
+        if (mode === 'custom') {
+            // Seed the inputs from whatever range was showing so "custom" starts
+            // as a tweak of it rather than as an empty (= all time) range.
+            const cur = rangeDates();
+            setRange({ mode, from: reportRange.from || cur.from, to: reportRange.to || cur.to });
+        } else {
+            setRange({ mode, from: '', to: '' });
+        }
+    });
+    const onCustomDate = () => {
+        let from = $('rangeFrom').value, to = $('rangeTo').value;
+        if (from && to && from > to) [from, to] = [to, from];
+        setRange({ mode: 'custom', from, to });
+    };
+    $('rangeFrom').addEventListener('change', onCustomDate);
+    $('rangeTo').addEventListener('change', onCustomDate);
+
+    // By Type: tick several types to view them combined.
+    $('tableType').addEventListener('change', e => {
+        if (!e.target.classList.contains('type-sel')) return;
+        const row = typeRows[+e.target.dataset.idx];
+        if (!row) return;
+        e.target.checked ? typeSel.add(row.type) : typeSel.delete(row.type);
+        renderTypeSelBar();
+    });
+    $('btnTypeViewSel').addEventListener('click', () => showTypeDetail([...typeSel]));
+    $('btnTypeClearSel').addEventListener('click', () => {
+        typeSel.clear();
+        document.querySelectorAll('#tableType .type-sel').forEach(cb => cb.checked = false);
+        renderTypeSelBar();
+    });
+
     loadOverview();   // default active tab
     loadMonthly();
     loadIdol();
@@ -1148,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /** Banner naming the flagged types + the toggle. Hidden entirely when none exist. */
 async function loadExcludedBanner() {
-    const res = await fetch('api.php?action=excluded_summary', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
+    const res = await fetch(rq('excluded_summary'), { cache: 'no-store' }).then(r => r.json()).catch(() => null);
     const banner = $('excludedBanner');
     if (!res || !res.enabled) {
         banner.classList.remove('d-flex');
@@ -1459,10 +1586,26 @@ async function loadIdol() {
 }
 
 // --- Type ---
+// Types ticked for a combined view. Cleared whenever the list reloads (range or
+// exclusion change) — a stale tick could point at a type no longer listed.
+const typeSel = new Set();
+let typeRows = [];
+
 async function loadType() {
     const res = await fetch(rq('report_type')).then(r => r.json());
-    renderRankReport(res.data, 'Type', 'type', 'chartTypePie', 'tableType', 'footType');
+    typeRows = res.data || [];
+    typeSel.clear();
+    renderRankReport(typeRows, 'Type', 'type', 'chartTypePie', 'tableType', 'footType');
     renderTypeExcluded(res.excluded || []);
+    renderTypeSelBar();
+}
+
+function renderTypeSelBar() {
+    const bar = $('typeSelBar');
+    const show = typeSel.size >= 2;
+    bar.classList.toggle('d-none', !show);
+    bar.classList.toggle('d-flex', show);
+    $('typeSelLabel').textContent = t('report.type_view_selected', { n: typeSel.size });
 }
 
 // Excluded types would otherwise vanish from the By Type table entirely. List them
@@ -1550,7 +1693,8 @@ function renderRankReport(data, label, key, chartId, tableId, footId) {
         const nameHtml = isIdol
             ? `<a href="#" class="text-decoration-none fw-semibold" onclick="showIdolDetail('${escJs(r[key])}');return false">${escHtml(r[key])}</a>${medal}`
             : isType
-            ? `<a href="#" class="text-decoration-none fw-semibold" onclick="showTypeDetail('${escJs(r[key])}');return false">${escHtml(r[key])}</a>${medal}`
+            ? `<input type="checkbox" class="form-check-input me-2 type-sel" data-idx="${i}" ${typeSel.has(r[key]) ? 'checked' : ''}>`
+              + `<a href="#" class="text-decoration-none fw-semibold" onclick="showTypeDetail('${escJs(r[key])}');return false">${escHtml(r[key])}</a>${medal}`
             : `${escHtml(r[key])}${medal}`;
         return `
         <tr>
@@ -1975,14 +2119,33 @@ function showCompanyGroups(idx) {
 }
 
 // --- Type Detail ---
-async function showTypeDetail(type) {
-    $('typeDetailName').textContent = type;
+/** Drill into one type (string) or several combined (array, e.g. cheki + pin cheki). */
+async function showTypeDetail(typeOrTypes) {
+    const types = Array.isArray(typeOrTypes) ? typeOrTypes : [typeOrTypes];
+    const multi = types.length > 1;
+    $('typeDetailName').innerHTML = multi
+        ? types.map(x => `<span class="badge badge-type me-1">${escHtml(x)}</span>`).join('')
+        : escHtml(types[0]);
     $('typeMainView').style.display = 'none';
     $('typeDetailView').style.display = 'block';
     $('tableTypeDetail').innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${t('common.loading')}</td></tr>`;
 
-    const res = await fetch(rq('report_type_detail', { type })).then(r => r.json());
+    // rq() takes a plain object, so append the repeated type[] keys by hand.
+    const url = rq('report_type_detail') + types.map(x => '&type%5B%5D=' + encodeURIComponent(x)).join('');
+    const res = await fetch(url).then(r => r.json());
     const members = res.members || [];
+
+    // Per-type split (combined view only)
+    const split = $('typeDetSplit');
+    const byType = res.by_type || [];
+    const splitTotal = byType.reduce((s, r) => s + r.total_price, 0);
+    split.innerHTML = multi ? byType.map(r => `<span>
+        <i class="bi bi-square-fill" style="color:${COLORS[types.indexOf(r.type) % COLORS.length]}"></i>
+        <strong>${escHtml(r.type)}</strong> ฿${fmt(r.total_price)}
+        <span class="text-muted">(${splitTotal > 0 ? (r.total_price / splitTotal * 100).toFixed(1) : '0.0'}% · ${fmtInt(r.items)} ${t('common.items')})</span>
+    </span>`).join('') : '';
+    split.classList.toggle('d-none', !multi);
+    split.classList.toggle('d-flex', multi);
 
     const totItems = members.reduce((s, r) => s + r.items_count, 0);
     const totQty   = members.reduce((s, r) => s + r.total_qty, 0);
@@ -2029,25 +2192,39 @@ async function showTypeDetail(type) {
 
     // --- Monthly Breakdown for Type ---
     const byMonth = res.by_month || [];
+    // Combined view: one stacked dataset per type so the split per month stays visible.
+    const datasets = multi
+        ? types.map((ty, i) => {
+            const m = {};
+            (res.by_month_type || []).forEach(r => { if (r.type === ty) m[r.month] = r.total_price; });
+            return {
+                label: ty,
+                data: byMonth.map(r => m[r.month] || 0),
+                backgroundColor: COLORS[i % COLORS.length],
+                stack: 'types',
+            };
+        })
+        : [{
+            label: t('common.spending_baht'),
+            data: byMonth.map(r => Number(r.total_price)),
+            backgroundColor: 'rgba(124,58,237,0.7)',
+            borderRadius: 4,
+        }];
     if (chartTypeDetailMonth) chartTypeDetailMonth.destroy();
     chartTypeDetailMonth = new Chart($('chartTypeDetailMonth').getContext('2d'), {
         type: 'bar',
-        data: {
-            labels: byMonth.map(r => formatMonth(r.month)),
-            datasets: [{
-                label: t('common.spending_baht'),
-                data: byMonth.map(r => Number(r.total_price)),
-                backgroundColor: 'rgba(124,58,237,0.7)',
-                borderRadius: 4,
-            }]
-        },
+        data: { labels: byMonth.map(r => formatMonth(r.month)), datasets },
         options: {
             responsive: true, maintainAspectRatio: false,
+            interaction: multi ? { mode: 'index', intersect: false } : undefined,
             plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => '฿' + fmt(ctx.raw) } }
+                legend: { display: multi },
+                tooltip: { callbacks: { label: ctx => (multi ? ctx.dataset.label + ': ' : '') + '฿' + fmt(ctx.raw) } }
             },
-            scales: { y: { ticks: { callback: v => '฿' + fmt(v) } } }
+            scales: {
+                x: { stacked: multi },
+                y: { stacked: multi, ticks: { callback: v => '฿' + fmt(v) } },
+            }
         }
     });
 
@@ -2059,7 +2236,7 @@ async function showTypeDetail(type) {
     $('tableTypeDetailMonth').innerHTML = byMonth.map(r => {
         const dateFrom = r.month + '-01';
         const dateTo = monthLastDay(r.month);
-        const url = 'items.php?type=' + encodeURIComponent(type) + '&date_from=' + dateFrom + '&date_to=' + dateTo;
+        const url = 'items.php?' + types.map(x => 'type%5B%5D=' + encodeURIComponent(x)).join('&') + '&date_from=' + dateFrom + '&date_to=' + dateTo;
         return `<tr>
             <td><a href="${url}" class="text-decoration-none">${formatMonth(r.month)}</a></td>
             <td class="text-end">${fmtInt(r.items)}</td>
@@ -2115,6 +2292,7 @@ function barOptsBaht() {
 // =====================================================================
 async function loadOverview() {
     const res = await fetch(rq('report_dashboard')).then(r => r.json());
+    (res.years || []).forEach(addRangeYear);   // unfiltered list, so safe to add on every load
     const k = res.kpis || {};
     $('ovSpent').textContent = '฿' + fmt(k.total_spent || 0);
     $('ovSpentSub').textContent = t('report.ov_active_months', { n: k.active_months || 0 });
@@ -2561,14 +2739,19 @@ let inactiveData = [];
 async function loadInactive() {
     const res = await fetch(rq('report_inactive')).then(r => r.json());
     inactiveData = res.data || [];
-    document.querySelectorAll('#inactiveThresholds button').forEach(b => {
-        b.addEventListener('click', () => {
-            document.querySelectorAll('#inactiveThresholds button').forEach(x => x.classList.remove('active'));
+    // This loader re-runs on every range / exclusion change — bind the threshold
+    // buttons once, and keep whichever threshold the user had picked.
+    const btns = document.querySelectorAll('#inactiveThresholds button');
+    if (!loadInactive._bound) {
+        loadInactive._bound = true;
+        btns.forEach(b => b.addEventListener('click', () => {
+            btns.forEach(x => x.classList.remove('active'));
             b.classList.add('active');
             renderInactive(+b.dataset.days);
-        });
-    });
-    renderInactive(90);
+        }));
+    }
+    const active = document.querySelector('#inactiveThresholds button.active');
+    renderInactive(active ? +active.dataset.days : 90);
 }
 function renderInactive(days) {
     const rows = inactiveData.filter(r => r.days_since !== null && r.days_since >= days);

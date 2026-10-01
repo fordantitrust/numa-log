@@ -308,6 +308,14 @@
                     </div>
                     <p class="text-muted">หน้า <strong>Report</strong> แสดงการวิเคราะห์ข้อมูลใน <strong>13 มุมมอง (tab)</strong> จัดกลุ่มเป็น dropdown พร้อมกราฟแบบ interactive &mdash; tab ที่โหลดข้อมูลมากจะ lazy-load ครั้งแรกที่เปิด (งบประมาณดูได้ที่หน้า <a href="#budget">งบประมาณ</a> แยกต่างหาก)</p>
 
+                    <div class="tip-box mb-3">
+                        <i class="bi bi-calendar-range"></i> <strong>เลือกช่วงวันที่</strong> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.12.0</span> &mdash; แถบ "ช่วงเวลา" เหนือ tab เลือกได้ว่าจะดู <strong>ทั้งหมด</strong>, <strong>12 เดือนล่าสุด</strong>, <strong>รายปี</strong> หรือ <strong>กำหนดช่วงเอง</strong> ทุก tab จะแสดงผลตามช่วงที่เลือก (กรองตามวันที่สั่ง) และระบบจะจำช่วงไว้ในเบราว์เซอร์
+                        <ul class="small mb-0 mt-1">
+                            <li><strong>By Event / Event Summary</strong> กรองตาม <strong>วันจัดงาน</strong> &mdash; แสดงงานที่คาบเกี่ยวกับช่วง พร้อมรายการทั้งหมดที่ผูกกับงาน แม้จะสั่งซื้อก่อนช่วง</li>
+                            <li><strong>Inactive</strong> ใช้แค่ <strong>วันสิ้นสุด</strong> ของช่วงเป็นวันอ้างอิง ("ณ วันนั้น ใครไม่ได้ซื้อมากี่วัน")</li>
+                        </ul>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
@@ -381,6 +389,9 @@
                                 <p class="small text-muted mb-2">อันดับประเภทสินค้าตามยอดใช้จ่าย พร้อมจำนวนรายการและจำนวนชิ้น</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>คลิกที่ชื่อประเภท</strong> เพื่อดูรายละเอียดสมาชิก กลุ่ม และค่ายที่ซื้อสินค้าประเภทนั้น
+                                </div>
+                                <div class="tip-box mt-2">
+                                    <i class="bi bi-collection"></i> <strong>ดูหลายประเภทรวมกัน</strong> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.12.0</span> &mdash; ติ๊ก checkbox หน้าชื่อประเภทตั้งแต่ 2 ประเภทขึ้นไป (เช่น Cheki + Pin Cheki) แล้วกด <strong>ดูรวม N ประเภท</strong> จะเห็นยอดรวม สมาชิก (รวมเป็นแถวเดียวต่อคน) สัดส่วนแต่ละประเภท และกราฟรายเดือนแบบแท่งซ้อนแยกสีตามประเภท
                                 </div>
                             </div>
                         </div>

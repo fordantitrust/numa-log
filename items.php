@@ -489,6 +489,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pDateTo   = urlParams.get('date_to');
     const pIdol     = urlParams.get('idol');
     const pEventId  = urlParams.get('event_id');
+    // type[] (report's combined-type drill-through) or a single legacy type=
+    const pTypes    = [...urlParams.getAll('type[]'), ...urlParams.getAll('type')].filter(Boolean);
 
     if (pDateFrom) $('fDateFrom').value = pDateFrom;
     if (pDateTo)   $('fDateTo').value   = pDateTo;
@@ -496,6 +498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadFilters();
 
     if (pIdol) msIdol.setSelected([pIdol]);
+    if (pTypes.length) msType.setSelected(pTypes);
     if (pEventId) {
         const ev = eventsData.find(e => e.id == pEventId);
         if (ev) msEvent.setSelected([eventDisplay(ev)]);

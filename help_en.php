@@ -308,6 +308,14 @@
                     </div>
                     <p class="text-muted">The <strong>Report</strong> page provides analytics across <strong>13 views (tabs)</strong> grouped into dropdowns, with interactive charts &mdash; data-heavy tabs are lazy-loaded the first time they are opened. (Budgets live on the separate <a href="#budget">Budgets</a> page.)</p>
 
+                    <div class="tip-box mb-3">
+                        <i class="bi bi-calendar-range"></i> <strong>Date range</strong> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.12.0</span> &mdash; the "Period" bar above the tabs lets you view <strong>All time</strong>, <strong>Last 12 months</strong>, a <strong>year</strong>, or a <strong>custom range</strong>. Every tab follows it (filtering by order date), and the choice is remembered in your browser.
+                        <ul class="small mb-0 mt-1">
+                            <li><strong>By Event / Event Summary</strong> filter by <strong>event date</strong> &mdash; events overlapping the range, with all items linked to them, even ones ordered before the range</li>
+                            <li><strong>Inactive</strong> uses only the range's <strong>end date</strong>, as an "as of" date</li>
+                        </ul>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="border rounded p-3 h-100">
@@ -381,6 +389,9 @@
                                 <p class="small text-muted mb-2">Ranking of item types by spending, with item count and quantity</p>
                                 <div class="tip-box mt-auto">
                                     <i class="bi bi-hand-index"></i> <strong>Click on a type name</strong> to see the member, group, and company breakdown for that type
+                                </div>
+                                <div class="tip-box mt-2">
+                                    <i class="bi bi-collection"></i> <strong>Combine types</strong> <span class="badge bg-info ms-1" style="font-size:.65rem">v1.12.0</span> &mdash; tick the checkbox next to two or more types (e.g. Cheki + Pin Cheki) and press <strong>View N types combined</strong> to see combined totals, one row per member, the split per type, and a stacked monthly chart coloured by type
                                 </div>
                             </div>
                         </div>

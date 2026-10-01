@@ -176,6 +176,11 @@ return [
     'report.group_time'      => 'Over Time',
     'report.group_breakdown' => 'Breakdown',
     'report.group_more'      => 'More',
+    'report.range_custom'    => 'Custom range…',
+    'report.type_select_hint'   => 'tick 2+ to view combined',
+    'report.type_view_selected' => 'View {n} types combined',
+    'report.range_note_event'    => 'Date range filters by event date: events overlapping the range, with all items linked to them.',
+    'report.range_note_inactive' => 'Date range: inactivity is measured as of the range end date.',
 
     'report.others'          => 'Others',
     'report.group_unit'      => 'Group / Unit',

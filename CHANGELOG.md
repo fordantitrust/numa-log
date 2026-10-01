@@ -4,6 +4,28 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.12.0 (2026-10-01)
+
+### Reports
+
+- **Date range** — a period bar above the tabs: **All time**, **Last 12 months**, any **year** with data, or a **custom range**. Every tab, the excluded-types banner and every drill-down follow it; the choice is remembered per browser. Changing it closes any open drill-down so stale numbers never sit next to fresh totals.
+- **Two tabs read the range differently, on purpose** (each shows a note when a range is set):
+  - **By Event / Event Summary** filter by **event date**: events whose span overlaps the range, with *all* items linked to them — including ones ordered before the range started.
+  - **Inactive** uses only the **end date**, as an "as of" date. Applying the start date too would hide exactly the members who went quiet before the range.
+- **Combine types in By Type** — tick two or more types (e.g. **Cheki** + **Pin Cheki**) and press **View N types combined**. The detail view shows combined totals, one row per member across all ticked types, a per-type split, and a stacked monthly chart coloured by type. Clicking a type name still opens it on its own.
+- Fixed: the **Inactive** tab re-bound its threshold buttons on every reload and snapped back to 90 days.
+
+### Items
+
+- Fixed: `items.php?type=…` (the month links in a type's drill-down) did not actually pre-select the type. Both `type=` and repeated `type[]=` are now honoured.
+
+### API
+
+- Every `report_*` action, plus `excluded_summary`, accepts optional `date_from` / `date_to` (YYYY-MM-DD, inclusive; invalid values are ignored). Manage-page endpoints (`idol_entities_tree`, `type_list`, `event_list`) stay unfiltered.
+- `report_type_detail` accepts repeated `type[]` (legacy single `type` still works) and also returns `types`, `by_month_type` and `by_type`.
+
+---
+
 ## v1.11.0 (2026-07-27)
 
 ### Items

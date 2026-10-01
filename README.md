@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.11.0 — **Bulk change type** on the Items page: tick the checkboxes and the bulk action bar now offers **Change Type** alongside the event actions, so a batch of mis-typed entries can be fixed in one step.
+**Latest:** v1.12.0 — Reports now have a **date range** selector (all time, last 12 months, a year, or a custom range) that applies to every tab, and the **By Type** tab lets you tick several types (e.g. Cheki + Pin Cheki) to view them combined.
+
+**v1.11.0** — **Bulk change type** on the Items page: tick the checkboxes and the bulk action bar now offers **Change Type** alongside the event actions, so a batch of mis-typed entries can be fixed in one step.
 
 **v1.10.0** — Types can now be excluded from reports: tick **"Exclude from reports"** on a type in Manage Types (travel costs, gifts for other people, resale stock) and its items stop inflating the dashboard KPIs, reports, budgets, item list and exports. Nothing is deleted or hidden silently — the excluded amount is always shown, and an **Include excluded types** toggle brings it back on any page.
 

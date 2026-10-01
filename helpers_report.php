@@ -81,6 +81,57 @@ function excludedTypesClause(string $col = 'i.type', string $keyword = 'AND'): s
     return $p === '' ? '' : " {$keyword} {$p}";
 }
 
+/**
+ * Report date range (report.php period selector): optional `date_from` / `date_to`
+ * (YYYY-MM-DD, inclusive). Invalid values are ignored. Memoised like
+ * includeExcludedTypes() so any handler can reach it without plumbing.
+ *
+ * @return array{from: string, to: string}  '' = open-ended on that side
+ */
+function reportDateRange(): array
+{
+    static $r = null;
+    if ($r === null) {
+        $valid = function (string $k): string {
+            $v = trim((string) ($_REQUEST[$k] ?? ''));
+            return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : '';
+        };
+        $r = ['from' => $valid('date_from'), 'to' => $valid('date_to')];
+    }
+    return $r;
+}
+
+/**
+ * `AND col >= 'from' AND col <= 'to'`, or '' when no range is set.
+ *
+ * Parameter-free for the same reason as excludedTypesClause(): it splices into any
+ * query (including ->query() calls and LEFT JOIN ... ON) without touching the bind
+ * array. Inlining is safe because reportDateRange() only lets ^\d{4}-\d{2}-\d{2}$
+ * through. As with the exclusion, when `items` is on the LEFT JOIN side this must go
+ * in the ON, not the WHERE.
+ */
+function reportDateClause(string $col = 'i.order_date', string $keyword = 'AND'): string
+{
+    ['from' => $from, 'to' => $to] = reportDateRange();
+    $parts = [];
+    if ($from !== '') $parts[] = "{$col} >= '{$from}'";
+    if ($to   !== '') $parts[] = "{$col} <= '{$to}'";
+    return $parts ? " {$keyword} " . implode(' AND ', $parts) : '';
+}
+
+/**
+ * Event-span version of reportDateClause() for the report's Event tabs: keeps events
+ * (alias `e`) whose event_date…COALESCE(end_date, event_date) overlaps the range.
+ */
+function reportEventOverlapClause(string $keyword = 'AND'): string
+{
+    ['from' => $from, 'to' => $to] = reportDateRange();
+    $parts = [];
+    if ($from !== '') $parts[] = "COALESCE(NULLIF(e.end_date, ''), e.event_date) >= '{$from}'";
+    if ($to   !== '') $parts[] = "e.event_date <= '{$to}'";
+    return $parts ? " {$keyword} " . implode(' AND ', $parts) : '';
+}
+
 /** Names of the flagged types — drives the banners and the client-side checks. */
 function excludedTypeNames(PDO $pdo): array
 {
