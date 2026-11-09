@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.12.0 — Reports now have a **date range** selector (all time, last 12 months, a year, or a custom range) that applies to every tab, and the **By Type** tab lets you tick several types (e.g. Cheki + Pin Cheki) to view them combined.
+**Latest:** v1.12.1 — Dependency update: `phpoffice/phpspreadsheet` bumped from 5.9.0 to 5.10.0 (Excel import/export). No app changes.
+
+**v1.12.0** — Reports now have a **date range** selector (all time, last 12 months, a year, or a custom range) that applies to every tab, and the **By Type** tab lets you tick several types (e.g. Cheki + Pin Cheki) to view them combined.
 
 **v1.11.0** — **Bulk change type** on the Items page: tick the checkboxes and the bulk action bar now offers **Change Type** alongside the event actions, so a batch of mis-typed entries can be fixed in one step.
 

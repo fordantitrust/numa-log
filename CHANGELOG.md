@@ -4,6 +4,14 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.12.1 (2026-11-09)
+
+### Dependencies
+
+- Bumped `phpoffice/phpspreadsheet` from 5.9.0 to 5.10.0 (Excel import/export). No app changes.
+
+---
+
 ## v1.12.0 (2026-10-01)
 
 ### Reports
