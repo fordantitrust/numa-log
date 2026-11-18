@@ -8,7 +8,7 @@
 ทั้งสองปัญหาเกิดจากรากเดียวกัน: `idol_entities.name` ถูกใช้เป็น **natural key** ในการ join กับ `items.idol` (TEXT match) ซึ่งเปราะทั้งเรื่องชื่อซ้ำและการย้ายวง
 
 **Target version:** v1.5.0
-**Status:** Draft
+**Status:** ✅ Implemented in v1.5.0 (schema v5, `migrations/v5_idol_refactor.php`). This document is kept as the design record. See [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) for the current schema (v13).
 
 ---
 

@@ -26,6 +26,17 @@ at a type directly, they get the full amount*:
 type's real totals; the filter dropdowns must still offer excluded types). `event_list` is
 unfiltered too — see the note under **Events**.
 
+### `date_from` / `date_to` (v1.12.0) — report date range
+
+Every `report_*` endpoint, plus `excluded_summary`, accepts optional `date_from` /
+`date_to` (`YYYY-MM-DD`, inclusive; invalid values are ignored). By default they bound
+`order_date`. Two exceptions:
+
+- `report_event` / `report_event_summary` keep events whose date span **overlaps** the range
+- `report_inactive` uses only `date_to`, as the "as of" date
+
+Management endpoints (`idol_entities_tree`, `type_list`, `event_list`) ignore the range.
+
 ---
 
 ## Authentication & CSRF
@@ -392,6 +403,130 @@ Spending aggregated by company, with group breakdown.
 
 ---
 
+### `report_by_unit` — GET
+
+Spending rolled up to `unit`-category entities through `idol_memberships` (primary **and**
+non-primary), matched by `order_date` against each membership period. This catches the
+sub-unit / project memberships that `report_by_group` leaves out.
+
+**Response:**
+```json
+{
+  "data": [
+    { "unit_id": 15, "name": "Unit Y", "parent": "Company Z", "items": 12, "total_qty": 20, "total_price": 6000.0, "members": 3 }
+  ]
+}
+```
+
+---
+
+### `report_event` — GET
+
+Spending per named event, plus the unlinked items grouped by `event_date`.
+
+**Date range:** named events are kept when their `event_date…COALESCE(end_date, event_date)`
+span **overlaps** `date_from`/`date_to` (`reportEventOverlapClause()`). Every linked item
+counts, including items ordered before the range. Unlinked rows and lead-time filter on
+`event_date`. `no_event` filters on `order_date`, because those items have no event date.
+
+**Response:**
+```json
+{
+  "named": [
+    { "event_id": 4, "event_name": "Tour BKK", "event_date": "2026-03-01", "end_date": "2026-03-02",
+      "is_named": true, "items": 6, "total_qty": 9, "total_price": 7200.0, "idols": 3, "types": 2 }
+  ],
+  "unlinked": [
+    { "event_id": null, "event_name": null, "event_date": "2025-12-10", "end_date": null,
+      "is_named": false, "items": 2, "total_qty": 2, "total_price": 900.0, "idols": 1, "types": 1 }
+  ],
+  "lead_time": { "n": 40, "avg_days": 21.5, "min_days": 0, "max_days": 120 },
+  "no_event": 85
+}
+```
+
+`lead_time` is `event_date − order_date` in days, over items that have both dates.
+
+---
+
+### `report_event_summary` — GET
+
+One row per named event, with its duration, status and per-day spend. It uses the same
+event-overlap date rule as `report_event`.
+
+**Response:**
+```json
+{
+  "events": [
+    { "id": 4, "name": "Tour BKK", "start_date": "2026-03-01", "end_date": "2026-03-02", "days": 2,
+      "status": "past", "items": 6, "total_qty": 9, "total_price": 7200.0, "avg_per_day": 3600.0 }
+  ],
+  "summary": { "total": 12, "multi_day": 3, "total_days": 16, "upcoming": 2, "ongoing": 0 }
+}
+```
+
+`status` is `upcoming` | `ongoing` | `past`, compared with today's date. `days` is at least `1`.
+
+---
+
+### `report_top_items` — GET
+
+Extremes: the 20 most expensive line items, the 20 most frequently bought titles, and
+unit-price statistics per type. Filters on `order_date`.
+
+**Response:**
+```json
+{
+  "expensive": [
+    { "id": 101, "title": "Lightstick", "idol": "Member A", "type": "Goods", "order_date": "2026-01-05",
+      "event_date": null, "price_per_qty": 1800.0, "qty": 2, "line_total": 3600.0 }
+  ],
+  "frequent": [ { "title": "Cheki", "items": 40, "total_qty": 55, "total_price": 16500.0 } ],
+  "avg_price": [
+    { "type": "Cheki", "items": 40, "total_qty": 55, "avg_price": 300.0, "min_price": 250.0, "max_price": 500.0, "total_price": 16500.0 }
+  ]
+}
+```
+
+---
+
+### `report_seasonality` — GET
+
+Spending by day of week and by month of year, summed across all years. Filters on `order_date`.
+
+**Response:**
+```json
+{
+  "weekday": [ { "dow": 0, "items": 10, "total_qty": 14, "total_price": 4200.0 } ],
+  "month_of_year": [ { "moy": 1, "items": 8, "total_qty": 12, "total_price": 3600.0 } ]
+}
+```
+
+`dow`: `0` = Sunday … `6` = Saturday. `moy`: `1`–`12`.
+
+---
+
+### `report_inactive` — GET
+
+Every idol with at least one item, with the date of their last purchase and the number of
+days since. The client applies the inactivity threshold (30 / 90 / 180 / 365 days).
+
+**Date range:** only `date_to` is used. It is the "as of" date for `days_since`, and later
+orders are ignored. `date_from` is ignored on purpose, because it would hide the members
+who stopped buying before the range began.
+
+**Response:**
+```json
+{
+  "data": [
+    { "idol_id": 42, "idol": "Yuna", "display_hint": "ITZY", "display": "Yuna [ITZY]",
+      "items": 10, "total_qty": 15, "total_price": 4500.0, "last_order": "2025-08-01", "days_since": 109 }
+  ]
+}
+```
+
+---
+
 ## Idol Entities (`api.php`)
 
 ### `idol_entities_tree` — GET
@@ -694,7 +829,7 @@ Recurring monthly spending limits per scope. See the `budgets` table in [DATABAS
 
 Two modes:
 - **`?mode=defaults`** — recurring default definitions only (`period IS NULL`), for the Manage view. No spending fields.
-- **`?month=YYYY-MM`** (default) — **effective** budgets for the month: per scope, a month override wins over the recurring default. Enriched with spending and colour status. **`budget_progress`** returns this same payload (dashboard card / report tab).
+- **`?month=YYYY-MM`** (default) — **effective** budgets for the month: per scope, a month override wins over the recurring default. Enriched with spending and colour status. **`budget_progress`** returns this same payload (dashboard card).
 
 **Query:** `mode` (`defaults` | omitted) · `month` (optional `YYYY-MM`, defaults to current month)
 
@@ -743,6 +878,72 @@ Delete a budget. Deleting a month override reverts that month to the recurring d
 **POST Body:** `id` (int, required), `csrf_token`
 
 **Response:** `{ "success": true }`
+
+### `budget_progress` — GET
+
+Same payload as `budget_list?month=YYYY-MM` (effective budgets with spending + status).
+Used by the dashboard card.
+
+### `budget_matrix` — GET
+
+Scopes × Months grid used by the **Monthly** tab on `budget.php`. It returns budget
+**amounts only**, with no spending figures.
+
+**Query:** `from`, `to` (`YYYY-MM`; swapped if reversed; capped at 240 months)
+
+**Response:**
+```json
+{
+  "from": "2026-01", "to": "2026-12",
+  "months": ["2026-01", "2026-02", "…"],
+  "scopes": [
+    {
+      "scope_type": "member", "scope_ref_id": 42, "scope_ref_name": "Yuna",
+      "label": "Yuna", "display_hint": "ITZY",
+      "default": { "id": 6, "amount": 3000, "warn_pct": 80, "danger_pct": 100, "note": "" },
+      "cells": { "2026-03": { "override_id": 9, "amount": 5000, "warn_pct": 80, "danger_pct": 100, "note": "concert" } }
+    }
+  ]
+}
+```
+
+`default` is `null` when the scope has only overrides. `cells` holds only the overridden
+months. Every other month uses `default`.
+
+### `budget_analytics` — GET
+
+Spending against budget for one scope over several months. Powers the **Insights** tab.
+
+**Query:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `scope_type` | string | `overall` | `overall` / `type` / `group` / `company` / `member` |
+| `scope_ref_id` | int | — | Entity id (group/company/member) |
+| `scope_ref_name` | string | — | Type name (`scope_type='type'`) |
+| `months` | int | `12` | Window ending at the current month (1–36) |
+
+**Response:**
+```json
+{
+  "scope": { "scope_type": "overall", "scope_ref_id": null, "scope_ref_name": "", "label": "", "display_hint": "" },
+  "months": [
+    { "month": "2026-11", "budget": 12000, "spent": 9800, "pct": 81.7, "status": "near", "has_budget": true, "over": false }
+  ],
+  "scopes": [ { "scope_type": "overall", "scope_ref_id": null, "scope_ref_name": "", "label": "", "display_hint": "" } ],
+  "summary": {
+    "months_tracked": 12, "months_with_budget": 12, "total_spent": 98000, "avg_spent": 8166.7,
+    "avg_budget": 12000, "avg_pct": 68.1, "over_count": 1, "near_count": 3,
+    "max_spent": { "month": "2026-03", "amount": 15200 }
+  },
+  "recommendations": [ { "code": "over_frequent", "severity": "danger", "params": { "m": 3, "n": 12 } } ]
+}
+```
+
+`status` is `ok` | `near` | `over` | `none` (no budget that month). `scopes` lists every
+scope that has an active budget (for the selector). Recommendation `code`s include
+`no_budget`, `over_frequent`, `over_recent` and `projection`, plus trend and on-track codes.
+The client translates them.
 
 ---
 

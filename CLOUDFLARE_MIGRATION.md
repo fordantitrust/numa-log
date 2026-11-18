@@ -1,6 +1,9 @@
 # Cloudflare Serverless Migration Plan
 
 > แผนการ migrate **numa-log** จาก PHP + SQLite แบบ traditional hosting ไปเป็น serverless บน Cloudflare
+>
+> **สถานะ:** แผนสำรวจ (exploratory) — **ยังไม่ได้ลงมือ** ระบบปัจจุบัน (v1.13.0) ยังเป็น PHP + SQLite
+> ขอบเขตที่ต้อง port ณ ปัจจุบันใหญ่กว่าตอนเขียนแผน: schema **v13** (`items`, `idol_entities`, `idol_memberships`, `events`, `budgets`, `type_categories`, `item_presets`, `users`, `login_attempts`, `schema_meta`), หน้า `budget.php` / `events.php`, รายงาน 14 แท็บ, และ migration ใน `migrations/v5`–`v13`
 
 ---
 
@@ -85,7 +88,7 @@ const rows = result.results;
 
 **ขั้นตอน:**
 1. สร้าง D1: `wrangler d1 create numa-log-db`
-2. Export schema จาก `config.php` เป็น `.sql` migration file
+2. Export schema ปัจจุบัน (baseline ใน `config.php` + `migrations/v5`–`v13`) เป็น `.sql` migration file — ง่ายสุดคือ `sqlite3 database.sqlite .schema > 0001_init.sql` จาก DB ที่ migrate แล้ว
 3. รัน migration: `wrangler d1 execute numa-log-db --file=migrations/0001_init.sql`
 4. Bind D1 ใน `wrangler.toml`:
 ```toml

@@ -25,9 +25,23 @@ migrations/
 | Version | App version | Notes |
 |---------|-------------|-------|
 | 4       | v1.4.x      | Implicit baseline — assigned when `schema_meta` is first created on an existing v1.4 database |
-| 5       | v1.5.0      | Membership history + ID-based reference (see `v5_idol_refactor.php`) |
+| 5       | v1.5.0      | Membership history + ID-based reference (`v5_idol_refactor.php`) |
+| 6       | v1.8.0      | `budgets` table (`v6_budgets.php`) |
+| 7       | v1.8.0      | `budgets.period` — per-month overrides; existing rows become recurring defaults (`v7_budget_periods.php`) |
+| 8       | v1.9.7      | `events` table + `items.event_id` (`v8_events.php`) |
+| 9       | v1.9.9      | `events.end_date` — multi-day events (`v9_event_end_date.php`) |
+| 10      | v1.9.15     | `type_categories.is_ticket` + `events.is_free_entry` (`v10_ticket_tracking.php`) |
+| 11      | v1.9.16     | `events.is_not_attended` (`v11_event_not_attended.php`) |
+| 12      | v1.10.0     | `type_categories.exclude_from_reports` (`v12_exclude_from_reports.php`) |
+| 13      | v1.13.0     | `item_presets` table (`v13_item_presets.php`) — **current** |
 
-A fresh install starts at version 0; baseline tables are created by `initDB()`, then migrations from v1 onward run in order.
+A fresh install starts at version 0; baseline tables are created by `initDB()`, then migrations from v5 onward run in order.
+
+To check the schema version from the command line (e.g. `docker exec numa-log php migrate.php`):
+
+```bash
+php migrate.php
+```
 
 ## Safety guarantees
 
@@ -47,6 +61,6 @@ If a migration causes problems in production:
 
 1. Bump `DB_SCHEMA_VERSION` in `config.php`.
 2. Create `migrations/vN_<slug>.php` with a single entry point `runMigrationVN(PDO $pdo)`.
-3. Add the `if ($currentVer < N)` branch in `config.php` `initDB()`.
-4. Document the changes in `DATABASE_SCHEMA.md` and `CHANGELOG.md`.
+3. Add the `if ($currentVer < N)` branch in `config.php` `initDB()`. Also add `$currentVer = N-1;` to the end of the previous last branch. The last branch leaves it out, so the v13 branch needs it when you add v14.
+4. Document the changes in `DATABASE_SCHEMA.md`, `CHANGELOG.md`, this file's version table and `CLAUDE.md`.
 5. Add integration tests in `tests/run.php`.

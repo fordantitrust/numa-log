@@ -1,6 +1,8 @@
 # Numa Log
 
-Web-based application for managing idol merchandise purchase data. Built with PHP 8.2, SQLite, Bootstrap 5, and Chart.js.
+Web-based application for managing idol merchandise purchase data, with a bilingual (English / Thai) UI. Built with PHP 8.2, SQLite, Bootstrap 5, and Chart.js.
+
+**Current version:** v1.13.0 · **Database schema:** v13
 
 ## Getting Started
 
@@ -20,8 +22,8 @@ docker compose up -d
 - **Backend:** PHP 8.2, PDO/SQLite
 - **Frontend:** Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Chart.js 4.4.7
 - **Database:** SQLite with WAL mode
-- **Import:** PhpSpreadsheet (Composer)
-- **CI/CD:** GitHub Actions (Docker build)
+- **Excel import / export:** PhpSpreadsheet 5.10 (Composer)
+- **CI/CD:** GitHub Actions (Docker image published to `ghcr.io/fordantitrust/numa-log`)
 
 ## Features
 
@@ -32,22 +34,29 @@ docker compose up -d
 - Monthly spending trend (bar chart), Top members and Top groups lists
 - Type and Company breakdowns (doughnut charts)
 - **Period selector** — filter the whole dashboard by *All time*, *Last 12 months*, or a specific year (years populated from the data)
+- **Budget card** with this month's budget progress
 - Powered by a single `report_dashboard` API call; group/company aggregates reuse the membership-aware joins so numbers match the Report page
 
 ### Item Management (`items.php`)
 
 - Full CRUD for purchase items (Add, Edit, Clone, Delete)
-- **Multi-select filters** for Idol and Type — select multiple values with badge display and inline search
-- Sortable columns, pagination, text search, and date range filter
+- **Item presets** (v1.13.0): a Preset dropdown in the Add / Clone form fills in the type, the price and, if Title is empty, a title. The price stays editable and shows a "changed from preset" hint. Presets are hidden in Edit mode, and items keep their own snapshot, so editing a preset never changes past data.
+- **Multi-select filters** for Idol, Type and Event, with badge display and inline search
+- **Filter by** Order Date or Event Date. Click a date or badge in a row to add it to the filters.
+- Sortable columns, pagination (20 / 50 / 100 / 200 rows), text search, and date range filter
+- **Bulk actions** on ticked rows: **Assign to Event**, **Unassign** event, **Change Type**
 - Summary cards: total items, quantity, and spending (updates with active filters)
-- URL parameter pre-fill — `idol`, `date_from`, `date_to` applied automatically on load (used by report drill-downs)
+- URL parameter pre-fill — `idol`, `type` / `type[]`, `date_from`, `date_to` applied automatically on load (used by report drill-downs)
 - **Export to Excel** — export all filtered items to `.xlsx` with auto-sized columns and filename based on active date range
-- Searchable dropdown for Idol and Type fields in the Add/Edit form
+- Searchable dropdowns for Idol, Type and Event in the Add/Edit form. An ambiguous idol name asks you to choose the right member.
+- Dropdowns refresh automatically when idols, types, events or presets change in another tab
 - Mobile responsive: 2-per-row cards and filters, horizontal table scroll
 
 ### Reports (`report.php`)
 
-Heavy analytics tabs are lazy-loaded the first time they are opened.
+14 tabs, grouped into compact dropdowns (**Overview** · **Over Time** · **Breakdown** · **More**). Heavy analytics tabs are lazy-loaded the first time they are opened.
+
+**Date range** (v1.12.0): a period bar above the tabs offers *All time*, *Last 12 months*, any year or a custom range. Every tab follows it, and each browser remembers the choice. By Event and Event Summary filter by **event date overlap**. Inactive uses only the end date, as an "as of" date.
 
 | Tab | Description |
 |-----|-------------|
@@ -60,8 +69,9 @@ Heavy analytics tabs are lazy-loaded the first time they are opened.
 | **By Group** | Aggregated spending per group/unit, rolling up all member spending. Click to see member breakdown. |
 | **By Unit** | Spending rolled up to `unit`-category entities, including sub-unit / project memberships that By Group rolls into the parent. |
 | **By Company** | Aggregated spending per company with group sub-breakdown. Click to see groups under that company. |
-| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company) and **Monthly Breakdown** chart. Click any month row to view filtered items for that type and month. |
-| **By Event** | Spending per `event_date` plus order→event lead-time stats (avg / min / max) and a count of items with no event date. |
+| **By Type** | Ranking of item types by spending. Click any type to see member breakdown (member, group, company) and **Monthly Breakdown** chart. Click any month row to view filtered items for that type and month. **Combine types**: tick several types (e.g. Cheki + Pin Cheki) to view them together, with a per-type split and a stacked monthly chart. Excluded types are listed in a muted section underneath. |
+| **By Event** | Spending per **named event** (links to a pre-filtered Items list). Unlinked items are grouped by `event_date`. Also shows order→event lead-time stats (avg / min / max) and a count of items with no event date. |
+| **Event Summary** | One row per event: start–end range, duration in days, Upcoming / Ongoing / Past status, spend and average per event-day, with summary KPI cards. |
 | **Top Items** | The 20 most expensive single purchases, the 20 most frequently bought titles, and average / min / max unit price per type. |
 | **Inactive** | Members with no recent purchases, with a selectable threshold (30 / 90 / 180 / 365 days) and click-through to member detail. |
 
@@ -76,9 +86,30 @@ Heavy analytics tabs are lazy-loaded the first time they are opened.
 - Unmapped names panel — idol names in items not yet linked to any entity, with quick-add button
 - Re-seed button (admin only, requires `ALLOW_RESEED`)
 
+### Budgets (`budget.php`)
+
+- Monthly spending limits scoped **Overall**, **By Type**, **By Company**, **By Group** or **By Member**, each with its own yellow / red % thresholds. Budgets only warn with colour. They never block adding items.
+- A **recurring default** applies to every month, and a **per-month override** replaces it for a single month (with one-click reset)
+- **Insights**: spending against budget over 6 / 12 / 24 months, with KPI cards, a spent-vs-limit chart, a % used trend and automatic recommendations
+- **Progress**: a colour-coded progress bar per budget for the selected month
+- **Monthly**: a Scopes × Months grid for a whole year, with Overall / Allocated / Unallocated totals in the footer
+- **Manage**: create, edit and delete recurring defaults
+- Group, company and member budgets use the same membership-aware joins as the reports
+
+### Events (`events.php`)
+
+- Named events (concerts, fan meets, …) with optional **end date** for multi-day events
+- Items link to an event through a searchable Event field that auto-fills Event Date
+- **Auto-assign** links unlinked items whose event date falls in the event's range. **Bulk assign / unassign** works from the Items page.
+- **Ticket detection**: each event shows *Ticket recorded*, *No ticket*, *Free entry* or *Did not attend*. Turn it on by flagging a type as **Is Ticket Type**.
+- Deleting an event only unlinks its items. The items themselves are kept.
+
 ### Type Management (`types.php`)
 
 - CRUD for type categories with description and sort order
+- **Is Ticket Type** flag (drives the Events page's ticket detection)
+- **Exclude from reports** flag (v1.10.0): leaves a type's items out of the dashboard, reports, budgets, item list and export (e.g. travel, gifts, resale). The excluded amount is always shown, and an **Include excluded types** toggle brings it back. If you rename a flagged type, the page offers to move its items to the new name.
+- **Item Presets** card (v1.13.0): button label, type, price and optional title for the Add Item form
 - Usage stats (rows, quantity, spending)
 - Unmapped type names panel with quick-add button
 - **Members by Type** accordion — shows which members, groups, and companies appear under each type
@@ -101,7 +132,9 @@ Heavy analytics tabs are lazy-loaded the first time they are opened.
 | Export Excel | O | O |
 | View reports | O | O |
 | Manage idols (add/edit/delete) | O | O |
-| Manage types (add/edit/delete) | O | O |
+| Manage types & item presets | O | O |
+| Manage events | O | O |
+| Manage budgets | O | O |
 | Re-seed idol data | O | X |
 | Import Excel | O | X |
 | Backup & Restore | O | X |
@@ -133,7 +166,7 @@ Heavy analytics tabs are lazy-loaded the first time they are opened.
 - **App-wide English / Thai** with an EN/TH toggle in every page's navbar
 - Default language is **English**; the choice is remembered across pages and sessions (session + 1-year cookie)
 - Translation tables in `lang/en.php` / `lang/th.php` (served to the browser as `window.I18N`, consumed by a shared `t()` helper in `assets/i18n.js`); missing keys fall back to English
-- Covers Dashboard, Items, Report (all tabs, charts, month/weekday names), Idols, Types, Users, Backup, Login, and the password-change screen
+- Covers Dashboard, Items, Report (all tabs, charts, month/weekday names), Budgets, Events, Idols, Types, Users, Backup, Login, and the password-change screen
 - Currency stays as `฿` with `th-TH` grouping in both languages
 
 ## Configuration
@@ -167,6 +200,14 @@ These are disabled by default to prevent accidental data loss:
 define('ALLOW_IMPORT', true);   // Shows Import Excel button
 define('ALLOW_RESEED', true);   // Shows Re-seed button on Idols page
 ```
+
+## Tests
+
+```bash
+php tests/run.php
+```
+
+This runs the integration suite against an isolated temporary database. It needs PHP CLI with the curl extension.
 
 ## Project Structure
 

@@ -1,7 +1,14 @@
 # แผน: ระบบงบประมาณ & เป้าหมายการใช้จ่าย (Budget / Spending Goals) — v1.8.0
 
-> สถานะ: รออนุมัติ / เริ่มลงมือ
+> สถานะ: **✅ Implemented แล้วใน v1.8.0** (schema v6 + v7) — เอกสารนี้เก็บไว้เป็นบันทึกการออกแบบ
 > เป้าหมายเวอร์ชัน: **1.8.0** (เพิ่ม schema v6)
+>
+> **ต่างจากแผนเดิม (ณ v1.13.0):**
+> - เพิ่ม `budgets.period` (schema v7) — งบ recurring default + override รายเดือน
+> - หน้า `budget.php` มี 4 แท็บ: **Insights** (v1.9.0) · **Progress** · **Monthly** grid (v1.9.6) · **Manage**
+> - **ไม่มีแท็บ Budget ในหน้ารายงานแล้ว** (ถอดออกเพราะซ้ำกับ `budget.php`) — รายงานมี 14 แท็บ
+> - API เพิ่ม `budget_matrix` และ `budget_analytics` (ดู [API_ENDPOINTS.md](API_ENDPOINTS.md))
+> - งบ `scope_type='type'` นับยอดเต็มแม้ type ถูกตั้ง Exclude from reports (v1.10.0)
 
 ## สรุปดีไซน์ (จากที่ยืนยันกับผู้ใช้)
 

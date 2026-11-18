@@ -1,6 +1,9 @@
-# Dockerfile — v1.4.0
+# Dockerfile — Security Hardening
 
-> สรุปการปรับปรุง Dockerfile ตามแนวทาง Docker Security Best Practices
+> สรุปการปรับปรุง Dockerfile ตามแนวทาง Docker Security Best Practices (เริ่มใน v1.3.10, timezone เพิ่มใน v1.3.11)
+> ยังใช้ได้กับเวอร์ชันปัจจุบัน (v1.13.0) — base image `php:8.2-apache`
+>
+> Image สำเร็จรูปถูก build โดย GitHub Actions ทุกครั้งที่ push ขึ้น `master` และ publish ที่ `ghcr.io/fordantitrust/numa-log:latest` (ดู [INSTALL.md](INSTALL.md))
 
 ---
 
@@ -70,6 +73,7 @@ Runtime library names เปลี่ยนตาม Debian release:
 | `upload_max_filesize` | `50M` | คงเดิม |
 | `post_max_size` | `50M` | คงเดิม |
 | `memory_limit` | `256M` | คงเดิม |
+| `date.timezone` | `Asia/Bangkok` | ให้วันที่/เวลาฝั่ง PHP ตรงกับ OS (`/etc/localtime` ก็ตั้งเป็น Asia/Bangkok) |
 
 ---
 
@@ -144,15 +148,19 @@ vendor/           # ติดตั้งใหม่ใน builder stage
 
 ```bash
 # Build
-docker build -t numa-log:1.3.10 .
+docker build -t numa-log:1.13.0 .
 
 # Run (mount data volume สำหรับ SQLite persistence)
 docker run -d \
-  -p 80:80 \
+  -p 8080:80 \
   -v numa-log-data:/var/www/html/data \
+  -e TZ=Asia/Bangkok \
   --name numa-log \
-  numa-log:1.3.10
+  numa-log:1.13.0
 
 # ตรวจสอบ health status
 docker inspect --format='{{.State.Health.Status}}' numa-log
+
+# ตรวจสอบ schema version (migration รันอัตโนมัติตอน request แรก)
+docker exec numa-log php migrate.php
 ```

@@ -1,6 +1,8 @@
 # Numa Log - How to Use
 
-Numa Log is a web application for recording and analyzing idol merchandise purchase data. Built with PHP 8.2, SQLite, Bootstrap 5, and Chart.js.
+Numa Log is a web application for recording and analyzing idol merchandise purchase data. Built with PHP 8.2, SQLite, Bootstrap 5, and Chart.js. The UI is available in **English** and **Thai** — toggle EN / TH in the top-right corner of any page (the choice is remembered).
+
+> This guide covers **v1.13.0**. The same content is available in the app under **Help**.
 
 ---
 
@@ -8,14 +10,17 @@ Numa Log is a web application for recording and analyzing idol merchandise purch
 
 1. [Installation](#1-installation)
 2. [Login](#2-login)
-3. [Item Management](#3-item-management-indexphp)
-4. [Reports](#4-reports-reportphp)
-5. [Idol Management](#5-idol-management-idolsphp)
-6. [Type Management](#6-type-management-typesphp)
-7. [User Management](#7-user-management-usersphp)
-8. [Backup & Restore](#8-backup--restore-backupphp)
-9. [Excel Import & Export](#9-excel-import--export)
-10. [Configuration](#10-configuration)
+3. [Dashboard](#3-dashboard-indexphp)
+4. [Item Management](#4-item-management-itemsphp)
+5. [Reports](#5-reports-reportphp)
+6. [Budgets](#6-budgets-budgetphp)
+7. [Events](#7-events-eventsphp)
+8. [Idol Management](#8-idol-management-idolsphp)
+9. [Type Management & Item Presets](#9-type-management--item-presets-typesphp)
+10. [User Management](#10-user-management-usersphp)
+11. [Backup & Restore](#11-backup--restore-backupphp)
+12. [Excel Import & Export](#12-excel-import--export)
+13. [Configuration](#13-configuration)
 
 ---
 
@@ -30,6 +35,8 @@ docker compose up -d
 # Open browser at
 http://localhost:8080
 ```
+
+A pre-built image is also published at `ghcr.io/fordantitrust/numa-log:latest` — see [INSTALL.md](INSTALL.md).
 
 **Change Port:** Edit `docker-compose.yml` and change `ports: "8080:80"` to your desired port.
 
@@ -60,7 +67,7 @@ composer install
 http://localhost/numa-log/
 ```
 
-The SQLite database will be created automatically on first load.
+The SQLite database is created automatically on first load, and schema upgrades are applied automatically after you update the code (a backup is taken first).
 
 ---
 
@@ -72,7 +79,7 @@ The SQLite database will be created automatically on first load.
 |----------|----------|------|
 | `admin` | `admin` | Admin |
 
-> **Important:** When logging in with the default `admin` password, the system will immediately force you to change it before accessing the application (new password must be at least 12 characters).
+> **Important:** When logging in with the default `admin` password, the system will immediately force you to change it before accessing the application (new password must be at least 12 characters). After login you land on the **Dashboard**.
 
 > **Brute-force protection:** After 5 failed login attempts within 15 minutes, the IP address is temporarily blocked for 15 minutes.
 
@@ -81,9 +88,11 @@ The SQLite database will be created automatically on first load.
 | Feature | Admin | User |
 |---------|:-----:|:----:|
 | View/Add/Edit/Delete items | ✅ | ✅ |
-| View reports | ✅ | ✅ |
+| View dashboard & reports | ✅ | ✅ |
+| Manage budgets | ✅ | ✅ |
+| Manage events | ✅ | ✅ |
 | Manage idol data | ✅ | ✅ |
-| Manage item types | ✅ | ✅ |
+| Manage item types & presets | ✅ | ✅ |
 | Change own password | ✅ | ✅ |
 | Export Excel data | ✅ | ✅ |
 | Import Excel data | ✅ | ❌ |
@@ -93,109 +102,175 @@ The SQLite database will be created automatically on first load.
 
 ---
 
-## 3. Item Management (index.php)
+## 3. Dashboard (index.php)
 
-The main page for recording all idol merchandise purchases.
+The landing page after login — an at-a-glance summary:
+
+- **KPI cards** — total spent, items / quantity, average per month, and the latest month with its month-over-month change
+- **Monthly trend** bar chart, **Top members** and **Top groups** lists
+- **Type** and **Company** doughnut charts
+- **Budget card** — this month's budget progress
+- **Period selector** — *All time*, *Last 12 months*, or a specific year
+
+If any type is marked *Exclude from reports*, an "excl. ฿X" note under the total shows how much was left out.
+
+---
+
+## 4. Item Management (items.php)
+
+The page for recording all idol merchandise purchases.
 
 ### Add New Item
 
-1. Click the **"Add Item"** button at the top
-2. Fill in the form:
+1. Click **"Add Item"** in the Filters card header
+2. (Optional) pick a **Preset** at the top of the form — it fills in the type and price (and the title, if Title is still empty). See [Item Presets](#item-presets)
+3. Fill in the form:
    - **Order Date** - Purchase date
+   - **Event** - Pick a named event (searchable) — auto-fills Event Date. See [Events](#7-events-eventsphp)
    - **Event Date** - Event date (if applicable)
    - **Title** - Item name
    - **Idol** - Idol/group name (type to search from dropdown)
    - **Type** - Item type (type to search from dropdown)
    - **Price per Qty** - Price per unit
    - **Qty** - Quantity
-3. Click **"Save"**
+4. Click **"Save"**
 
-### Edit Item
+> The Idol and Type fields accept a brand-new name too. If the idol name matches **more than one** member (e.g. "Yuna" in ITZY and AKB48), the form shows candidate buttons — pick the right one and the save retries automatically.
 
-1. Click the **edit** button (pencil icon) on the item row
-2. Modify the data in the form
-3. Click **"Save"**
+### Edit / Clone / Delete
 
-### Clone (Duplicate) Item
+- **Edit** — click the pencil icon, change the data, click **Save** (the Preset dropdown is hidden when editing)
+- **Clone** — click the copy icon to duplicate an item (including its linked event). If a "From" date filter is active, the new item's date is pre-filled from it
+- **Delete** — click the trash icon and confirm
 
-1. Click the **Clone** button (copy icon) on the item row
-2. The system will create a new item with the same data
-3. Modify as needed, then click **"Save"**
+### Bulk Actions
 
-### Delete Item
+Tick the checkbox on one or more rows (or the header checkbox for the whole page) and a bulk action bar appears:
 
-1. Click the **delete** button (trash icon) on the item row
-2. Confirm the deletion
+| Action | Description |
+|--------|-------------|
+| **Assign to Event** | Link every selected item to one named event |
+| **Unassign** | Clear the event link (each item keeps its own Event Date) |
+| **Change Type** | Set the same type on every selected item |
+
+> If you change items to a type marked *Exclude from reports*, those rows leave the list straight away — the page tells you and offers to switch on **Include excluded types**.
 
 ### Filtering and Searching
 
-Use the filters above the table to find items:
-
 | Filter | Description |
 |--------|-------------|
-| **Idol** | Filter by idol/group name — **supports multi-select** |
-| **Type** | Filter by item type — **supports multi-select** |
-| **Date Range** | Filter by date range |
+| **Idol** | Filter by one or more idols/groups |
+| **Type** | Filter by one or more item types |
+| **Event** | Filter by one or more events |
+| **Filter by** | Whether the date range filters by Order Date or Event Date |
+| **From / To** | Date range |
 | **Search** | Search by item title |
 
-> **Idol** and **Type** support multi-select: click to open the dropdown → type to search → select multiple values at once → selected values appear as badges (click × to remove individual selections).
+- Multi-select filters: open the dropdown → type to search → select several values → they appear as badges (× to remove)
+- **Click a row to filter quickly** — click an Order/Event Date to set "From" to that date; click an Idol, Type or Event badge to add it to the matching filter
+- **Export** downloads the currently filtered data as Excel; **Clear** resets all filters
+- **Include excluded types** toggle brings back types marked *Exclude from reports*
+- Dropdowns refresh automatically when idols, types, events or presets are changed in another tab
 
-The filter row also has an **Export** button (green) to download the currently filtered data as Excel, and a **Clear** button to reset all filters.
+### Sorting & Paging
 
-### Sorting
-
-- Click on any column header to sort (click again to toggle ascending/descending)
+- Click any column header to sort (click again to toggle ascending/descending)
+- Page-size selector at the bottom-left: 20 (default) / 50 / 100 / 200
 
 ### Summary Cards
 
-The top of the table displays a summary:
-- **Total Items** - Number of items
-- **Total Quantity** - Total quantity
-- **Total Spending** - Total amount spent
+Total Items, Total Quantity and Total Spending — updated with the active filters.
 
 ---
 
-## 4. Reports (report.php)
+## 5. Reports (report.php)
 
-The reports page has 5 tabs, each showing data from a different perspective:
+The reports page has **14 tabs**, grouped into dropdowns (**Overview** · **Over Time** · **Breakdown** · **More**). Data-heavy tabs load the first time you open them.
 
-### 4.1 Monthly
+### Date Range
 
-- Bar chart (spending) + line chart (quantity) by month
-- **Click on any month** to drill down to daily details, including:
-  - **Type Breakdown** — "Top 10 by Type" doughnut chart and full table showing spending share by item type for that month
-  - **Idol Breakdown** — "Top 10 by Idol" doughnut chart (top 10 + Others) and full table showing spending share by idol for that month (click any idol name to jump to their detail view)
-- **Click on any day in the Daily Breakdown table** to go to the Items page filtered to that specific day
+The **Period** bar above the tabs lets you view *All time*, *Last 12 months*, a year, or a custom range. Every tab follows it (by order date), and the choice is remembered in your browser. Two exceptions:
 
-### 4.2 By Member
+- **By Event / Event Summary** filter by **event date** — events overlapping the range, with all items linked to them, even ones ordered before the range
+- **Inactive** uses only the range's end date, as an "as of" date
 
-- Ranking of idol members by spending
-- **Click on a member name** for details:
-  - Breakdown by item type
-  - Monthly spending chart
-- **Click on any month in the Monthly Breakdown table** to go to the Items page filtered to that member and month
+### Tabs
 
-### 4.3 By Group
+| Tab | Group | What it shows |
+|-----|-------|---------------|
+| **Overview** | — | KPI cards, monthly trend, Top 5 members, highlights, Type / Company doughnuts |
+| **Monthly** | Over Time | Spending (bars) + quantity (line) by month. Click a month to drill down by day, with **Type** and **Idol** breakdowns; click a day to open the Items page filtered to it |
+| **Trends** | Over Time | Cumulative spending, month-over-month growth bars, and a current-month forecast |
+| **Seasonality** | Over Time | Spending by day of week and by month of year |
+| **By Member** | Breakdown | Members ranked by spending. Click a name for type breakdown + monthly chart; click a month to open the filtered Items page |
+| **Compare** | Breakdown | Two members side by side: summary cards, monthly line, by-type bars |
+| **By Group** | Breakdown | Spending per group/unit (primary memberships). Click to see members |
+| **By Unit** | Breakdown | Spending rolled up to unit entities, including sub-unit / project memberships |
+| **By Company** | Breakdown | Spending per company. Click to see its groups |
+| **By Type** | Breakdown | Types ranked by spending. Click a type for its member / group / company breakdown and monthly chart. **Combine types**: tick two or more types and press *View N types combined* |
+| **By Event** | More | Spending per named event (links to the filtered Items list), unlinked items grouped by Event Date, and order→event lead time |
+| **Event Summary** | More | Each event's date range, duration, Upcoming / Ongoing / Past status, spend and average per event-day |
+| **Top Items** | More | Top 20 most expensive purchases, top 20 most frequent titles, avg / min / max unit price per type |
+| **Inactive** | More | Members with no recent purchases (30 / 90 / 180 / 365 days) |
 
-- Aggregated spending for each group/unit
-- **Click to expand** and see member breakdown
-
-### 4.4 By Company
-
-- Aggregated spending for each company
-- **Click to expand** and see groups under the company
-
-### 4.5 By Type
-
-- Ranking of item types by spending
-- Shows item count and quantity for each type
-- **Click on a type name** to see details:
-  - Members, groups, and companies that purchased that type, with statistics
-  - **Monthly Breakdown** — Bar chart and table showing monthly spending for that type. Click any month to go to the Items page filtered by type and month
+> If a type is marked *Exclude from reports*, a banner shows the excluded amount, and **Include excluded types** brings it back.
 
 ---
 
-## 5. Idol Management (idols.php)
+## 6. Budgets (budget.php)
+
+Set monthly spending limits and track spending against them. Budgets are a **visual warning only** — they never block adding items.
+
+### Scopes & Colours
+
+Each budget is scoped **Overall**, **By Type**, **By Company**, **By Group** or **By Member**, with a limit (฿) and two thresholds:
+
+- 🟢 Green below the yellow %
+- 🟡 Yellow from the yellow % up to the red %
+- 🔴 Red at or above the red % (over budget)
+
+### Tabs
+
+| Tab | Description |
+|-----|-------------|
+| **Insights** | Spending vs. budget over the last 6 / 12 / 24 months for one scope: KPI cards, spent-vs-limit chart, % used trend, and automatic recommendations |
+| **Progress** | A progress bar for every budget in the selected month. Override a single month, or reset it to the recurring default |
+| **Monthly Budgets** | A Scopes × Months grid for a whole year. Click the Default cell to edit the recurring budget, or a month cell to override it. Footer rows show Overall / Allocated / Unallocated |
+| **Manage Budgets** | Create, edit and delete recurring defaults |
+
+> A **Default** budget applies to every month; a **Custom** month override replaces it for that month only. Group / Company / Member budgets use the same membership-aware rules as the reports. A budget pointed at an excluded type still counts that type in full.
+
+---
+
+## 7. Events (events.php)
+
+Name real events (concerts, fan meets, fan signs…) and link items to them.
+
+### Create an Event
+
+Click **Add Event** and enter:
+
+- **Event Name** — e.g. "TWICE 5th World Tour Bangkok"
+- **Start Date / End Date** — leave End Date empty for a single-day event
+- **Description** — optional
+- **Free entry** / **Did not attend** — optional flags for ticket detection
+
+### Link Items
+
+- **In the item form** — pick the event in the searchable **Event** field (auto-fills Event Date)
+- **Auto-assign** — each event row shows how many unlinked items have an Event Date inside its range; one click links them all
+- **Bulk assign** — on the Items page, tick items and click **Assign to Event**
+- **Unassign** — the ✕ button next to the Event field, or **Unassign** in the bulk bar
+
+### Ticket Detection
+
+Each event shows a badge: **Ticket recorded**, **No ticket**, **Free entry** or **Did not attend**. This needs at least one type marked **Is Ticket Type** (see [Type Management](#9-type-management--item-presets-typesphp)).
+
+> Deleting an event only unlinks its items — it never deletes them.
+
+---
+
+## 8. Idol Management (idols.php)
 
 Manage the hierarchical structure of idols: **Company > Group/Unit > Member**
 
@@ -203,21 +278,21 @@ Manage the hierarchical structure of idols: **Company > Group/Unit > Member**
 
 1. Click the **"Add Entity"** button
 2. Fill in the details:
-   - **Name** — Entity name (duplicates are allowed since v1.5; see Display Hint below)
-   - **Category** — Type (`company`, `group`, `unit`, `member`)
+   - **Name** — Entity name (duplicates are allowed; see Display Hint below)
+   - **Category** — `company`, `group`, `unit`, `member`
    - **Parent** — Parent entity (default group for a member)
-   - **Display Hint** — Optional short label rendered next to the name to disambiguate same-name members (e.g. "ITZY", "AKB48 Team A"). The form auto-suggests one from the parent group when it detects a name collision.
+   - **Display Hint** — Optional short label to tell same-name members apart (e.g. "ITZY", "AKB48 Team A"). Auto-suggested from the parent group when a name collision is detected
    - **Sort Order** — Display order
-3. Click **"Save"** — for member entities, a default primary membership row is automatically created from the parent.
+3. Click **"Save"** — for member entities, a default primary membership is created from the parent
 
-### Memberships (v1.5+)
+### Memberships
 
-For each member entity, you can track which group(s) they belong to over time. Open the member's edit modal to see the **Memberships** section:
+Open a member's edit form to see the **Memberships** section:
 
-- **Add membership** — link the member to another group with optional start/end dates.
-- **Move to new group** — shortcut that closes the current open membership the day before `move_date` and starts a new one. Items purchased before the move stay attributed to the old group; items purchased after roll up under the new group.
-- **Primary vs. sub-unit** — `primary` memberships count in the By-Group / By-Company reports; non-primary ones are shown only in group drill-down (sub-unit list).
-- **Overlap warnings** — if two `primary` periods overlap for the same member, the save still succeeds but a warning is surfaced.
+- **Add membership** — link the member to another group with optional start/end dates
+- **Move to new group** — closes the current membership the day before the move date and starts a new one. Items bought before the move stay with the old group
+- **Primary vs. sub-unit** — primary memberships count in By-Group / By-Company reports; sub-unit ones show only in the drill-down
+- **Overlap warnings** — overlapping primary periods are saved but warned
 
 ### Hierarchy Structure
 
@@ -229,116 +304,91 @@ Company
 
 ### Unmapped Names
 
-- The system detects idol names in items that haven't been added to `idol_entities`
-- Displayed as a list with a **Quick Add** button for fast entry
+Idol names used in items but not yet in the tree are listed with a **Quick Add** button. After you create the entity, matching items are linked automatically.
 
-### Ambiguous Mappings (v1.5+)
+### Ambiguous Mappings
 
-When an item's idol name matches **more than one** member entity, the item is left unmapped and shown in the **Ambiguous Mappings** panel. Click **Resolve Conflicts** to bulk-remap each name to the correct entity.
+Items whose idol name matches **more than one** member are listed in the **Ambiguous Mappings** panel (with a banner on the Items page). Click **Resolve Conflicts** to bulk-remap each name to the correct entity.
 
 ### Statistics
 
-Each entity shows:
-- Number of items
-- Total spending
-- 🔄 icon if the member has more than one membership row
+Each entity shows its item count and total spending; 🔄 marks members with more than one membership; members with a Display Hint render as `Name [hint]`.
 
 ---
 
-## 6. Type Management (types.php)
+## 9. Type Management & Item Presets (types.php)
 
 ### Add Item Type
 
 1. Click the **"Add Type"** button
 2. Fill in the details:
-   - **Name** - Type name (e.g., Photocard, T-Shirt, Lightstick)
+   - **Name** - Type name (e.g., Photocard, Cheki, Lightstick)
    - **Description** - Description
    - **Sort Order** - Display order
+   - **Is Ticket Type** - items of this type count as an event ticket
+   - **Exclude from reports** - leave this type out of normal totals
 3. Click **"Save"**
 
-### Usage Statistics
+### Exclude from Reports
 
-Each type shows:
-- Number of rows using this type
-- Total quantity
-- Total spending
+For spending you want on record but not mixed in with your merch — travel, gifts for other people, items to resell. Items of a flagged type are left out of the dashboard, all report tabs, budgets, the item list and Excel export.
 
-### Unmapped Type Names
+- Nothing is hidden silently — the excluded amount is always shown, and every page has an **Include excluded types** toggle
+- Exceptions: a budget pointed directly at the type counts it in full, and the Events page still counts it for ticket detection
+- **Renaming a type** leaves existing items on the old name (so they stop being excluded). Numa Log detects this and offers to update them
 
-- The system detects type names in items that haven't been added to type_categories
-- Displayed as a list with a **Quick Add** button
+### Item Presets
 
-### Members by Type
+For things you buy repeatedly at the same price (e.g. *Cheki ฿300*, *Deco Cheki* → type Pin Cheki ฿500). In the **Item Presets** card, add a button label, a type, a price and an optional title.
 
-The bottom of the Types page includes a **Members by Type** accordion:
-- Expand each type to see which members purchased items of that type
-- Shows the group/unit and company for each member
-- Displays statistics: item count, quantity, and total spending
+- The Add Item / Clone form has a **Preset** dropdown — it fills type and price, and the title only if Title is empty
+- The price stays editable; a "changed from preset" note appears when it differs
+- Items are not linked to presets — editing or deleting a preset never changes saved items or past reports
+
+### Usage Statistics, Unmapped Names, Members by Type
+
+- Each type shows row count, total quantity and total spending
+- Type names used in items but not yet created are listed with **Quick Add**
+- The **Members by Type** accordion shows which members, groups and companies bought each type
 
 ---
 
-## 7. User Management (users.php)
+## 10. User Management (users.php)
 
 > Admin only (except changing own password)
 
 ### Create New User
 
 1. Click the **"Add User"** button
-2. Fill in the details:
-   - **Username** - Login username
-   - **Password** - Password (minimum **12 characters**)
-   - **Display Name** - Display name
-   - **Role** - Permission level (`admin` or `user`)
+2. Fill in **Username**, **Password** (minimum **12 characters**), **Display Name** and **Role** (`admin` or `user`)
 3. Click **"Save"**
 
 ### Change Password
 
-- All users can change their own password
-- Click the **"Change Password"** button next to your name
-- New password must be at least **12 characters**
+All users can change their own password with the **"Change Password"** button. The new password must be at least **12 characters**.
 
 ---
 
-## 8. Backup & Restore (backup.php)
+## 11. Backup & Restore (backup.php)
 
 > Admin only
 
-### Create Backup
+- **Create Backup** — optionally enter a label, then click **"Create Backup"**
+- **Restore** — select a backup, click **"Restore"** and confirm (an automatic backup is created first)
+- **Download / Upload** — move backup files to and from your computer (e.g. to migrate to another machine)
+- **Delete** — remove backups you no longer need
 
-1. Go to the **Backup** page
-2. Enter a label name for the backup (optional)
-3. Click **"Create Backup"**
-
-### Restore Data
-
-1. Select the backup to restore from
-2. Click **"Restore"**
-3. Confirm the restoration
-
-> The system automatically creates a backup before every restore to prevent data loss.
-
-### Download / Upload Backup
-
-- **Download** - Download a backup file to your computer
-- **Upload** - Upload a previously downloaded backup file back to the system
-
-### Delete Backup
-
-- Click **"Delete"** on the backup you want to remove
+> Before each schema upgrade, the system also writes a `pre-v{N}-…` snapshot to the backups folder.
 
 ---
 
-## 9. Excel Import & Export
+## 12. Excel Import & Export
 
 ### Export Excel
 
-Export all items matching the current filters (or all items if no filter is applied).
-
-1. Apply filters on the Items page if you want to export a specific subset
-2. Click the **"Export Excel"** button in the navbar
-3. The `.xlsx` file will download immediately
-
-Exported column format:
+1. Apply filters on the Items page if you want a specific subset
+2. Click **"Export"** in the Filters card header
+3. The `.xlsx` file downloads immediately (filename reflects the active date range)
 
 | Column | Field |
 |--------|-------|
@@ -351,34 +401,27 @@ Exported column format:
 | G | Qty |
 | H | Price Total (F × G) |
 
-> Export is available to all users (Admin and User).
-
----
+> Export is available to all users. Excluded types are left out unless **Include excluded types** is on or you filtered by that type.
 
 ### Import Excel
 
 > Admin only | Must be enabled in config first
 
-### Enable Import
-
-Edit `config.php`:
+Enable in `config.php`:
 
 ```php
 define('ALLOW_IMPORT', true);
 ```
 
-### How to Import
-
 1. Prepare an `.xlsx` file with columns: Order Date, Event Date, Title, Idol, Type, Price per Qty, Qty
-2. Click the **"Import Excel"** button on the Items page
-3. Select the `.xlsx` file
-4. Confirm the import
+2. Click **"Import Excel"** on the Items page
+3. Select the file and confirm
 
 > **Warning:** Importing will **delete all existing data** before importing new data. Always create a backup first!
 
 ---
 
-## 10. Configuration
+## 13. Configuration
 
 All settings are in `config.php`:
 
@@ -411,6 +454,6 @@ define('ALLOW_RESEED', true);   // Show Re-seed button on Idols page
 | Backend | PHP 8.2, PDO/SQLite |
 | Frontend | Bootstrap 5.3.3, Bootstrap Icons 1.11.3 |
 | Charts | Chart.js 4.4.7 |
-| Excel Import / Export | PhpSpreadsheet |
-| Database | SQLite (WAL mode) |
+| Excel Import / Export | PhpSpreadsheet 5.10 |
+| Database | SQLite (WAL mode), schema v13 |
 | Container | Docker & Docker Compose |

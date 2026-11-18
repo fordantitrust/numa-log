@@ -195,7 +195,7 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 |----------|----------|-------|
 | `admin`  | `admin`  | Admin |
 
-> **Important:** Change the default password after first login via the Users page.
+> **Important:** While the password is still the default `admin`, every login redirects to a forced password-change screen. The new password needs at least 12 characters. After 5 failed logins, an IP address is blocked for 15 minutes.
 
 ---
 
@@ -205,7 +205,14 @@ The SQLite database (`database.sqlite`) and all tables will be created automatic
 
 > **Always create a backup before upgrading.** Go to the **Backup** page and click **Create Backup**, or use the Docker/file copy method below.
 
-Database schema changes (new tables, columns, indexes) are applied automatically via `IF NOT EXISTS` statements on first page load — no manual migration needed.
+Database schema changes are applied automatically on the first page load after an upgrade, so you never run a migration by hand. Each pending migration in `migrations/` runs inside a transaction. Before it runs, a snapshot is written to `data/backups/pre-v{N}-{timestamp}.sqlite` (or `backups/` on a manual install). The current schema version is **v13**. See [migrations/README.md](migrations/README.md).
+
+To check the schema version from the command line:
+
+```bash
+php migrate.php                         # manual install
+docker exec numa-log php migrate.php    # Docker
+```
 
 ---
 
@@ -265,6 +272,19 @@ If you placed the project under XAMPP's `htdocs`, just refresh the browser — s
 
 | Upgrading to | Notes |
 |---|---|
+| **v1.13.0** | Schema **v13** (auto): new `item_presets` table. No manual steps. |
+| **v1.12.1** | Dependency update only (`phpoffice/phpspreadsheet` 5.10.0). Run `composer install` (manual) or rebuild/pull the image. |
+| **v1.12.0** | No schema change. The report date range is stored in the browser, so there is nothing to migrate. |
+| **v1.11.0** | No schema change. |
+| **v1.10.0** | Schema **v12** (auto): `type_categories.exclude_from_reports`. Existing types default to *not excluded*, so totals are unchanged until you flag a type. |
+| **v1.9.18** | Composer platform pinned to PHP 8.2. On a manual install, run `composer install` again. |
+| **v1.9.16** | Schema **v11** (auto): `events.is_not_attended`. |
+| **v1.9.15** | Schema **v10** (auto): `type_categories.is_ticket` + `events.is_free_entry`. Flag at least one type as **Is Ticket Type** to turn on ticket detection. |
+| **v1.9.9** | Schema **v9** (auto): `events.end_date`. Existing events stay single-day. |
+| **v1.9.7** | Schema **v8** (auto): `events` table + `items.event_id`. Use **Auto-assign** on the Events page to link old items. |
+| **v1.8.0** | Schema **v6 + v7** (auto): `budgets` table with per-month `period` overrides. |
+| **v1.6.0** | `index.php` is now the Dashboard and the item list moved to `items.php`. Update any bookmarks. |
+| **v1.5.0** | Schema **v5** (auto): membership history + ID-based idol references. Ambiguous idol names show up in the **Ambiguous Mappings** panel on the Idols page, where you can resolve them. |
 | **v1.4.0** | No manual steps required. JavaScript-only formatting changes; no schema changes. All currency amounts now display with 2 decimal places. |
 | **v1.3.11** | No manual steps required. Timezone fix only; no schema changes. Rebuild Docker image with `docker compose up -d --build`. |
 | **v1.3.10** | No manual steps required. Docker-only changes; no schema or application code changes. Rebuild image with `docker build -t numa-log:1.3.10 .` |
