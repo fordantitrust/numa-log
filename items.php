@@ -307,6 +307,10 @@ require __DIR__ . '/navbar.php';
             <div class="modal-body">
                 <form id="itemForm">
                     <input type="hidden" id="itemId">
+                    <div id="presetBar" class="d-none align-items-center gap-2 mb-2">
+                        <label class="form-label small mb-0 text-nowrap" for="presetSelect"><i class="bi bi-lightning-charge"></i> <?= t('presets.quick') ?></label>
+                        <select class="form-select form-select-sm" id="presetSelect"></select>
+                    </div>
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label small"><?= t('items.order_date') ?></label>
@@ -348,6 +352,7 @@ require __DIR__ . '/navbar.php';
                         <div class="col-6">
                             <label class="form-label small"><?= t('items.price_per_qty_label') ?></label>
                             <input type="number" class="form-control form-control-sm" id="itemPrice" min="0" step="0.01" required>
+                            <div class="form-text small d-none" id="itemPresetHint"></div>
                         </div>
                         <div class="col-6">
                             <label class="form-label small"><?= t('common.qty') ?></label>
@@ -474,6 +479,8 @@ let currentPage = 1;
 let debounceTimer = null;
 let filtersData = { idols: [], types: [], excluded_types: [] };
 let eventsData = [];
+let presetsData = [];
+let activePreset = null;   // preset last applied in the open form (drives the price hint)
 let msIdol, msType, msEvent;
 let selectedIds = new Set();
 // Shared with index.php and report.php — one mode across the app.
@@ -555,6 +562,7 @@ function setupFilterEvents() {
         if ($('fDateField').value !== 'order_date') return;  // filter must be keyed by order_date
         $('fDateFrom').value = $('itemOrderDate').value;
     });
+    $('itemPrice').addEventListener('input', updatePresetHint);
 }
 
 // --- API ---
@@ -564,7 +572,12 @@ async function api(url, opts = {}) {
 }
 
 async function loadFilters() {
-    [filtersData] = await Promise.all([api('api.php?action=filters')]);
+    let presetRes;
+    [filtersData, presetRes] = await Promise.all([
+        api('api.php?action=filters'),
+        api('api.php?action=preset_list').catch(() => ({})),
+    ]);
+    presetsData = presetRes.presets || [];
     const evRes = await api('api.php?action=event_list');
     eventsData = evRes.events || [];
     msIdol = initMultiSelect('msIdol', () => filtersData.idols, () => { currentPage = 1; loadData(); });
@@ -914,7 +927,54 @@ function showFormModal(id = null) {
         }
     }
     $('formTitle').textContent = id ? t('items.edit_item') : t('items.add_item');
+    renderPresetBar();
     new bootstrap.Modal($('formModal')).show();
+}
+
+// --- Presets ---
+// Form fillers only: a preset copies type/price (and title, if the field is empty)
+// into the form. Nothing links the saved item back to the preset.
+function renderPresetBar() {
+    const bar = $('presetBar');
+    activePreset = null;
+    updatePresetHint();
+    const show = !$('itemId').value && presetsData.length > 0;   // add/clone only, never edit
+    bar.classList.toggle('d-none', !show);
+    bar.classList.toggle('d-flex', show);
+    const sel = $('presetSelect');
+    if (!show) { sel.innerHTML = ''; return; }
+    // Option label: "Deco Cheki — ฿500.00 (Pin Cheki)"; the type is shown only when it differs from the name.
+    sel.innerHTML = `<option value="">${escHtml(t('presets.pick'))}</option>` +
+        presetsData.map((p, i) => {
+            const extra = p.type !== p.name ? ` (${escHtml(p.type)})` : '';
+            return `<option value="${i}">${escHtml(p.name)} — ฿${formatNumber(p.price_per_qty)}${extra}</option>`;
+        }).join('');
+    sel.value = '';
+    if (!sel._presetInit) {
+        sel._presetInit = true;
+        sel.addEventListener('change', () => { if (sel.value !== '') applyPreset(presetsData[+sel.value]); });
+    }
+}
+
+function applyPreset(p) {
+    $('itemType').value = p.type;
+    $('itemPrice').value = p.price_per_qty;
+    if (p.title && $('itemTitle').value.trim() === '') $('itemTitle').value = p.title;
+    activePreset = p;
+    updatePresetHint();
+    // Focus + select the price so an override is just "type the new number".
+    $('itemPrice').focus();
+    $('itemPrice').select();
+}
+
+function updatePresetHint() {
+    const hint = $('itemPresetHint');
+    if (!activePreset) { hint.classList.add('d-none'); hint.textContent = ''; return; }
+    const price = formatNumber(activePreset.price_per_qty);
+    const overridden = parseFloat($('itemPrice').value) !== activePreset.price_per_qty;
+    hint.textContent = t(overridden ? 'presets.overridden' : 'presets.price_hint', { price });
+    hint.classList.toggle('text-warning-emphasis', overridden);
+    hint.classList.remove('d-none');
 }
 
 async function editItem(id) {
@@ -935,6 +995,7 @@ async function editItem(id) {
     $('itemPrice').value = d.price_per_qty;
     $('itemQty').value = d.qty;
     $('formTitle').textContent = t('items.edit_item');
+    renderPresetBar();
     new bootstrap.Modal($('formModal')).show();
 }
 
@@ -961,6 +1022,7 @@ async function cloneItem(id) {
     $('itemPrice').value = d.price_per_qty;
     $('itemQty').value = d.qty;
     $('formTitle').textContent = t('items.clone_item');
+    renderPresetBar();
     new bootstrap.Modal($('formModal')).show();
 }
 

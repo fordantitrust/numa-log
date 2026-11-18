@@ -184,7 +184,9 @@ See **[API_ENDPOINTS.md](API_ENDPOINTS.md)** for full API documentation includin
 
 See **[CHANGELOG.md](CHANGELOG.md)** for the full version history.
 
-**Latest:** v1.12.1 — Dependency update: `phpoffice/phpspreadsheet` bumped from 5.9.0 to 5.10.0 (Excel import/export). No app changes.
+**Latest:** v1.13.0 — **Item presets**: a Preset dropdown in the Add Item form (e.g. *Cheki ฿300*, *Deco Cheki = Pin Cheki ฿500*) fill in the type, price and an optional title. The price stays editable, so you can override it before saving. Manage presets from a new card on the Manage Types page.
+
+**v1.12.1** — Dependency update: `phpoffice/phpspreadsheet` bumped from 5.9.0 to 5.10.0 (Excel import/export). No app changes.
 
 **v1.12.0** — Reports now have a **date range** selector (all time, last 12 months, a year, or a custom range) that applies to every tab, and the **By Type** tab lets you tick several types (e.g. Cheki + Pin Cheki) to view them combined.
 

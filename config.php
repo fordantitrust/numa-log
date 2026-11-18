@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 date_default_timezone_set('Asia/Bangkok');
 
-define('APP_VERSION', '1.12.1');
-const DB_SCHEMA_VERSION = 12;
+define('APP_VERSION', '1.13.0');
+const DB_SCHEMA_VERSION = 13;
 
 // Use data/ directory if it exists (Docker), otherwise use project root
 $dataDir = is_dir(__DIR__ . '/data') ? __DIR__ . '/data' : __DIR__;
@@ -150,6 +150,11 @@ function initDB(): void
     if ($currentVer < 12) {
         require_once __DIR__ . '/migrations/v12_exclude_from_reports.php';
         runMigrationV12($pdo);
+        $currentVer = 12;
+    }
+    if ($currentVer < 13) {
+        require_once __DIR__ . '/migrations/v13_item_presets.php';
+        runMigrationV13($pdo);
     }
 }
 

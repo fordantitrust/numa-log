@@ -4,6 +4,28 @@ All notable changes to Numa Log are documented here.
 
 ---
 
+## v1.13.0 (2026-11-18)
+
+### Items
+
+- **Item presets** — the Add Item and Clone forms have a **Preset** dropdown (e.g. **Cheki ฿300**, **Deco Cheki** → Pin Cheki ฿500 with title "Deco", **Poster A4 ฿350**). Choosing one fills in the type and price, and the title too if the preset has one and the Title field is still empty.
+- **Price override** — the price stays a normal editable field after picking a preset. A hint shows the preset price and switches to "changed from ฿…" once you type a different amount.
+- Presets are hidden when editing an existing item, so a stray choice can't overwrite a saved row.
+
+### Manage Types
+
+- New **Presets** card to add, edit and delete presets (name, type, price, optional title, sort order). Saving a preset whose type isn't a known category shows a warning but still saves, because item types are free text.
+
+### Database
+
+- Schema **v13**: new `item_presets` table. Presets are form fillers only, with **no link to items**. Items keep their own snapshot of type, price and title, so editing or deleting a preset never changes past data or report totals.
+
+### API
+
+- New `preset_list` (GET), `preset_save` (POST) and `preset_delete` (POST).
+
+---
+
 ## v1.12.1 (2026-11-09)
 
 ### Dependencies

@@ -74,6 +74,19 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
                 <div class="card-body py-2" id="statsPanel">-</div>
             </div>
 
+            <div class="card mb-3">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <strong><i class="bi bi-lightning-charge"></i> <?= t('presets.title') ?></strong>
+                    <button class="btn btn-primary btn-sm" onclick="showPresetForm()">
+                        <i class="bi bi-plus-lg"></i> <?= t('common.add') ?>
+                    </button>
+                </div>
+                <div class="card-body py-2">
+                    <div class="stat-muted mb-2"><?= t('presets.intro') ?></div>
+                    <div id="presetList"><div class="text-muted"><?= t('common.loading') ?></div></div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header py-2"><strong><?= t('types.unmapped_title') ?></strong></div>
                 <div class="card-body py-2" id="unmappedPanel">
@@ -144,6 +157,51 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
     </div>
 </div>
 
+<!-- Preset Modal -->
+<div class="modal fade" id="presetModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="presetFormTitle"><?= t('presets.add') ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="presetForm">
+                    <input type="hidden" id="pId">
+                    <div class="mb-2">
+                        <label class="form-label small"><?= t('presets.name') ?></label>
+                        <input type="text" class="form-control form-control-sm" id="pName" required placeholder="<?= t('presets.name_ph') ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small"><?= t('common.type') ?></label>
+                        <input type="text" class="form-control form-control-sm" id="pType" required list="pTypeList" autocomplete="off">
+                        <datalist id="pTypeList"></datalist>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small"><?= t('presets.price') ?></label>
+                        <input type="number" class="form-control form-control-sm" id="pPrice" min="0" step="0.01" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small"><?= t('presets.title_optional') ?></label>
+                        <input type="text" class="form-control form-control-sm" id="pTitle">
+                        <div class="form-text small"><?= t('presets.title_help') ?></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small"><?= t('types.sort_order') ?></label>
+                        <input type="number" class="form-control form-control-sm" id="pSort" value="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="savePreset()">
+                    <i class="bi bi-check-lg"></i> <?= t('common.save') ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -172,9 +230,11 @@ window.fetch = (function(origFetch) { return function(url, opts = {}) { if (opts
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 let allTypes = [];
+let allPresets = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     loadTypes();
+    loadPresets();
     loadMembersReport();
 });
 
@@ -184,6 +244,89 @@ async function loadTypes() {
     renderTable();
     renderStats();
     renderUnmapped(res.unmapped);
+    $('pTypeList').innerHTML = allTypes.map(ty => `<option value="${escHtml(ty.name)}"></option>`).join('');
+}
+
+// --- Item presets ---
+// Form fillers for the Add Item form. Items never reference a preset, so edits
+// and deletes here cannot change past data.
+async function loadPresets() {
+    const res = await fetch('api.php?action=preset_list').then(r => r.json());
+    allPresets = res.presets || [];
+    renderPresets();
+}
+
+function renderPresets() {
+    if (allPresets.length === 0) {
+        $('presetList').innerHTML = `<div class="text-muted">${t('presets.empty')}</div>`;
+        return;
+    }
+    $('presetList').innerHTML = allPresets.map(p => `
+        <div class="d-flex align-items-center justify-content-between py-1 border-bottom gap-2">
+            <div class="text-truncate">
+                <strong>${escHtml(p.name)}</strong> <span class="text-nowrap">฿${fmt(p.price_per_qty)}</span>
+                <div class="stat-muted text-truncate">${escHtml(p.type)}${p.title ? ' · ' + escHtml(p.title) : ''}</div>
+            </div>
+            <div class="text-nowrap">
+                <button class="btn btn-outline-primary btn-sm px-1 py-0" onclick="editPreset(${p.id})" title="${t('common.edit')}"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-outline-danger btn-sm px-1 py-0" onclick="deletePreset(${p.id})" title="${t('common.delete')}"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showPresetForm() {
+    $('pId').value = '';
+    $('presetForm').reset();
+    $('presetFormTitle').textContent = t('presets.add');
+    new bootstrap.Modal($('presetModal')).show();
+}
+
+function editPreset(id) {
+    const p = allPresets.find(x => x.id == id);
+    if (!p) return;
+    $('pId').value = p.id;
+    $('pName').value = p.name;
+    $('pType').value = p.type;
+    $('pPrice').value = p.price_per_qty;
+    $('pTitle').value = p.title || '';
+    $('pSort').value = p.sort_order;
+    $('presetFormTitle').textContent = t('presets.edit');
+    new bootstrap.Modal($('presetModal')).show();
+}
+
+async function savePreset() {
+    const form = $('presetForm');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const body = new FormData();
+    body.append('action', 'preset_save');
+    const id = $('pId').value;
+    if (id) body.append('id', id);
+    body.append('name', $('pName').value);
+    body.append('type', $('pType').value);
+    body.append('price_per_qty', $('pPrice').value);
+    body.append('title', $('pTitle').value);
+    body.append('sort_order', $('pSort').value);
+
+    const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
+    if (res.error) { alert(res.error); return; }
+    bootstrap.Modal.getInstance($('presetModal')).hide();
+    if (res.warning === 'unknown_type') alert(t('presets.unknown_type', { type: $('pType').value.trim() }));
+    loadPresets();
+    notifyDataChanged('presets');
+}
+
+async function deletePreset(id) {
+    const p = allPresets.find(x => x.id == id);
+    if (!p || !confirm(t('presets.delete_confirm', { name: p.name }))) return;
+    const body = new FormData();
+    body.append('action', 'preset_delete');
+    body.append('id', id);
+    const res = await fetch('api.php', { method: 'POST', body }).then(r => r.json());
+    if (res.error) { alert(res.error); return; }
+    loadPresets();
+    notifyDataChanged('presets');
 }
 
 async function loadMembersReport() {

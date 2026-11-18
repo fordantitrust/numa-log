@@ -58,6 +58,9 @@ try {
         'type_save' => handleTypeSave($pdo),
         'type_rename_items' => handleTypeRenameItems($pdo),
         'type_delete' => handleTypeDelete($pdo),
+        'preset_list' => handlePresetList($pdo),
+        'preset_save' => handlePresetSave($pdo),
+        'preset_delete' => handlePresetDelete($pdo),
         'event_list' => handleEventList($pdo),
         'event_save' => handleEventSave($pdo),
         'event_delete' => handleEventDelete($pdo),
@@ -1743,6 +1746,76 @@ function handleTypeDelete(PDO $pdo): void
         jsonResponse(['error' => 'ID is required'], 400);
     }
     $pdo->prepare("DELETE FROM type_categories WHERE id = :id")->execute([':id' => $id]);
+    jsonResponse(['success' => true]);
+}
+
+// --- Item presets ---
+// Form fillers only: picking a preset copies type/price/title into the item form.
+// Items never reference a preset, so editing or deleting one cannot change past
+// data or totals (same snapshot principle as items.idol).
+
+function handlePresetList(PDO $pdo): void
+{
+    $rows = $pdo->query("SELECT id, name, type, price_per_qty, title, sort_order FROM item_presets ORDER BY sort_order, name")->fetchAll();
+    $presets = array_map(fn($r) => [
+        'id'            => (int) $r['id'],
+        'name'          => $r['name'],
+        'type'          => $r['type'],
+        'price_per_qty' => (float) $r['price_per_qty'],
+        'title'         => $r['title'],
+        'sort_order'    => (int) $r['sort_order'],
+    ], $rows);
+    jsonResponse(['presets' => $presets]);
+}
+
+function handlePresetSave(PDO $pdo): void
+{
+    $id        = (int) ($_POST['id'] ?? 0);
+    $name      = trim((string) ($_POST['name'] ?? ''));
+    $type      = trim((string) ($_POST['type'] ?? ''));
+    $title     = trim((string) ($_POST['title'] ?? ''));
+    $sortOrder = (int) ($_POST['sort_order'] ?? 0);
+    $priceRaw  = trim((string) ($_POST['price_per_qty'] ?? ''));
+
+    if ($name === '' || $type === '') {
+        jsonResponse(['error' => 'Name and type are required'], 400);
+    }
+    if ($priceRaw === '' || !is_numeric($priceRaw) || (float) $priceRaw < 0) {
+        jsonResponse(['error' => 'Price must be a number ≥ 0'], 400);
+    }
+    $price = (float) $priceRaw;
+
+    $params = [':name' => $name, ':type' => $type, ':price' => $price, ':title' => $title, ':sort' => $sortOrder];
+    if ($id > 0) {
+        $stmt = $pdo->prepare("UPDATE item_presets SET name = :name, type = :type, price_per_qty = :price, title = :title, sort_order = :sort WHERE id = :id");
+        $stmt->execute($params + [':id' => $id]);
+        if ($stmt->rowCount() === 0) {
+            jsonResponse(['error' => 'Preset not found'], 404);
+        }
+    } else {
+        $pdo->prepare("INSERT INTO item_presets (name, type, price_per_qty, title, sort_order) VALUES (:name, :type, :price, :title, :sort)")
+            ->execute($params);
+        $id = (int) $pdo->lastInsertId();
+    }
+
+    // items.type is free text, so an unknown type is allowed — but warn, since a typo
+    // here would quietly create a new type on every item saved from this preset.
+    $known = $pdo->prepare("SELECT 1 FROM type_categories WHERE name = :t");
+    $known->execute([':t' => $type]);
+    $resp = ['success' => true, 'id' => $id];
+    if (!$known->fetchColumn()) {
+        $resp['warning'] = 'unknown_type';
+    }
+    jsonResponse($resp);
+}
+
+function handlePresetDelete(PDO $pdo): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    if (!$id) {
+        jsonResponse(['error' => 'ID is required'], 400);
+    }
+    $pdo->prepare("DELETE FROM item_presets WHERE id = :id")->execute([':id' => $id]);
     jsonResponse(['success' => true]);
 }
 

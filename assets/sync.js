@@ -17,7 +17,7 @@
     let bc = null;
     try { bc = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL) : null; } catch (_) { /* ignore */ }
 
-    // kind = 'idols' | 'types' | 'events'
+    // kind = 'idols' | 'types' | 'events' | 'presets'
     window.notifyDataChanged = function (kind) {
         const msg = { kind, ts: Date.now() };
         if (bc) { try { bc.postMessage(msg); } catch (_) { /* ignore */ } }

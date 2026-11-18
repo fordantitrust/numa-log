@@ -450,6 +450,24 @@ return [
     'types.rename_orphans'   => 'Renamed. {n} items still use the old name "{old}" and no longer carry this type\'s settings. Update them to "{new}"?',
     'types.rename_orphans_ok' => 'Updated {n} items.',
 
+    // Item presets (v1.13.0)
+    'presets.title'          => 'Item Presets',
+    'presets.quick'          => 'Preset',
+    'presets.pick'           => '— Choose a preset —',
+    'presets.add'            => 'Add Preset',
+    'presets.edit'           => 'Edit Preset',
+    'presets.name'           => 'Button label',
+    'presets.name_ph'        => 'e.g. Deco Cheki',
+    'presets.price'          => 'Price / qty',
+    'presets.title_optional' => 'Title (optional)',
+    'presets.title_help'     => 'Filled in only when the item\'s Title field is still empty.',
+    'presets.intro'          => 'A dropdown in the Add Item form that fills in the type and price. The price can still be changed before saving. Items are not linked to presets, so editing one never changes past items.',
+    'presets.price_hint'     => 'Preset price ฿{price}, you can change it',
+    'presets.overridden'     => 'Changed from preset ฿{price}',
+    'presets.unknown_type'   => 'Saved. Note: "{type}" is not a type in Manage Types. Items saved from this preset will use it as a new type name.',
+    'presets.empty'          => 'No presets yet.',
+    'presets.delete_confirm' => 'Delete preset "{name}"? Items already saved are not affected.',
+
     // ── Excluded types (shared: index / report / items / budget) ────────────
     'excluded.toggle'              => 'Include excluded types',
     'excluded.banner'              => '{n} items ({amount}) are hidden — their type is excluded from reports.',

@@ -543,6 +543,49 @@ Delete a type category.
 
 ---
 
+## Item Presets (`api.php`, v13)
+
+Form fillers for the Add Item form. Items are never linked to a preset, so these endpoints never touch `items`.
+
+### `preset_list` — GET
+
+All presets, ordered by `sort_order, name`.
+
+**Response:**
+```json
+{ "presets": [
+  { "id": 2, "name": "Deco Cheki", "type": "Pin Cheki", "price_per_qty": 500.0, "title": "Deco", "sort_order": 1 }
+] }
+```
+
+---
+
+### `preset_save` — POST
+
+Create a preset (no `id`) or update one (`id` > 0).
+
+**POST Body:** `id` (int, optional), `name` (required), `type` (required), `price_per_qty` (number ≥ 0, required), `title` (optional, `''` = none), `sort_order` (int), `csrf_token`
+
+**Response:**
+```json
+{ "success": true, "id": 2, "warning": "unknown_type" }
+```
+`warning: "unknown_type"` is present when `type` does not match any `type_categories.name`. The preset is still saved, because `items.type` is free text.
+Errors: 400 if name or type is missing or the price is invalid, 404 if `id` does not exist.
+
+---
+
+### `preset_delete` — POST
+
+**POST Body:** `id` (int, required), `csrf_token`
+
+**Response:**
+```json
+{ "success": true }
+```
+
+---
+
 ## Events (`api.php`)
 
 ### `event_list` — GET

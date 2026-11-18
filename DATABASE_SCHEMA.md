@@ -93,6 +93,23 @@ Report queries pick the membership whose `start_date` ≤ `items.order_date` ≤
 > detection would produce false "missing ticket" warnings. The Event tabs in `report.php`
 > *are* filtered.
 
+### `item_presets` (v13)
+Form fillers for the Preset dropdown in the Add Item form (managed on `types.php`).
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER PK | Auto-increment ID |
+| name | TEXT | Button label, e.g. `Deco Cheki` |
+| type | TEXT | Copied into `items.type`. Free text, matched by name like `items.type`. Not a FK |
+| price_per_qty | REAL | Copied into the price field. The user can still change it before saving |
+| title | TEXT | `''` = none. Otherwise filled into Title **only if that field is empty** |
+| sort_order | INTEGER | Button order |
+| created_at | TEXT | Creation timestamp |
+
+> **No link to items.** There is no `items.preset_id`. A preset only fills the form, and
+> the saved item keeps its own snapshot of type, price and title. Editing or deleting a
+> preset therefore never changes past items or report totals. Do not add a FK to
+> "track which preset was used" without revisiting this.
+
 ### `budgets` (v6, `period` added in v7)
 Monthly spending limits per scope, with a recurring default plus per-month overrides.
 

@@ -444,6 +444,24 @@ return [
     'types.rename_orphans'   => 'เปลี่ยนชื่อแล้ว ยังมี {n} รายการที่ใช้ชื่อเดิม "{old}" อยู่ และไม่ได้รับการตั้งค่าของประเภทนี้แล้ว ต้องการเปลี่ยนเป็น "{new}" ด้วยหรือไม่',
     'types.rename_orphans_ok' => 'อัปเดต {n} รายการแล้ว',
 
+    // Item presets (v1.13.0)
+    'presets.title'          => 'Preset รายการ',
+    'presets.quick'          => 'Preset',
+    'presets.pick'           => '— เลือก preset —',
+    'presets.add'            => 'เพิ่ม Preset',
+    'presets.edit'           => 'แก้ไข Preset',
+    'presets.name'           => 'ชื่อบนปุ่ม',
+    'presets.name_ph'        => 'เช่น Deco Cheki',
+    'presets.price'          => 'ราคา / ชิ้น',
+    'presets.title_optional' => 'Title (ไม่บังคับ)',
+    'presets.title_help'     => 'เติมให้เฉพาะเมื่อช่อง Title ของรายการยังว่าง',
+    'presets.intro'          => 'dropdown ในฟอร์มเพิ่มรายการ เลือกแล้วเติมประเภทและราคาให้ และยังแก้ราคาได้ก่อนบันทึก รายการไม่ได้ผูกกับ preset จึงแก้ preset ได้โดยรายการเดิมไม่เปลี่ยน',
+    'presets.price_hint'     => 'ราคา preset ฿{price} แก้ได้',
+    'presets.overridden'     => 'ปรับจากราคา preset ฿{price}',
+    'presets.unknown_type'   => 'บันทึกแล้ว หมายเหตุ: "{type}" ไม่มีในหน้าจัดการประเภท รายการที่บันทึกจาก preset นี้จะใช้เป็นชื่อประเภทใหม่',
+    'presets.empty'          => 'ยังไม่มี preset',
+    'presets.delete_confirm' => 'ลบ preset "{name}" ใช่ไหม รายการที่บันทึกไปแล้วจะไม่ได้รับผลกระทบ',
+
     // ── Excluded types (shared: index / report / items / budget) ────────────
     'excluded.toggle'              => 'รวมประเภทที่ยกเว้น',
     'excluded.banner'              => 'ซ่อนอยู่ {n} รายการ ({amount}) เพราะประเภทถูกยกเว้นจากรายงาน',
